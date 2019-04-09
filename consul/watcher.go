@@ -46,13 +46,16 @@ func (w *Watcher) Watch() error {
 		if err != nil {
 			//TODO: error handling
 		}
-		cng := new(harvester.Change)
-		err = json.Unmarshal(buf, cng)
+		mp := make(map[string]interface{}, 0)
+		err = json.Unmarshal(buf, mp)
 		if err != nil {
 			//TODO: error handling
 		}
-		cng.Value = base64.StdEncoding.EncodeToString([]byte(cng.Value))
-		w.ch <- cng
+		w.ch <- &harvester.Change{
+			Key:     mp["Key"].(string),
+			Value:   base64.StdEncoding.EncodeToString([]byte(mp["Value"].(string))),
+			Version: mp["ModifyIndex"].(int),
+		}
 	}
 	return pl.Run(w.address)
 }
