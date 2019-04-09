@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/consul/watch"
 	"github.com/taxibeat/harvester"
-	"google.golang.org/appengine/log"
 )
 
 // Watcher of Consul changes.
@@ -45,13 +44,15 @@ func (w *Watcher) Watch() error {
 		}
 		buf, err := json.MarshalIndent(data, "", "    ")
 		if err != nil {
-			log.Errorf("Error encoding output: %s\n", err)
+			//TODO: error handling
 		}
 		cng := new(harvester.Change)
-		json.Unmarshal(buf, cng)
-		cng := harvester.Change{Key: "key", Value: "val"}
+		err = json.Unmarshal(buf, cng)
+		if err != nil {
+			//TODO: error handling
+		}
 		cng.Value = base64.StdEncoding.EncodeToString([]byte(cng.Value))
-		w.ch <- &cng
+		w.ch <- cng
 	}
 	return pl.Run(w.address)
 }
