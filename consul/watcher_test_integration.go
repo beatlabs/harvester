@@ -10,7 +10,6 @@ import (
 )
 
 func TestPayload(t *testing.T) {
-
 	params := make(map[string]interface{})
 	params["datacenter"] = ""
 	params["token"] = ""
@@ -23,5 +22,4 @@ func TestPayload(t *testing.T) {
 	w, err := New("127.0.0.1:8500", params, ch, chErr, false)
 	require.NoError(t, err)
 	require.NotNil(t, w)
-
 }

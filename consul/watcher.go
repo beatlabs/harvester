@@ -16,6 +16,7 @@ type Watcher struct {
 	ch                  chan<- *harvester.Change
 	chErr               chan<- error
 	ignoreInitialChange bool
+	pl                  *watch.Plan
 }
 
 // New creates a new watcher.
@@ -36,25 +37,28 @@ func New(address string, params map[string]interface{}, ch chan<- *harvester.Cha
 	return &Watcher{address: address, params: params, ch: ch, chErr: chErr, ignoreInitialChange: ign}, nil
 }
 
-// Watch the setup key and prefices for changes.
+// Watch the setup key and prefixes for changes.
 func (w *Watcher) Watch() error {
-	pl, err := watch.Parse(w.params)
+	var err error
+	w.pl, err = watch.Parse(w.params)
 	if err != nil {
 		return err
 	}
-	pl.Handler = func(idx uint64, data interface{}) {
+	w.pl.Handler = func(idx uint64, data interface{}) {
 		if w.ignoreInitialChange {
 			w.ignoreInitialChange = false
 			return
 		}
 		buf, err := json.MarshalIndent(data, "", "    ")
 		if err != nil {
-			//TODO: error handling
+			w.chErr <- err
+			return
 		}
 		mp := make(map[string]interface{}, 0)
-		err = json.Unmarshal(buf, mp)
+		err = json.Unmarshal(buf, &mp)
 		if err != nil {
-			//TODO: error handling
+			w.chErr <- err
+			return
 		}
 		w.ch <- &harvester.Change{
 			Key:     mp["Key"].(string),
@@ -62,5 +66,10 @@ func (w *Watcher) Watch() error {
 			Version: mp["ModifyIndex"].(int),
 		}
 	}
-	return pl.Run(w.address)
+	return w.pl.Run(w.address)
+}
+
+// Stop the watcher.
+func (w *Watcher) Stop() error {
+	return w.Stop()
 }
