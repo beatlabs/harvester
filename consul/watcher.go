@@ -14,11 +14,13 @@ type Watcher struct {
 	params              map[string]interface{}
 	address             string
 	ch                  chan<- *harvester.Change
+	chErr               chan<- error
 	ignoreInitialChange bool
 }
 
 // New creates a new watcher.
-func New(address string, params map[string]interface{}, ch chan<- *harvester.Change, ign bool) (*Watcher, error) {
+func New(address string, params map[string]interface{}, ch chan<- *harvester.Change,
+	chErr chan<- error, ign bool) (*Watcher, error) {
 	if address == "" {
 		return nil, errors.New("address is empty")
 	}
@@ -28,7 +30,10 @@ func New(address string, params map[string]interface{}, ch chan<- *harvester.Cha
 	if ch == nil {
 		return nil, errors.New("channel is nil")
 	}
-	return &Watcher{address: address, params: params, ch: ch, ignoreInitialChange: ign}, nil
+	if chErr == nil {
+		return nil, errors.New("error channel is nil")
+	}
+	return &Watcher{address: address, params: params, ch: ch, chErr: chErr, ignoreInitialChange: ign}, nil
 }
 
 // Watch the setup key and prefices for changes.
