@@ -16,6 +16,5 @@ before_script:
 script:
   - make ci
 
-# after_success:
-#   - export CODECOV_TOKEN="d23e5765-006b-4aa8-b76c-dc96c88e7da3"
-#   - bash <(curl -s https://codecov.io/bash)
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
