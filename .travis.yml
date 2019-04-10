@@ -7,7 +7,7 @@ go:
 install: true
 
 before_script:
-  - rm consul
+  - rm -rf consul
   - wget https://releases.hashicorp.com/consul/1.4.3/consul_1.4.3_linux_amd64.zip  
   - unzip "consul_1.4.3_linux_amd64.zip"
   - ./consul agent -server -bootstrap-expect 1 -data-dir /tmp/consul -dev -bind=$(hostname -I | awk '{print $1}' | xargs) -http-port 8501 -log-level=err &
