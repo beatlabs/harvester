@@ -4,7 +4,7 @@ package harvester
 type Change struct {
 	Key     string
 	Value   string
-	Version int
+	Version uint64
 }
 
 // Watcher defines methods to watch for configuration changes.

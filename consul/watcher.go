@@ -1,10 +1,10 @@
 package consul
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"errors"
+	"fmt"
 
+	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
 	"github.com/taxibeat/harvester"
 )
@@ -22,7 +22,7 @@ func NewKeyWatchItem(key string) WatchItem {
 
 // NewPrefixWatchItem creates a prefix key watch item for the watcher.
 func NewPrefixWatchItem(key string) WatchItem {
-	return WatchItem{Type: "prefix", Key: key}
+	return WatchItem{Type: "keyprefix", Key: key}
 }
 
 // Watcher of Consul changes.
@@ -50,6 +50,9 @@ func (w *Watcher) Watch(ch chan<- *harvester.Change, chErr chan<- error, ww ...W
 	if chErr == nil {
 		return errors.New("error channel is nil")
 	}
+	if len(ww) == 0 {
+		return errors.New("watch items are empty")
+	}
 
 	for _, wi := range ww {
 		var pl *watch.Plan
@@ -57,30 +60,32 @@ func (w *Watcher) Watch(ch chan<- *harvester.Change, chErr chan<- error, ww ...W
 		switch wi.Type {
 		case "key":
 			pl, err = w.runKeyWatcher(ch, chErr, wi.Key)
-		case "prefix":
+		case "keyprefix":
 			pl, err = w.runPrefixWatcher(ch, chErr, wi.Key)
 		}
 		if err != nil {
 			return err
 		}
 		w.pp = append(w.pp, pl)
+		go func() {
+			err := pl.Run(w.address)
+			if err != nil {
+				chErr <- err
+			}
+		}()
 	}
 	return nil
 }
 
 // Stop the watcher.
-func (w *Watcher) Stop() error {
-
-	return w.Stop()
+func (w *Watcher) Stop() {
+	for _, p := range w.pp {
+		p.Stop()
+	}
 }
 
 func (w *Watcher) runKeyWatcher(ch chan<- *harvester.Change, chErr chan<- error, key string) (*watch.Plan, error) {
-	params := map[string]interface{}{}
-	params["datacenter"] = w.datacenter
-	params["token"] = w.token
-	params["key"] = key
-	params["type"] = "key"
-	pl, err := watch.Parse(params)
+	pl, err := w.getPlan("key", key)
 	if err != nil {
 		return nil, err
 	}
@@ -89,37 +94,22 @@ func (w *Watcher) runKeyWatcher(ch chan<- *harvester.Change, chErr chan<- error,
 			w.ignoreInitialChange = false
 			return
 		}
-		buf, err := json.MarshalIndent(data, "", "    ")
-		if err != nil {
-			chErr <- err
-			return
+		pair, ok := data.(*api.KVPair)
+		if !ok {
+			chErr <- fmt.Errorf("data is not kv pair: %v", data)
 		}
-		mp := make(map[string]interface{}, 0)
-		err = json.Unmarshal(buf, &mp)
-		if err != nil {
-			chErr <- err
-			return
-		}
+
 		ch <- &harvester.Change{
-			Key:     mp["Key"].(string),
-			Value:   base64.StdEncoding.EncodeToString([]byte(mp["Value"].(string))),
-			Version: mp["ModifyIndex"].(int),
+			Key:     pair.Key,
+			Value:   string(pair.Value),
+			Version: pair.ModifyIndex,
 		}
-	}
-	err = pl.Run(w.address)
-	if err != nil {
-		return nil, err
 	}
 	return pl, nil
 }
 
 func (w *Watcher) runPrefixWatcher(ch chan<- *harvester.Change, chErr chan<- error, key string) (*watch.Plan, error) {
-	params := map[string]interface{}{}
-	params["datacenter"] = w.datacenter
-	params["token"] = w.token
-	params["key"] = key
-	params["type"] = "prefix"
-	pl, err := watch.Parse(params)
+	pl, err := w.getPlan("keyprefix", key)
 	if err != nil {
 		return nil, err
 	}
@@ -128,27 +118,30 @@ func (w *Watcher) runPrefixWatcher(ch chan<- *harvester.Change, chErr chan<- err
 			w.ignoreInitialChange = false
 			return
 		}
-		buf, err := json.MarshalIndent(data, "", "    ")
-		if err != nil {
-			chErr <- err
-			return
+		pp, ok := data.(api.KVPairs)
+		if !ok {
+			chErr <- fmt.Errorf("data is not kv pairs: %v", data)
 		}
-		//TODO: this might be a array...
-		mp := make(map[string]interface{}, 0)
-		err = json.Unmarshal(buf, &mp)
-		if err != nil {
-			chErr <- err
-			return
+		for _, p := range pp {
+			ch <- &harvester.Change{
+				Key:     p.Key,
+				Value:   string(p.Value),
+				Version: p.ModifyIndex,
+			}
 		}
-		ch <- &harvester.Change{
-			Key:     mp["Key"].(string),
-			Value:   base64.StdEncoding.EncodeToString([]byte(mp["Value"].(string))),
-			Version: mp["ModifyIndex"].(int),
-		}
-	}
-	err = pl.Run(w.address)
-	if err != nil {
-		return nil, err
 	}
 	return pl, nil
+}
+
+func (w *Watcher) getPlan(tp, key string) (*watch.Plan, error) {
+	params := map[string]interface{}{}
+	params["datacenter"] = w.datacenter
+	params["token"] = w.token
+	if tp == "key" {
+		params["key"] = key
+	} else {
+		params["prefix"] = key
+	}
+	params["type"] = tp
+	return watch.Parse(params)
 }
