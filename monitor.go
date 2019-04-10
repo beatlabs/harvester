@@ -21,9 +21,20 @@ func NewMonitor(cfg interface{}, ch <-chan *Change) (*Monitor, error) {
 	if ch == nil {
 		return nil, errors.New("change channel is nil")
 	}
-	return &Monitor{ch: ch, cfg: cfg}, nil
+	m := &Monitor{ch: ch, cfg: cfg}
+	if err := m.init(); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *Monitor) Monitor() error {
+	//TODO: for range the channel for changes
+	return nil
+}
 
+func (c *Monitor) init() error {
+	//TODO: extract tags
+	//TODO: create internal map
+	return nil
 }
