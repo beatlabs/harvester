@@ -122,6 +122,7 @@ func (w *Watcher) runKeyWatcher(key string) (*watch.Plan, error) {
 		}
 
 		w.cfg.ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     pair.Key,
 			Value:   string(pair.Value),
 			Version: pair.ModifyIndex,
@@ -146,6 +147,7 @@ func (w *Watcher) runPrefixWatcher(key string) (*watch.Plan, error) {
 		}
 		for _, p := range pp {
 			w.cfg.ch <- &harvester.Change{
+				Src:     harvester.SourceConsul,
 				Key:     p.Key,
 				Value:   string(p.Value),
 				Version: p.ModifyIndex,
