@@ -87,6 +87,5 @@ require (
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 	gopkg.in/gorethink/gorethink.v4 v4.1.0 // indirect
 	gopkg.in/ory-am/dockertest.v2 v2.2.3 // indirect
-	gotest.tools v2.2.0+incompatible
 	layeh.com/radius v0.0.0-20190322222518-890bc1058917 // indirect
 )
