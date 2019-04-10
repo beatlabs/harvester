@@ -8,33 +8,53 @@ import (
 	"github.com/taxibeat/harvester"
 )
 
-func TestNew(t *testing.T) {
+func TestNewConfig(t *testing.T) {
+	ch := make(chan *harvester.Change)
+	chErr := make(chan error)
 	type args struct {
 		address string
+		ch      chan *harvester.Change
+		chErr   chan error
 	}
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{
-			name: "success",
-			args: args{
-				address: "addr",
-			},
-			wantErr: false,
-		},
-		{
-			name: "missing address",
-			args: args{
-				address: "",
-			},
-			wantErr: true,
-		},
+		{name: "success", args: args{address: "addr", ch: ch, chErr: chErr}, wantErr: false},
+		{name: "missing address", args: args{address: "", ch: ch, chErr: chErr}, wantErr: true},
+		{name: "missing channel", args: args{address: "addr", ch: nil, chErr: chErr}, wantErr: true},
+		{name: "missing error channel", args: args{address: "addr", ch: ch, chErr: nil}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.address, "datacenter", "token", false)
+			got, err := NewConfig(tt.args.address, "datacenter", "token", false, tt.args.ch, tt.args.chErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, got)
+			}
+		})
+	}
+}
+
+func TestNew(t *testing.T) {
+	type args struct {
+		cfg *Config
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{name: "success", args: args{cfg: &Config{}}, wantErr: false},
+		{name: "missing config", args: args{cfg: nil}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(tt.args.cfg)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, got)
@@ -47,28 +67,21 @@ func TestNew(t *testing.T) {
 }
 
 func TestWatcher_Watch(t *testing.T) {
-	ch := make(chan *harvester.Change)
-	chErr := make(chan error)
-	ww := []WatchItem{}
 	type args struct {
-		ch    chan<- *harvester.Change
-		chErr chan<- error
-		ww    []WatchItem
+		ww []WatchItem
 	}
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name: "missing channel", args: args{ch: nil, chErr: chErr, ww: ww}, wantErr: true},
-		{name: "missing error channel", args: args{ch: ch, chErr: nil, ww: ww}, wantErr: true},
-		{name: "missing watch items", args: args{ch: ch, chErr: chErr, ww: nil}, wantErr: true},
+		{name: "missing watch items", args: args{ww: nil}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			w, err := New("address", "datacenter", "token", false)
+			w, err := New(&Config{})
 			require.NoError(t, err)
-			err = w.Watch(tt.args.ch, tt.args.chErr, tt.args.ww...)
+			err = w.Watch(tt.args.ww...)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

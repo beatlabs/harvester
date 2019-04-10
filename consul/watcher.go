@@ -25,31 +25,53 @@ func NewPrefixWatchItem(key string) WatchItem {
 	return WatchItem{Type: "keyprefix", Key: key}
 }
 
+// Config for configuring the watcher.
+type Config struct {
+	Address             string
+	Datacenter          string
+	Token               string
+	IgnoreInitialChange bool
+	ch                  chan<- *harvester.Change
+	chErr               chan<- error
+}
+
+// NewConfig constructor.
+func NewConfig(addr, dc, token string, ign bool, ch chan<- *harvester.Change, chErr chan<- error) (*Config, error) {
+	if addr == "" {
+		return nil, errors.New("address is empty")
+	}
+	if ch == nil {
+		return nil, errors.New("channel is nil")
+	}
+	if chErr == nil {
+		return nil, errors.New("error channel is nil")
+	}
+	return &Config{
+		Address:             addr,
+		Datacenter:          dc,
+		Token:               token,
+		IgnoreInitialChange: ign,
+		ch:                  ch,
+		chErr:               chErr,
+	}, nil
+}
+
 // Watcher of Consul changes.
 type Watcher struct {
-	datacenter          string
-	token               string
-	address             string
-	ignoreInitialChange bool
-	pp                  []*watch.Plan
+	cfg *Config
+	pp  []*watch.Plan
 }
 
 // New creates a new watcher.
-func New(address, datacenter, token string, ign bool) (*Watcher, error) {
-	if address == "" {
-		return nil, errors.New("address is empty")
+func New(cfg *Config) (*Watcher, error) {
+	if cfg == nil {
+		return nil, errors.New("config is nil")
 	}
-	return &Watcher{address: address, ignoreInitialChange: ign}, nil
+	return &Watcher{cfg: cfg}, nil
 }
 
 // Watch the setup key and prefixes for changes.
-func (w *Watcher) Watch(ch chan<- *harvester.Change, chErr chan<- error, ww ...WatchItem) error {
-	if ch == nil {
-		return errors.New("channel is nil")
-	}
-	if chErr == nil {
-		return errors.New("error channel is nil")
-	}
+func (w *Watcher) Watch(ww ...WatchItem) error {
 	if len(ww) == 0 {
 		return errors.New("watch items are empty")
 	}
@@ -59,18 +81,18 @@ func (w *Watcher) Watch(ch chan<- *harvester.Change, chErr chan<- error, ww ...W
 		var err error
 		switch wi.Type {
 		case "key":
-			pl, err = w.runKeyWatcher(ch, chErr, wi.Key)
+			pl, err = w.runKeyWatcher(wi.Key)
 		case "keyprefix":
-			pl, err = w.runPrefixWatcher(ch, chErr, wi.Key)
+			pl, err = w.runPrefixWatcher(wi.Key)
 		}
 		if err != nil {
 			return err
 		}
 		w.pp = append(w.pp, pl)
 		go func() {
-			err := pl.Run(w.address)
+			err := pl.Run(w.cfg.Address)
 			if err != nil {
-				chErr <- err
+				w.cfg.chErr <- err
 			}
 		}()
 	}
@@ -84,22 +106,22 @@ func (w *Watcher) Stop() {
 	}
 }
 
-func (w *Watcher) runKeyWatcher(ch chan<- *harvester.Change, chErr chan<- error, key string) (*watch.Plan, error) {
+func (w *Watcher) runKeyWatcher(key string) (*watch.Plan, error) {
 	pl, err := w.getPlan("key", key)
 	if err != nil {
 		return nil, err
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
-		if w.ignoreInitialChange {
-			w.ignoreInitialChange = false
+		if w.cfg.IgnoreInitialChange {
+			w.cfg.IgnoreInitialChange = false
 			return
 		}
 		pair, ok := data.(*api.KVPair)
 		if !ok {
-			chErr <- fmt.Errorf("data is not kv pair: %v", data)
+			w.cfg.chErr <- fmt.Errorf("data is not kv pair: %v", data)
 		}
 
-		ch <- &harvester.Change{
+		w.cfg.ch <- &harvester.Change{
 			Key:     pair.Key,
 			Value:   string(pair.Value),
 			Version: pair.ModifyIndex,
@@ -108,22 +130,22 @@ func (w *Watcher) runKeyWatcher(ch chan<- *harvester.Change, chErr chan<- error,
 	return pl, nil
 }
 
-func (w *Watcher) runPrefixWatcher(ch chan<- *harvester.Change, chErr chan<- error, key string) (*watch.Plan, error) {
+func (w *Watcher) runPrefixWatcher(key string) (*watch.Plan, error) {
 	pl, err := w.getPlan("keyprefix", key)
 	if err != nil {
 		return nil, err
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
-		if w.ignoreInitialChange {
-			w.ignoreInitialChange = false
+		if w.cfg.IgnoreInitialChange {
+			w.cfg.IgnoreInitialChange = false
 			return
 		}
 		pp, ok := data.(api.KVPairs)
 		if !ok {
-			chErr <- fmt.Errorf("data is not kv pairs: %v", data)
+			w.cfg.chErr <- fmt.Errorf("data is not kv pairs: %v", data)
 		}
 		for _, p := range pp {
-			ch <- &harvester.Change{
+			w.cfg.ch <- &harvester.Change{
 				Key:     p.Key,
 				Value:   string(p.Value),
 				Version: p.ModifyIndex,
@@ -135,8 +157,8 @@ func (w *Watcher) runPrefixWatcher(ch chan<- *harvester.Change, chErr chan<- err
 
 func (w *Watcher) getPlan(tp, key string) (*watch.Plan, error) {
 	params := map[string]interface{}{}
-	params["datacenter"] = w.datacenter
-	params["token"] = w.token
+	params["datacenter"] = w.cfg.Datacenter
+	params["token"] = w.cfg.Token
 	if tp == "key" {
 		params["key"] = key
 	} else {

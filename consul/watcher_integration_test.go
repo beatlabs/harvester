@@ -44,13 +44,14 @@ func TestWatch(t *testing.T) {
 
 	ch := make(chan *harvester.Change)
 	chErr := make(chan error)
-
-	w, err := New(addr, "", "", false)
+	cfg, err := NewConfig(addr, "", "", false, ch, chErr)
+	require.NoError(t, err)
+	w, err := New(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, w)
 	defer w.Stop()
 
-	err = w.Watch(ch, chErr, NewPrefixWatchItem("prefix1"), NewKeyWatchItem("key1"))
+	err = w.Watch(NewPrefixWatchItem("prefix1"), NewKeyWatchItem("key1"))
 	require.NoError(t, err)
 
 	for i := 0; i < 3; i++ {
