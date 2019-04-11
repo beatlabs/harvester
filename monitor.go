@@ -2,14 +2,20 @@ package harvester
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 )
 
 type field struct {
 	Name    string
-	Type    reflect.Kind
+	Kind    reflect.Kind
 	Version uint64
+}
+
+type tag struct {
+	Src Source
+	Key string
 }
 
 // Monitor definition.
@@ -44,49 +50,54 @@ func (m *Monitor) Monitor() {
 func (m *Monitor) applyChange(c *Change) {
 	mp, ok := m.mp[c.Src]
 	if !ok {
-		//TODO: log
+		logWarnf("source %s not found", c.Src)
 		return
 	}
 	fld, ok := mp[c.Key]
 	if !ok {
-		//TODO: log
+		logWarnf("key %s not found", c.Key)
 		return
 	}
 	if fld.Version > c.Version {
-		//TODO: log
+		logWarnf("version %d is older than %d", c.Version, fld.Version)
 		return
 	}
 
-	f := m.cfg.FieldByName(fld.Name)
-	switch fld.Type {
-	case reflect.Bool:
-		b, err := strconv.ParseBool(c.Value)
-		if err != nil {
-			//TODO: log error
-			return
-		}
-		f.SetBool(b)
-	case reflect.String:
-		f.SetString(c.Value)
-	case reflect.Int64:
-		v, err := strconv.ParseInt(c.Value, 10, 64)
-		if err != nil {
-			//TODO: log error
-			return
-		}
-		f.SetInt(v)
-	case reflect.Float64:
-		v, err := strconv.ParseFloat(c.Value, 64)
-		if err != nil {
-			//TODO: log error
-			return
-		}
-		f.SetFloat(v)
-	default:
-		//TODO: log error!!!!
+	err := m.setValue(fld.Name, c.Value, fld.Kind)
+	if err != nil {
+		logErrorf("failed to set value %s of kind %d on field %s", c.Value, fld.Kind, fld.Name)
 		return
 	}
 	fld.Version = c.Version
+}
+
+func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
+	f := m.cfg.FieldByName(name)
+	switch kind {
+	case reflect.Bool:
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		f.SetBool(b)
+	case reflect.String:
+		f.SetString(value)
+	case reflect.Int64:
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		f.SetInt(v)
+	case reflect.Float64:
+		v, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return err
+		}
+		f.SetFloat(v)
+	default:
+		return fmt.Errorf("unsupported kind: %v", kind)
+	}
+	return nil
 }
 
 func (m *Monitor) init(cfg interface{}) error {

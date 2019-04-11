@@ -24,6 +24,14 @@ func TestTags(t *testing.T) {
 	assert.Equal(t, "Name", r.Elem().Field(0).Name)
 }
 
+func TestTags1(t *testing.T) {
+	cfg := &TestConfig{}
+	r := reflect.TypeOf(cfg)
+	f := r.Elem().Field(0)
+	assert.Equal(t, "Name", f.Name)
+	assert.Equal(t, "John Doe", f.Tag.Get("seed"))
+}
+
 func Extract(tag reflect.StructTag) []reflect.StructTag {
 	tags := strings.Split(string(tag), " ")
 	if len(tags) == 0 {
