@@ -26,9 +26,9 @@ func TestTags(t *testing.T) {
 
 func TestTags1(t *testing.T) {
 	cfg := &TestConfig{}
-	r := reflect.TypeOf(cfg)
+	r := reflect.TypeOf(cfg).Elem()
 	f := r.Elem().Field(0)
-	assert.Equal(t, "Name", f.Name)
+	f.Tag.Lookup("seed")
 	assert.Equal(t, "John Doe", f.Tag.Get("seed"))
 }
 

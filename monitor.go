@@ -3,14 +3,17 @@ package harvester
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type field struct {
 	Name    string
 	Kind    reflect.Kind
 	Version uint64
+	Tag     reflect.StructTag
 }
 
 type tag struct {
@@ -101,10 +104,86 @@ func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
 }
 
 func (m *Monitor) init(cfg interface{}) error {
-
-	//TODO: check for unsupported kind
+	tp := reflect.TypeOf(cfg)
+	if tp.Kind() != reflect.Ptr {
+		return errors.New("configuration should be a pointer type")
+	}
+	ff, err := getFields(tp.Elem())
+	if err != nil {
+		return err
+	}
+	err = validate(ff)
+	if err != nil {
+		return err
+	}
+	err = m.applySeedValues(ff)
+	if err != nil {
+		return err
+	}
+	err = m.applyEnvVarValues(ff)
+	if err != nil {
+		return err
+	}
 	//TODO: extract tags
 	//TODO: create internal map
+	return nil
+}
+
+func getFields(tp reflect.Type) ([]*field, error) {
+	var ff []*field
+	for i := 0; i < tp.NumField(); i++ {
+		ff = append(ff, &field{
+			Version: 0,
+			Name:    tp.Field(i).Name,
+			Kind:    tp.Field(i).Type.Kind(),
+			Tag:     tp.Field(i).Tag,
+		})
+	}
+	return ff, nil
+}
+
+func validate(ff []*field) error {
+	sb := strings.Builder{}
+	for _, f := range ff {
+		if !isSupportedKind(f.Kind) {
+			sb.WriteString(fmt.Sprintf("field %s of kind %d is not supported\n", f.Name, f.Kind))
+		}
+	}
+	if sb.Len() == 0 {
+		return nil
+	}
+	return errors.New(sb.String())
+}
+
+func (m *Monitor) applySeedValues(ff []*field) error {
+	for _, f := range ff {
+		value, ok := f.Tag.Lookup(string(SourceSeed))
+		if !ok {
+			continue
+		}
+		err := m.setValue(f.Name, value, f.Kind)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *Monitor) applyEnvVarValues(ff []*field) error {
+	for _, f := range ff {
+		value, ok := f.Tag.Lookup(string(SourceEnv))
+		if !ok {
+			continue
+		}
+		value, ok = os.LookupEnv(value)
+		if !ok {
+			continue
+		}
+		err := m.setValue(f.Name, value, f.Kind)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
