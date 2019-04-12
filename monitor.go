@@ -6,14 +6,15 @@ import (
 	"os"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 type field struct {
-	Name    string
-	Kind    reflect.Kind
-	Version uint64
-	Tag     reflect.StructTag
+	Name      string
+	Kind      reflect.Kind
+	Version   uint64
+	SeedValue string
+	EnvVarKey string
+	ConsulKey string
 }
 
 type tag struct {
@@ -23,9 +24,9 @@ type tag struct {
 
 // Monitor definition.
 type Monitor struct {
-	cfg reflect.Value
-	ch  <-chan *Change
-	mp  map[Source]map[string]*field
+	cfg        reflect.Value
+	ch         <-chan *Change
+	monitorMap map[Source]map[string]*field
 }
 
 // NewMonitor creates a new monitor.
@@ -36,8 +37,16 @@ func NewMonitor(cfg interface{}, ch <-chan *Change) (*Monitor, error) {
 	if ch == nil {
 		return nil, errors.New("change channel is nil")
 	}
-	m := &Monitor{ch: ch, cfg: reflect.ValueOf(cfg).Elem()}
-	if err := m.init(cfg); err != nil {
+	tp := reflect.TypeOf(cfg)
+	if tp.Kind() != reflect.Ptr {
+		return nil, errors.New("configuration should be a pointer type")
+	}
+	m := &Monitor{
+		ch:         ch,
+		cfg:        reflect.ValueOf(cfg).Elem(),
+		monitorMap: make(map[Source]map[string]*field),
+	}
+	if err := m.setup(tp); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -51,7 +60,7 @@ func (m *Monitor) Monitor() {
 }
 
 func (m *Monitor) applyChange(c *Change) {
-	mp, ok := m.mp[c.Src]
+	mp, ok := m.monitorMap[c.Src]
 	if !ok {
 		logWarnf("source %s not found", c.Src)
 		return
@@ -68,7 +77,7 @@ func (m *Monitor) applyChange(c *Change) {
 
 	err := m.setValue(fld.Name, c.Value, fld.Kind)
 	if err != nil {
-		logErrorf("failed to set value %s of kind %d on field %s", c.Value, fld.Kind, fld.Name)
+		logErrorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
 		return
 	}
 	fld.Version = c.Version
@@ -103,91 +112,89 @@ func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
 	return nil
 }
 
-func (m *Monitor) init(cfg interface{}) error {
-	tp := reflect.TypeOf(cfg)
-	if tp.Kind() != reflect.Ptr {
-		return errors.New("configuration should be a pointer type")
-	}
+func (m *Monitor) setup(tp reflect.Type) error {
 	ff, err := getFields(tp.Elem())
 	if err != nil {
 		return err
 	}
-	err = validate(ff)
+	err = m.applyInitialValues(ff)
 	if err != nil {
 		return err
 	}
-	err = m.applySeedValues(ff)
-	if err != nil {
-		return err
-	}
-	err = m.applyEnvVarValues(ff)
-	if err != nil {
-		return err
-	}
-	//TODO: extract tags
-	//TODO: create internal map
+	m.createMonitorMap(ff)
 	return nil
 }
 
 func getFields(tp reflect.Type) ([]*field, error) {
 	var ff []*field
 	for i := 0; i < tp.NumField(); i++ {
-		ff = append(ff, &field{
+		fld := tp.Field(i)
+		kind := fld.Type.Kind()
+		if !isKindSupported(kind) {
+			return nil, fmt.Errorf("field %s is not supported(only bool, int64, float64 and string)", fld.Name)
+		}
+		f := &field{
+			Name:    fld.Name,
+			Kind:    kind,
 			Version: 0,
-			Name:    tp.Field(i).Name,
-			Kind:    tp.Field(i).Type.Kind(),
-			Tag:     tp.Field(i).Tag,
-		})
+		}
+		value, ok := fld.Tag.Lookup(string(SourceSeed))
+		if ok {
+			f.SeedValue = value
+		}
+		value, ok = fld.Tag.Lookup(string(SourceEnv))
+		if ok {
+			f.EnvVarKey = value
+		}
+		value, ok = fld.Tag.Lookup(string(SourceConsul))
+		if ok {
+			f.ConsulKey = value
+		}
+		ff = append(ff, f)
 	}
 	return ff, nil
 }
 
-func validate(ff []*field) error {
-	sb := strings.Builder{}
+func (m *Monitor) applyInitialValues(ff []*field) error {
 	for _, f := range ff {
-		if !isSupportedKind(f.Kind) {
-			sb.WriteString(fmt.Sprintf("field %s of kind %d is not supported\n", f.Name, f.Kind))
+		if f.SeedValue != "" {
+			err := m.setValue(f.Name, f.SeedValue, f.Kind)
+			if err != nil {
+				return err
+			}
 		}
-	}
-	if sb.Len() == 0 {
-		return nil
-	}
-	return errors.New(sb.String())
-}
+		if f.EnvVarKey != "" {
+			value, ok := os.LookupEnv(f.EnvVarKey)
+			if !ok {
+				continue
+			}
+			err := m.setValue(f.Name, value, f.Kind)
+			if err != nil {
+				return err
+			}
+		}
+		if f.ConsulKey != "" {
 
-func (m *Monitor) applySeedValues(ff []*field) error {
-	for _, f := range ff {
-		value, ok := f.Tag.Lookup(string(SourceSeed))
-		if !ok {
-			continue
-		}
-		err := m.setValue(f.Name, value, f.Kind)
-		if err != nil {
-			return err
 		}
 	}
 	return nil
 }
 
-func (m *Monitor) applyEnvVarValues(ff []*field) error {
+func (m *Monitor) createMonitorMap(ff []*field) {
 	for _, f := range ff {
-		value, ok := f.Tag.Lookup(string(SourceEnv))
-		if !ok {
+		if f.ConsulKey == "" {
 			continue
 		}
-		value, ok = os.LookupEnv(value)
+		_, ok := m.monitorMap[SourceConsul]
 		if !ok {
-			continue
-		}
-		err := m.setValue(f.Name, value, f.Kind)
-		if err != nil {
-			return err
+			m.monitorMap[SourceConsul] = map[string]*field{f.ConsulKey: f}
+		} else {
+			m.monitorMap[SourceConsul][f.ConsulKey] = f
 		}
 	}
-	return nil
 }
 
-func isSupportedKind(kind reflect.Kind) bool {
+func isKindSupported(kind reflect.Kind) bool {
 	switch kind {
 	case reflect.Bool, reflect.Int64, reflect.Float64, reflect.String:
 		return true

@@ -1,45 +1,137 @@
 package harvester
 
 import (
+	"os"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type TestConfig struct {
-	Name   string `seed:"John Doe" env:"ENV_NAME" consul:"/config/name"`
-	Age    int    `seed:"18" env:"ENV_AGE" consul:"/config/age"`
-	HasJob bool   `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
-}
-
-func TestTags(t *testing.T) {
-	cfg := &TestConfig{}
-	r := reflect.TypeOf(cfg)
-	v := reflect.ValueOf(cfg)
-	f := v.Elem().Field(0)
-	f.SetString("Test")
-	assert.Equal(t, "Test", cfg.Name)
-	assert.Equal(t, "Name", r.Elem().Field(0).Name)
-}
-
-func TestTags1(t *testing.T) {
-	cfg := &TestConfig{}
-	r := reflect.TypeOf(cfg).Elem()
-	f := r.Elem().Field(0)
-	f.Tag.Lookup("seed")
-	assert.Equal(t, "John Doe", f.Tag.Get("seed"))
-}
-
-func Extract(tag reflect.StructTag) []reflect.StructTag {
-	tags := strings.Split(string(tag), " ")
-	if len(tags) == 0 {
-		return nil
+func TestNewMonitor(t *testing.T) {
+	expectedAgeField := field{
+		Name:      "Age",
+		Kind:      reflect.Int64,
+		EnvVarKey: "ENV_AGE",
+		ConsulKey: "/config/age",
 	}
-	tt := make([]reflect.StructTag, len(tags))
-	for i := 0; i < len(tags); i++ {
-		tt[i] = reflect.StructTag(tags[i])
+	expectedBalanceField := field{
+		Name:      "Balance",
+		Kind:      reflect.Float64,
+		SeedValue: "99.9",
+		EnvVarKey: "ENV_BALANCE",
+		ConsulKey: "/config/balance",
 	}
-	return tt
+	expectedHasJobField := field{
+		Name:      "HasJob",
+		Kind:      reflect.Bool,
+		SeedValue: "true",
+		EnvVarKey: "ENV_HAS_JOB",
+		ConsulKey: "/config/has-job",
+	}
+	require.NoError(t, os.Setenv("ENV_AGE", "18"))
+	ch := make(chan *Change)
+	type args struct {
+		cfg interface{}
+		ch  <-chan *Change
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *Monitor
+		wantErr bool
+	}{
+		{name: "config nil", args: args{cfg: nil, ch: ch}, wantErr: true},
+		{name: "channel nil", args: args{cfg: &testConfig{}, ch: nil}, wantErr: true},
+		{name: "config not pointer", args: args{cfg: testConfig{}, ch: ch}, wantErr: true},
+		{name: "not supported data types", args: args{cfg: &testInvalidConfig{}, ch: ch}, wantErr: true},
+		{name: "success", args: args{cfg: &testConfig{}, ch: ch}, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewMonitor(tt.args.cfg, tt.args.ch)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, got)
+				cfg := tt.args.cfg.(*testConfig)
+				assert.Equal(t, "John Doe", cfg.Name)
+				assert.Equal(t, int64(18), cfg.Age)
+				assert.Equal(t, 99.9, cfg.Balance)
+				assert.True(t, cfg.HasJob)
+				assert.Contains(t, got.monitorMap, SourceConsul)
+				assert.Len(t, got.monitorMap[SourceConsul], 3)
+				assert.Contains(t, got.monitorMap[SourceConsul], "/config/age")
+				assert.Equal(t, expectedAgeField, *got.monitorMap[SourceConsul]["/config/age"])
+				assert.Contains(t, got.monitorMap[SourceConsul], "/config/balance")
+				assert.Equal(t, expectedBalanceField, *got.monitorMap[SourceConsul]["/config/balance"])
+				assert.Contains(t, got.monitorMap[SourceConsul], "/config/has-job")
+				assert.Equal(t, expectedHasJobField, *got.monitorMap[SourceConsul]["/config/has-job"])
+			}
+		})
+	}
+}
+
+func TestMonitor_Monitor(t *testing.T) {
+	require.NoError(t, os.Setenv("ENV_AGE", "18"))
+	chDone := make(chan struct{})
+	ch := make(chan *Change)
+	cfg := &testConfig{}
+	mon, err := NewMonitor(cfg, ch)
+	require.NoError(t, err)
+	require.Equal(t, "John Doe", cfg.Name)
+	require.Equal(t, int64(18), cfg.Age)
+	require.Equal(t, 99.9, cfg.Balance)
+	require.True(t, cfg.HasJob)
+	go func() {
+		mon.Monitor()
+		chDone <- struct{}{}
+	}()
+	// ch <- &Change{
+	// 	Src:     SourceConsul,
+	// 	Key:     "/config/age",
+	// 	Value:   "23",
+	// 	Version: 1,
+	// }
+	// require.Equal(t, int64(23), cfg.Age)
+	// ch <- &Change{
+	// 	Src:     SourceConsul,
+	// 	Key:     "/config/age",
+	// 	Value:   "99",
+	// 	Version: 0,
+	// }
+	// require.Equal(t, int64(23), cfg.Age)
+	// ch <- &Change{
+	// 	Src:     SourceConsul,
+	// 	Key:     "/config/balance",
+	// 	Value:   "123.4",
+	// 	Version: 1,
+	// }
+	// require.Equal(t, 123.4, cfg.Balance)
+	ch <- &Change{
+		Src:     SourceConsul,
+		Key:     "/config/has-job",
+		Value:   "false",
+		Version: 1,
+	}
+	require.False(t, cfg.HasJob)
+	close(ch)
+	<-chDone
+}
+
+type testConfig struct {
+	Name    string  `seed:"John Doe" env:"ENV_NAME"`
+	Age     int64   `env:"ENV_AGE" consul:"/config/age"`
+	Balance float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	HasJob  bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+}
+
+type testInvalidConfig struct {
+	Name    string  `seed:"John Doe" env:"ENV_NAME" consul:"/config/name"`
+	Age     int     `seed:"18" env:"ENV_AGE" consul:"/config/age"`
+	Balance float32 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	HasJob  bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }
