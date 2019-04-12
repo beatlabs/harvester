@@ -8,6 +8,9 @@ import (
 	"strconv"
 )
 
+// GetFunc function definition for getting a value for a key.
+type GetFunc func(string) (string, error)
+
 type field struct {
 	Name      string
 	Kind      reflect.Kind
@@ -27,15 +30,19 @@ type Monitor struct {
 	cfg        reflect.Value
 	ch         <-chan *Change
 	monitorMap map[Source]map[string]*field
+	consulGet  GetFunc
 }
 
 // NewMonitor creates a new monitor.
-func NewMonitor(cfg interface{}, ch <-chan *Change) (*Monitor, error) {
+func NewMonitor(cfg interface{}, ch <-chan *Change, consulGet GetFunc) (*Monitor, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
 	if ch == nil {
 		return nil, errors.New("change channel is nil")
+	}
+	if consulGet == nil {
+		return nil, errors.New("consul get is nil")
 	}
 	tp := reflect.TypeOf(cfg)
 	if tp.Kind() != reflect.Ptr {
@@ -45,6 +52,7 @@ func NewMonitor(cfg interface{}, ch <-chan *Change) (*Monitor, error) {
 		ch:         ch,
 		cfg:        reflect.ValueOf(cfg).Elem(),
 		monitorMap: make(map[Source]map[string]*field),
+		consulGet:  consulGet,
 	}
 	if err := m.setup(tp); err != nil {
 		return nil, err
@@ -174,7 +182,14 @@ func (m *Monitor) applyInitialValues(ff []*field) error {
 			}
 		}
 		if f.ConsulKey != "" {
-
+			value, err := m.consulGet(f.ConsulKey)
+			if err != nil {
+				return err
+			}
+			err = m.setValue(f.Name, value, f.Kind)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

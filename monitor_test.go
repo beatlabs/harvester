@@ -1,6 +1,7 @@
 package harvester
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"testing"
@@ -33,8 +34,9 @@ func TestNewMonitor(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_AGE", "18"))
 	ch := make(chan *Change)
 	type args struct {
-		cfg interface{}
-		ch  <-chan *Change
+		cfg       interface{}
+		ch        <-chan *Change
+		consulGet GetFunc
 	}
 	tests := []struct {
 		name    string
@@ -42,15 +44,16 @@ func TestNewMonitor(t *testing.T) {
 		want    *Monitor
 		wantErr bool
 	}{
-		{name: "config nil", args: args{cfg: nil, ch: ch}, wantErr: true},
-		{name: "channel nil", args: args{cfg: &testConfig{}, ch: nil}, wantErr: true},
-		{name: "config not pointer", args: args{cfg: testConfig{}, ch: ch}, wantErr: true},
-		{name: "not supported data types", args: args{cfg: &testInvalidConfig{}, ch: ch}, wantErr: true},
-		{name: "success", args: args{cfg: &testConfig{}, ch: ch}, wantErr: false},
+		{name: "config nil", args: args{cfg: nil, ch: ch, consulGet: nil}, wantErr: true},
+		{name: "channel nil", args: args{cfg: &testConfig{}, ch: nil, consulGet: nil}, wantErr: true},
+		{name: "channel nil", args: args{cfg: &testConfig{}, ch: ch, consulGet: nil}, wantErr: true},
+		{name: "config not pointer", args: args{cfg: testConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
+		{name: "not supported data types", args: args{cfg: &testInvalidConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
+		{name: "success", args: args{cfg: &testConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMonitor(tt.args.cfg, tt.args.ch)
+			got, err := NewMonitor(tt.args.cfg, tt.args.ch, tt.args.consulGet)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, got)
@@ -59,7 +62,7 @@ func TestNewMonitor(t *testing.T) {
 				assert.NotNil(t, got)
 				cfg := tt.args.cfg.(*testConfig)
 				assert.Equal(t, "John Doe", cfg.Name)
-				assert.Equal(t, int64(18), cfg.Age)
+				assert.Equal(t, int64(25), cfg.Age)
 				assert.Equal(t, 99.9, cfg.Balance)
 				assert.True(t, cfg.HasJob)
 				assert.Contains(t, got.monitorMap, SourceConsul)
@@ -80,37 +83,37 @@ func TestMonitor_Monitor(t *testing.T) {
 	chDone := make(chan struct{})
 	ch := make(chan *Change)
 	cfg := &testConfig{}
-	mon, err := NewMonitor(cfg, ch)
+	mon, err := NewMonitor(cfg, ch, stubGetFunc)
 	require.NoError(t, err)
 	require.Equal(t, "John Doe", cfg.Name)
-	require.Equal(t, int64(18), cfg.Age)
+	require.Equal(t, int64(25), cfg.Age)
 	require.Equal(t, 99.9, cfg.Balance)
 	require.True(t, cfg.HasJob)
 	go func() {
 		mon.Monitor()
 		chDone <- struct{}{}
 	}()
-	// ch <- &Change{
-	// 	Src:     SourceConsul,
-	// 	Key:     "/config/age",
-	// 	Value:   "23",
-	// 	Version: 1,
-	// }
-	// require.Equal(t, int64(23), cfg.Age)
-	// ch <- &Change{
-	// 	Src:     SourceConsul,
-	// 	Key:     "/config/age",
-	// 	Value:   "99",
-	// 	Version: 0,
-	// }
-	// require.Equal(t, int64(23), cfg.Age)
-	// ch <- &Change{
-	// 	Src:     SourceConsul,
-	// 	Key:     "/config/balance",
-	// 	Value:   "123.4",
-	// 	Version: 1,
-	// }
-	// require.Equal(t, 123.4, cfg.Balance)
+	ch <- &Change{
+		Src:     SourceConsul,
+		Key:     "/config/age",
+		Value:   "23",
+		Version: 1,
+	}
+	require.Equal(t, int64(23), cfg.Age)
+	ch <- &Change{
+		Src:     SourceConsul,
+		Key:     "/config/age",
+		Value:   "99",
+		Version: 0,
+	}
+	require.Equal(t, int64(23), cfg.Age)
+	ch <- &Change{
+		Src:     SourceConsul,
+		Key:     "/config/balance",
+		Value:   "123.4",
+		Version: 1,
+	}
+	require.Equal(t, 123.4, cfg.Balance)
 	ch <- &Change{
 		Src:     SourceConsul,
 		Key:     "/config/has-job",
@@ -120,6 +123,18 @@ func TestMonitor_Monitor(t *testing.T) {
 	require.False(t, cfg.HasJob)
 	close(ch)
 	<-chDone
+}
+
+var stubGetFunc = func(key string) (string, error) {
+	switch key {
+	case "/config/age":
+		return "25", nil
+	case "/config/balance":
+		return "999.99", nil
+	case "/config/has-job":
+		return "false", nil
+	}
+	return "", errors.New("should not happen")
 }
 
 type testConfig struct {
