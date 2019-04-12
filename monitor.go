@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"sync"
 )
 
 // GetFunc function definition for getting a value for a key.
@@ -27,10 +28,11 @@ type tag struct {
 
 // Monitor definition.
 type Monitor struct {
-	cfg        reflect.Value
 	ch         <-chan *Change
 	monitorMap map[Source]map[string]*field
 	consulGet  GetFunc
+	sync.Mutex
+	cfg reflect.Value
 }
 
 // NewMonitor creates a new monitor.
@@ -92,6 +94,8 @@ func (m *Monitor) applyChange(c *Change) {
 }
 
 func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
+	m.Lock()
+	defer m.Unlock()
 	f := m.cfg.FieldByName(name)
 	switch kind {
 	case reflect.Bool:
