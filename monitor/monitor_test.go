@@ -1,4 +1,4 @@
-package harvester
+package monitor
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/taxibeat/harvester"
 )
 
 func TestNewMonitor(t *testing.T) {
@@ -34,11 +35,11 @@ func TestNewMonitor(t *testing.T) {
 	}
 	require.NoError(t, os.Setenv("ENV_AGE", "18"))
 	require.NoError(t, os.Setenv("ENV_XXX", "aaa"))
-	ch := make(chan *Change)
+	ch := make(chan *harvester.Change)
 	type args struct {
 		cfg       interface{}
-		ch        <-chan *Change
-		consulGet GetFunc
+		ch        <-chan *harvester.Change
+		consulGet harvester.GetValueFunc
 	}
 	tests := []struct {
 		name    string
@@ -71,14 +72,14 @@ func TestNewMonitor(t *testing.T) {
 				assert.Equal(t, int64(25), cfg.Age)
 				assert.Equal(t, 99.9, cfg.Balance)
 				assert.True(t, cfg.HasJob)
-				assert.Contains(t, got.monitorMap, SourceConsul)
-				assert.Len(t, got.monitorMap[SourceConsul], 3)
-				assert.Contains(t, got.monitorMap[SourceConsul], "/config/age")
-				assert.Equal(t, expectedAgeField, *got.monitorMap[SourceConsul]["/config/age"])
-				assert.Contains(t, got.monitorMap[SourceConsul], "/config/balance")
-				assert.Equal(t, expectedBalanceField, *got.monitorMap[SourceConsul]["/config/balance"])
-				assert.Contains(t, got.monitorMap[SourceConsul], "/config/has-job")
-				assert.Equal(t, expectedHasJobField, *got.monitorMap[SourceConsul]["/config/has-job"])
+				assert.Contains(t, got.monitorMap, harvester.SourceConsul)
+				assert.Len(t, got.monitorMap[harvester.SourceConsul], 3)
+				assert.Contains(t, got.monitorMap[harvester.SourceConsul], "/config/age")
+				assert.Equal(t, expectedAgeField, *got.monitorMap[harvester.SourceConsul]["/config/age"])
+				assert.Contains(t, got.monitorMap[harvester.SourceConsul], "/config/balance")
+				assert.Equal(t, expectedBalanceField, *got.monitorMap[harvester.SourceConsul]["/config/balance"])
+				assert.Contains(t, got.monitorMap[harvester.SourceConsul], "/config/has-job")
+				assert.Equal(t, expectedHasJobField, *got.monitorMap[harvester.SourceConsul]["/config/has-job"])
 			}
 		})
 	}
@@ -87,7 +88,7 @@ func TestNewMonitor(t *testing.T) {
 func TestMonitor_Monitor(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_AGE", "18"))
 	chDone := make(chan struct{})
-	ch := make(chan *Change)
+	ch := make(chan *harvester.Change)
 	cfg := &testConfig{}
 	mon, err := NewMonitor(cfg, ch, stubGetFunc)
 	require.NoError(t, err)
@@ -100,8 +101,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		chDone <- struct{}{}
 	}()
 	t.Run("change age", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/age",
 			Value:   "23",
 			Version: 1,
@@ -112,8 +113,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("age does not change due to version check", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/age",
 			Value:   "99",
 			Version: 0,
@@ -124,8 +125,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("balance change", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/balance",
 			Value:   "123.4",
 			Version: 1,
@@ -136,8 +137,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, 123.4, cfg.Balance)
 	})
 	t.Run("has job(bool) change", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/has-job",
 			Value:   "false",
 			Version: 1,
@@ -148,8 +149,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid source, no change", func(t *testing.T) {
-		ch <- &Change{
-			Src:     Source("XXX"),
+		ch <- &harvester.Change{
+			Src:     harvester.Source("XXX"),
 			Key:     "/config/has-job",
 			Value:   "true",
 			Version: 2,
@@ -160,8 +161,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("key not found, no change", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/has-job1",
 			Value:   "true",
 			Version: 2,
@@ -172,8 +173,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid bool, no change", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/has-job",
 			Value:   "XXX",
 			Version: 2,
@@ -184,8 +185,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid int, no change", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/age",
 			Value:   "XXX",
 			Version: 4,
@@ -196,8 +197,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("invalid float, no change", func(t *testing.T) {
-		ch <- &Change{
-			Src:     SourceConsul,
+		ch <- &harvester.Change{
+			Src:     harvester.SourceConsul,
 			Key:     "/config/balance",
 			Value:   "XXX",
 			Version: 5,

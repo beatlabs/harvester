@@ -36,3 +36,23 @@ func SetupLogging(infof, warnf, errorf LogFunc) error {
 	logErrorf = errorf
 	return nil
 }
+
+// LogInfof provides log info capabilities.
+func LogInfof(format string, v ...interface{}) {
+	logInfof(format, v...)
+}
+
+// LogWarnf provides log warn capabilities.
+func LogWarnf(format string, v ...interface{}) {
+	logWarnf(format, v...)
+}
+
+// LogErrorf provides log error capabilities.
+func LogErrorf(format string, v ...interface{}) {
+	logErrorf(format, v...)
+}
+
+// Harvester interface.
+type Harvester interface {
+	Harvest(cfg interface{}) error
+}
