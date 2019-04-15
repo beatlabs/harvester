@@ -26,8 +26,13 @@ type tag struct {
 	Key string
 }
 
-// Monitor definition.
-type Monitor struct {
+// Monitor defines a monitoring interface.
+type Monitor interface {
+	Monitor()
+}
+
+// TypeMonitor definition.
+type TypeMonitor struct {
 	ch         <-chan *Change
 	monitorMap map[Source]map[string]*field
 	consulGet  GetFunc
@@ -36,7 +41,7 @@ type Monitor struct {
 }
 
 // NewMonitor creates a new monitor.
-func NewMonitor(cfg interface{}, ch <-chan *Change, consulGet GetFunc) (*Monitor, error) {
+func NewMonitor(cfg interface{}, ch <-chan *Change, consulGet GetFunc) (*TypeMonitor, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
@@ -50,7 +55,7 @@ func NewMonitor(cfg interface{}, ch <-chan *Change, consulGet GetFunc) (*Monitor
 	if tp.Kind() != reflect.Ptr {
 		return nil, errors.New("configuration should be a pointer type")
 	}
-	m := &Monitor{
+	m := &TypeMonitor{
 		ch:         ch,
 		cfg:        reflect.ValueOf(cfg).Elem(),
 		monitorMap: make(map[Source]map[string]*field),
@@ -63,14 +68,14 @@ func NewMonitor(cfg interface{}, ch <-chan *Change, consulGet GetFunc) (*Monitor
 }
 
 // Monitor changes and apply them.
-func (m *Monitor) Monitor() {
-	for c := range m.ch {
-		m.applyChange(c)
+func (tm *TypeMonitor) Monitor() {
+	for c := range tm.ch {
+		tm.applyChange(c)
 	}
 }
 
-func (m *Monitor) applyChange(c *Change) {
-	mp, ok := m.monitorMap[c.Src]
+func (tm *TypeMonitor) applyChange(c *Change) {
+	mp, ok := tm.monitorMap[c.Src]
 	if !ok {
 		logWarnf("source %s not found", c.Src)
 		return
@@ -85,7 +90,7 @@ func (m *Monitor) applyChange(c *Change) {
 		return
 	}
 
-	err := m.setValue(fld.Name, c.Value, fld.Kind)
+	err := tm.setValue(fld.Name, c.Value, fld.Kind)
 	if err != nil {
 		logErrorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
 		return
@@ -93,10 +98,10 @@ func (m *Monitor) applyChange(c *Change) {
 	fld.Version = c.Version
 }
 
-func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
-	m.Lock()
-	defer m.Unlock()
-	f := m.cfg.FieldByName(name)
+func (tm *TypeMonitor) setValue(name, value string, kind reflect.Kind) error {
+	tm.Lock()
+	defer tm.Unlock()
+	f := tm.cfg.FieldByName(name)
 	switch kind {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(value)
@@ -124,16 +129,19 @@ func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
 	return nil
 }
 
-func (m *Monitor) setup(tp reflect.Type) error {
+func (tm *TypeMonitor) setup(tp reflect.Type) error {
 	ff, err := getFields(tp.Elem())
 	if err != nil {
 		return err
 	}
-	err = m.applyInitialValues(ff)
+	err = tm.applyInitialValues(ff)
 	if err != nil {
 		return err
 	}
-	m.createMonitorMap(ff)
+	err = tm.createMonitorMap(ff)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -167,10 +175,10 @@ func getFields(tp reflect.Type) ([]*field, error) {
 	return ff, nil
 }
 
-func (m *Monitor) applyInitialValues(ff []*field) error {
+func (tm *TypeMonitor) applyInitialValues(ff []*field) error {
 	for _, f := range ff {
 		if f.SeedValue != "" {
-			err := m.setValue(f.Name, f.SeedValue, f.Kind)
+			err := tm.setValue(f.Name, f.SeedValue, f.Kind)
 			if err != nil {
 				return err
 			}
@@ -180,17 +188,17 @@ func (m *Monitor) applyInitialValues(ff []*field) error {
 			if !ok {
 				continue
 			}
-			err := m.setValue(f.Name, value, f.Kind)
+			err := tm.setValue(f.Name, value, f.Kind)
 			if err != nil {
 				return err
 			}
 		}
 		if f.ConsulKey != "" {
-			value, err := m.consulGet(f.ConsulKey)
+			value, err := tm.consulGet(f.ConsulKey)
 			if err != nil {
 				return err
 			}
-			err = m.setValue(f.Name, value, f.Kind)
+			err = tm.setValue(f.Name, value, f.Kind)
 			if err != nil {
 				return err
 			}
@@ -199,18 +207,23 @@ func (m *Monitor) applyInitialValues(ff []*field) error {
 	return nil
 }
 
-func (m *Monitor) createMonitorMap(ff []*field) {
+func (tm *TypeMonitor) createMonitorMap(ff []*field) error {
 	for _, f := range ff {
 		if f.ConsulKey == "" {
 			continue
 		}
-		_, ok := m.monitorMap[SourceConsul]
+		_, ok := tm.monitorMap[SourceConsul]
 		if !ok {
-			m.monitorMap[SourceConsul] = map[string]*field{f.ConsulKey: f}
+			tm.monitorMap[SourceConsul] = map[string]*field{f.ConsulKey: f}
 		} else {
-			m.monitorMap[SourceConsul][f.ConsulKey] = f
+			_, ok := tm.monitorMap[SourceConsul][f.ConsulKey]
+			if ok {
+				return fmt.Errorf("consul key %s already exist in monitor map", f.ConsulKey)
+			}
+			tm.monitorMap[SourceConsul][f.ConsulKey] = f
 		}
 	}
+	return nil
 }
 
 func isKindSupported(kind reflect.Kind) bool {

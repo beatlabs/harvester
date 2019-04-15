@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,7 +42,7 @@ func TestNewMonitor(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Monitor
+		want    *TypeMonitor
 		wantErr bool
 	}{
 		{name: "config nil", args: args{cfg: nil, ch: ch, consulGet: nil}, wantErr: true},
@@ -49,6 +50,7 @@ func TestNewMonitor(t *testing.T) {
 		{name: "channel nil", args: args{cfg: &testConfig{}, ch: ch, consulGet: nil}, wantErr: true},
 		{name: "config not pointer", args: args{cfg: testConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
 		{name: "not supported data types", args: args{cfg: &testInvalidConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
+		{name: "duplicate consul key", args: args{cfg: &testDuplicateConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
 		{name: "success", args: args{cfg: &testConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: false},
 	}
 	for _, tt := range tests {
@@ -93,34 +95,114 @@ func TestMonitor_Monitor(t *testing.T) {
 		mon.Monitor()
 		chDone <- struct{}{}
 	}()
-	ch <- &Change{
-		Src:     SourceConsul,
-		Key:     "/config/age",
-		Value:   "23",
-		Version: 1,
-	}
-	require.Equal(t, int64(23), cfg.Age)
-	ch <- &Change{
-		Src:     SourceConsul,
-		Key:     "/config/age",
-		Value:   "99",
-		Version: 0,
-	}
-	require.Equal(t, int64(23), cfg.Age)
-	ch <- &Change{
-		Src:     SourceConsul,
-		Key:     "/config/balance",
-		Value:   "123.4",
-		Version: 1,
-	}
-	require.Equal(t, 123.4, cfg.Balance)
-	ch <- &Change{
-		Src:     SourceConsul,
-		Key:     "/config/has-job",
-		Value:   "false",
-		Version: 1,
-	}
-	require.False(t, cfg.HasJob)
+	t.Run("change age", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/age",
+			Value:   "23",
+			Version: 1,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.Equal(t, int64(23), cfg.Age)
+	})
+	t.Run("age does not change due to version check", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/age",
+			Value:   "99",
+			Version: 0,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.Equal(t, int64(23), cfg.Age)
+	})
+	t.Run("balance change", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/balance",
+			Value:   "123.4",
+			Version: 1,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.Equal(t, 123.4, cfg.Balance)
+	})
+	t.Run("has job(bool) change", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/has-job",
+			Value:   "false",
+			Version: 1,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.False(t, cfg.HasJob)
+	})
+	t.Run("invalid source, no change", func(t *testing.T) {
+		ch <- &Change{
+			Src:     Source("XXX"),
+			Key:     "/config/has-job",
+			Value:   "true",
+			Version: 2,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.False(t, cfg.HasJob)
+	})
+	t.Run("key not found, no change", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/has-job1",
+			Value:   "true",
+			Version: 2,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.False(t, cfg.HasJob)
+	})
+	t.Run("invalid bool, no change", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/has-job",
+			Value:   "XXX",
+			Version: 2,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.False(t, cfg.HasJob)
+	})
+	t.Run("invalid int, no change", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/age",
+			Value:   "XXX",
+			Version: 4,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.Equal(t, int64(23), cfg.Age)
+	})
+	t.Run("invalid float, no change", func(t *testing.T) {
+		ch <- &Change{
+			Src:     SourceConsul,
+			Key:     "/config/balance",
+			Value:   "XXX",
+			Version: 5,
+		}
+		time.Sleep(10 * time.Millisecond)
+		mon.Lock()
+		defer mon.Unlock()
+		require.Equal(t, 123.4, cfg.Balance)
+	})
 	close(ch)
 	<-chDone
 }
@@ -149,4 +231,10 @@ type testInvalidConfig struct {
 	Age     int     `seed:"18" env:"ENV_AGE" consul:"/config/age"`
 	Balance float32 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
 	HasJob  bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+}
+
+type testDuplicateConfig struct {
+	Name string `seed:"John Doe" env:"ENV_NAME"`
+	Age1 int64  `env:"ENV_AGE" consul:"/config/age"`
+	Age2 int64  `env:"ENV_AGE" consul:"/config/age"`
 }
