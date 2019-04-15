@@ -80,6 +80,12 @@ type Monitor interface {
 	Monitor()
 }
 
+// Watcher defines methods to watch for configuration changes.
+type Watcher interface {
+	Watch() error
+	Stop() error
+}
+
 // Harvester interface.
 type Harvester interface {
 	Harvest(cfg interface{}) error
