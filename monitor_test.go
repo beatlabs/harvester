@@ -33,6 +33,7 @@ func TestNewMonitor(t *testing.T) {
 		ConsulKey: "/config/has-job",
 	}
 	require.NoError(t, os.Setenv("ENV_AGE", "18"))
+	require.NoError(t, os.Setenv("ENV_XXX", "aaa"))
 	ch := make(chan *Change)
 	type args struct {
 		cfg       interface{}
@@ -50,6 +51,10 @@ func TestNewMonitor(t *testing.T) {
 		{name: "config not pointer", args: args{cfg: testConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
 		{name: "not supported data types", args: args{cfg: &testInvalidConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
 		{name: "duplicate consul key", args: args{cfg: &testDuplicateConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
+		{name: "invalid bool seed", args: args{cfg: &testInvalidIntSeedConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
+		{name: "invalid env var val", args: args{cfg: &testInvalidEnvVarValueConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
+		{name: "consul get error", args: args{cfg: &testConfig{}, ch: ch, consulGet: stubGetErrorFunc}, wantErr: true},
+		{name: "invalid consul get val", args: args{cfg: &testInvalidConsulValueConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: true},
 		{name: "success", args: args{cfg: &testConfig{}, ch: ch, consulGet: stubGetFunc}, wantErr: false},
 	}
 	for _, tt := range tests {
@@ -214,7 +219,13 @@ var stubGetFunc = func(key string) (string, error) {
 		return "999.99", nil
 	case "/config/has-job":
 		return "false", nil
+	case "/config/xxx":
+		return "xxx", nil
 	}
+	return "", errors.New("should not happen")
+}
+
+var stubGetErrorFunc = func(_ string) (string, error) {
 	return "", errors.New("should not happen")
 }
 
@@ -236,4 +247,16 @@ type testDuplicateConfig struct {
 	Name string `seed:"John Doe" env:"ENV_NAME"`
 	Age1 int64  `env:"ENV_AGE" consul:"/config/age"`
 	Age2 int64  `env:"ENV_AGE" consul:"/config/age"`
+}
+
+type testInvalidIntSeedConfig struct {
+	Age int64 `seed:"XXX" consul:"/config/age"`
+}
+
+type testInvalidEnvVarValueConfig struct {
+	Age int64 `env:"ENV_XXX" consul:"/config/age"`
+}
+
+type testInvalidConsulValueConfig struct {
+	Age int64 `consul:"/config/xxx"`
 }

@@ -78,64 +78,34 @@ func (tm *TypeMonitor) setup(tp reflect.Type) error {
 	return nil
 }
 
-// Monitor changes and apply them.
-func (tm *TypeMonitor) Monitor() {
-	for c := range tm.ch {
-		tm.applyChange(c)
-	}
-}
-
-func (tm *TypeMonitor) applyChange(c *Change) {
-	mp, ok := tm.monitorMap[c.Src]
-	if !ok {
-		logWarnf("source %s not found", c.Src)
-		return
-	}
-	fld, ok := mp[c.Key]
-	if !ok {
-		logWarnf("key %s not found", c.Key)
-		return
-	}
-	if fld.Version > c.Version {
-		logWarnf("version %d is older than %d", c.Version, fld.Version)
-		return
-	}
-
-	err := tm.setValue(fld.Name, c.Value, fld.Kind)
-	if err != nil {
-		logErrorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
-		return
-	}
-	fld.Version = c.Version
-}
-
-func (tm *TypeMonitor) setValue(name, value string, kind reflect.Kind) error {
-	tm.Lock()
-	defer tm.Unlock()
-	f := tm.cfg.FieldByName(name)
-	switch kind {
-	case reflect.Bool:
-		b, err := strconv.ParseBool(value)
-		if err != nil {
-			return err
+func (tm *TypeMonitor) applyInitialValues(ff []*field) error {
+	for _, f := range ff {
+		if f.SeedValue != "" {
+			err := tm.setValue(f.Name, f.SeedValue, f.Kind)
+			if err != nil {
+				return err
+			}
 		}
-		f.SetBool(b)
-	case reflect.String:
-		f.SetString(value)
-	case reflect.Int64:
-		v, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			return err
+		if f.EnvVarKey != "" {
+			value, ok := os.LookupEnv(f.EnvVarKey)
+			if !ok {
+				continue
+			}
+			err := tm.setValue(f.Name, value, f.Kind)
+			if err != nil {
+				return err
+			}
 		}
-		f.SetInt(v)
-	case reflect.Float64:
-		v, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err
+		if f.ConsulKey != "" {
+			value, err := tm.consulGet(f.ConsulKey)
+			if err != nil {
+				return err
+			}
+			err = tm.setValue(f.Name, value, f.Kind)
+			if err != nil {
+				return err
+			}
 		}
-		f.SetFloat(v)
-	default:
-		return fmt.Errorf("unsupported kind: %v", kind)
 	}
 	return nil
 }
@@ -170,38 +140,6 @@ func getFields(tp reflect.Type) ([]*field, error) {
 	return ff, nil
 }
 
-func (tm *TypeMonitor) applyInitialValues(ff []*field) error {
-	for _, f := range ff {
-		if f.SeedValue != "" {
-			err := tm.setValue(f.Name, f.SeedValue, f.Kind)
-			if err != nil {
-				return err
-			}
-		}
-		if f.EnvVarKey != "" {
-			value, ok := os.LookupEnv(f.EnvVarKey)
-			if !ok {
-				continue
-			}
-			err := tm.setValue(f.Name, value, f.Kind)
-			if err != nil {
-				return err
-			}
-		}
-		if f.ConsulKey != "" {
-			value, err := tm.consulGet(f.ConsulKey)
-			if err != nil {
-				return err
-			}
-			err = tm.setValue(f.Name, value, f.Kind)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (tm *TypeMonitor) createMonitorMap(ff []*field) error {
 	for _, f := range ff {
 		if f.ConsulKey == "" {
@@ -221,6 +159,37 @@ func (tm *TypeMonitor) createMonitorMap(ff []*field) error {
 	return nil
 }
 
+func (tm *TypeMonitor) setValue(name, value string, kind reflect.Kind) error {
+	tm.Lock()
+	defer tm.Unlock()
+	f := tm.cfg.FieldByName(name)
+	switch kind {
+	case reflect.Bool:
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		f.SetBool(b)
+	case reflect.String:
+		f.SetString(value)
+	case reflect.Int64:
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		f.SetInt(v)
+	case reflect.Float64:
+		v, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return err
+		}
+		f.SetFloat(v)
+	default:
+		return fmt.Errorf("unsupported kind: %v", kind)
+	}
+	return nil
+}
+
 func isKindSupported(kind reflect.Kind) bool {
 	switch kind {
 	case reflect.Bool, reflect.Int64, reflect.Float64, reflect.String:
@@ -228,4 +197,35 @@ func isKindSupported(kind reflect.Kind) bool {
 	default:
 		return false
 	}
+}
+
+// Monitor changes and apply them.
+func (tm *TypeMonitor) Monitor() {
+	for c := range tm.ch {
+		tm.applyChange(c)
+	}
+}
+
+func (tm *TypeMonitor) applyChange(c *Change) {
+	mp, ok := tm.monitorMap[c.Src]
+	if !ok {
+		logWarnf("source %s not found", c.Src)
+		return
+	}
+	fld, ok := mp[c.Key]
+	if !ok {
+		logWarnf("key %s not found", c.Key)
+		return
+	}
+	if fld.Version > c.Version {
+		logWarnf("version %d is older than %d", c.Version, fld.Version)
+		return
+	}
+
+	err := tm.setValue(fld.Name, c.Value, fld.Kind)
+	if err != nil {
+		logErrorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
+		return
+	}
+	fld.Version = c.Version
 }
