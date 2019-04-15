@@ -42,7 +42,6 @@ func TestNewMonitor(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *TypeMonitor
 		wantErr bool
 	}{
 		{name: "config nil", args: args{cfg: nil, ch: ch, consulGet: nil}, wantErr: true},

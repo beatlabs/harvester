@@ -21,11 +21,6 @@ type field struct {
 	ConsulKey string
 }
 
-type tag struct {
-	Src Source
-	Key string
-}
-
 // Monitor defines a monitoring interface.
 type Monitor interface {
 	Monitor()
@@ -65,6 +60,22 @@ func NewMonitor(cfg interface{}, ch <-chan *Change, consulGet GetFunc) (*TypeMon
 		return nil, err
 	}
 	return m, nil
+}
+
+func (tm *TypeMonitor) setup(tp reflect.Type) error {
+	ff, err := getFields(tp.Elem())
+	if err != nil {
+		return err
+	}
+	err = tm.applyInitialValues(ff)
+	if err != nil {
+		return err
+	}
+	err = tm.createMonitorMap(ff)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Monitor changes and apply them.
@@ -125,22 +136,6 @@ func (tm *TypeMonitor) setValue(name, value string, kind reflect.Kind) error {
 		f.SetFloat(v)
 	default:
 		return fmt.Errorf("unsupported kind: %v", kind)
-	}
-	return nil
-}
-
-func (tm *TypeMonitor) setup(tp reflect.Type) error {
-	ff, err := getFields(tp.Elem())
-	if err != nil {
-		return err
-	}
-	err = tm.applyInitialValues(ff)
-	if err != nil {
-		return err
-	}
-	err = tm.createMonitorMap(ff)
-	if err != nil {
-		return err
 	}
 	return nil
 }
