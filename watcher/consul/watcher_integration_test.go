@@ -53,7 +53,7 @@ func TestWatch(t *testing.T) {
 	err = w.Watch(NewPrefixWatchItem("prefix1"), NewKeyWatchItem("key1"))
 	require.NoError(t, err)
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 1; i++ {
 		cc := <-ch
 		for _, cng := range cc {
 			switch cng.Key {
@@ -62,6 +62,7 @@ func TestWatch(t *testing.T) {
 			case "prefix1/key3":
 				assert.Equal(t, "3", cng.Value)
 			case "key1":
+				assert.Equal(t, "1", cng.Value)
 			default:
 				assert.Fail(t, "key invalid", cng.Key)
 			}

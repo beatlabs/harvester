@@ -136,13 +136,13 @@ func (w *Watcher) runPrefixWatcher(key string) (*watch.Plan, error) {
 			w.cfg.chErr <- fmt.Errorf("data is not kv pairs: %v", data)
 		}
 		cc := make([]*harvester.Change, len(pp))
-		for _, p := range pp {
-			cc = append(cc, &harvester.Change{
+		for i := 0; i < len(pp); i++ {
+			cc[i] = &harvester.Change{
 				Src:     harvester.SourceConsul,
-				Key:     p.Key,
-				Value:   string(p.Value),
-				Version: p.ModifyIndex,
-			})
+				Key:     pp[i].Key,
+				Value:   string(pp[i].Value),
+				Version: pp[i].ModifyIndex,
+			}
 		}
 		w.cfg.ch <- cc
 	}
