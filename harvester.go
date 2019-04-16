@@ -81,9 +81,25 @@ type Monitorer interface {
 	Monitor(ctx context.Context)
 }
 
+// WatchItem definition.
+type WatchItem struct {
+	Type string
+	Key  string
+}
+
+// NewKeyWatchItem creates a new key watch item for the watcher.
+func NewKeyWatchItem(key string) WatchItem {
+	return WatchItem{Type: "key", Key: key}
+}
+
+// NewPrefixWatchItem creates a prefix key watch item for the watcher.
+func NewPrefixWatchItem(key string) WatchItem {
+	return WatchItem{Type: "keyprefix", Key: key}
+}
+
 // Watcher defines methods to watch for configuration changes.
 type Watcher interface {
-	Watch(ctx context.Context) error
+	Watch(ww ...WatchItem) error
 	Stop() error
 }
 

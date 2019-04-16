@@ -9,22 +9,6 @@ import (
 	"github.com/taxibeat/harvester"
 )
 
-// WatchItem definition.
-type WatchItem struct {
-	Type string
-	Key  string
-}
-
-// NewKeyWatchItem creates a new key watch item for the watcher.
-func NewKeyWatchItem(key string) WatchItem {
-	return WatchItem{Type: "key", Key: key}
-}
-
-// NewPrefixWatchItem creates a prefix key watch item for the watcher.
-func NewPrefixWatchItem(key string) WatchItem {
-	return WatchItem{Type: "keyprefix", Key: key}
-}
-
 // Config for configuring the watcher.
 type Config struct {
 	Address    string
@@ -69,7 +53,7 @@ func New(cfg *Config) (*Watcher, error) {
 }
 
 // Watch the setup key and prefixes for changes.
-func (w *Watcher) Watch(ww ...WatchItem) error {
+func (w *Watcher) Watch(ww ...harvester.WatchItem) error {
 	if len(ww) == 0 {
 		return errors.New("watch items are empty")
 	}

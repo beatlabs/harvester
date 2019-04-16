@@ -68,7 +68,7 @@ func TestNew(t *testing.T) {
 
 func TestWatcher_Watch(t *testing.T) {
 	type args struct {
-		ww []WatchItem
+		ww []harvester.WatchItem
 	}
 	tests := []struct {
 		name    string

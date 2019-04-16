@@ -50,7 +50,7 @@ func TestWatch(t *testing.T) {
 	require.NotNil(t, w)
 	defer w.Stop()
 
-	err = w.Watch(NewPrefixWatchItem("prefix1"), NewKeyWatchItem("key1"))
+	err = w.Watch(harvester.NewPrefixWatchItem("prefix1"), harvester.NewKeyWatchItem("key1"))
 	require.NoError(t, err)
 
 	for i := 0; i < 1; i++ {
