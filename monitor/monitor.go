@@ -23,7 +23,7 @@ type field struct {
 
 // Monitor definition.
 type Monitor struct {
-	ch         <-chan *harvester.Change
+	ch         <-chan []*harvester.Change
 	monitorMap map[harvester.Source]map[string]*field
 	consulGet  harvester.GetValueFunc
 	name       string
@@ -31,8 +31,8 @@ type Monitor struct {
 	cfg reflect.Value
 }
 
-// NewMonitor creates a new monitor.
-func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harvester.GetValueFunc) (*Monitor, error) {
+// New creates a new monitor.
+func New(cfg interface{}, ch <-chan []*harvester.Change, consulGet harvester.GetValueFunc) (*Monitor, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
@@ -203,8 +203,10 @@ func (m *Monitor) Monitor(ctx context.Context) {
 		case <-ctx.Done():
 			harvester.LogInfof("exiting configuration monitor for %s", m.name)
 			return
-		case c := <-m.ch:
-			m.applyChange(c)
+		case cc := <-m.ch:
+			for _, c := range cc {
+				m.applyChange(c)
+			}
 		}
 	}
 }

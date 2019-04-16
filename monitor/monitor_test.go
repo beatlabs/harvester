@@ -61,7 +61,7 @@ func TestNewMonitor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMonitor(tt.args.cfg, tt.args.ch, tt.args.consulGet)
+			got, err := New(tt.args.cfg, tt.args.ch, tt.args.consulGet)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, got)
@@ -91,7 +91,7 @@ func TestMonitor_Monitor(t *testing.T) {
 	chDone := make(chan struct{})
 	ch := make(chan *harvester.Change)
 	cfg := &testConfig{}
-	mon, err := NewMonitor(cfg, ch, stubGetFunc)
+	mon, err := New(cfg, ch, stubGetFunc)
 	require.NoError(t, err)
 	require.Equal(t, "John Doe", cfg.Name)
 	require.Equal(t, int64(25), cfg.Age)
