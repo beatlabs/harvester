@@ -41,31 +41,33 @@ func TestMain(m *testing.M) {
 }
 
 func TestWatch(t *testing.T) {
-
-	ch := make(chan *harvester.Change)
+	ch := make(chan []*harvester.Change)
 	chErr := make(chan error)
-	cfg, err := NewConfig(addr, "", "", false, ch, chErr)
+	cfg, err := NewConfig(addr, "", "", ch, chErr)
 	require.NoError(t, err)
 	w, err := New(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, w)
 	defer w.Stop()
 
-	err = w.Watch(NewPrefixWatchItem("prefix1"), NewKeyWatchItem("key1"))
+	err = w.Watch(harvester.NewPrefixWatchItem("prefix1"), harvester.NewKeyWatchItem("key1"))
 	require.NoError(t, err)
 
-	for i := 0; i < 3; i++ {
-		cng := <-ch
-		switch cng.Key {
-		case "prefix1/key2":
-			assert.Equal(t, "2", cng.Value)
-		case "prefix1/key3":
-			assert.Equal(t, "3", cng.Value)
-		case "key1":
-		default:
-			assert.Fail(t, "key invalid", cng.Key)
+	for i := 0; i < 1; i++ {
+		cc := <-ch
+		for _, cng := range cc {
+			switch cng.Key {
+			case "prefix1/key2":
+				assert.Equal(t, "2", cng.Value)
+			case "prefix1/key3":
+				assert.Equal(t, "3", cng.Value)
+			case "key1":
+				assert.Equal(t, "1", cng.Value)
+			default:
+				assert.Fail(t, "key invalid", cng.Key)
+			}
+			assert.True(t, cng.Version > 0)
 		}
-		assert.True(t, cng.Version > 0)
 	}
 }
 
