@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"errors"
 	"os"
 	"reflect"
@@ -96,8 +97,9 @@ func TestMonitor_Monitor(t *testing.T) {
 	require.Equal(t, int64(25), cfg.Age)
 	require.Equal(t, 99.9, cfg.Balance)
 	require.True(t, cfg.HasJob)
+	ctx, cnl := context.WithCancel(context.Background())
 	go func() {
-		mon.Monitor()
+		mon.Monitor(ctx)
 		chDone <- struct{}{}
 	}()
 	t.Run("change age", func(t *testing.T) {
@@ -208,7 +210,7 @@ func TestMonitor_Monitor(t *testing.T) {
 		defer mon.Unlock()
 		require.Equal(t, 123.4, cfg.Balance)
 	})
-	close(ch)
+	cnl()
 	<-chDone
 }
 

@@ -1,6 +1,7 @@
 package harvester
 
 import (
+	"context"
 	"errors"
 	"log"
 )
@@ -75,18 +76,18 @@ type Change struct {
 // GetValueFunc function definition for getting a value for a key from a source.
 type GetValueFunc func(key string) (string, error)
 
-// Monitor defines a monitoring interface.
-type Monitor interface {
-	Monitor()
+// Monitorer defines a monitoring interface.
+type Monitorer interface {
+	Monitor(ctx context.Context)
 }
 
 // Watcher defines methods to watch for configuration changes.
 type Watcher interface {
-	Watch() error
+	Watch(ctx context.Context) error
 	Stop() error
 }
 
 // Harvester interface.
 type Harvester interface {
-	Harvest(cfg interface{}) error
+	Harvest(ctx context.Context, cfg interface{}) error
 }

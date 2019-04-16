@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -25,6 +26,7 @@ type Monitor struct {
 	ch         <-chan *harvester.Change
 	monitorMap map[harvester.Source]map[string]*field
 	consulGet  harvester.GetValueFunc
+	name       string
 	sync.Mutex
 	cfg reflect.Value
 }
@@ -49,6 +51,7 @@ func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harveste
 		cfg:        reflect.ValueOf(cfg).Elem(),
 		monitorMap: make(map[harvester.Source]map[string]*field),
 		consulGet:  consulGet,
+		name:       tp.Name(),
 	}
 	if err := m.setup(tp); err != nil {
 		return nil, err
@@ -194,9 +197,15 @@ func isKindSupported(kind reflect.Kind) bool {
 }
 
 // Monitor changes and apply them.
-func (m *Monitor) Monitor() {
-	for c := range m.ch {
-		m.applyChange(c)
+func (m *Monitor) Monitor(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			harvester.LogInfof("exiting configuration monitor for %s", m.name)
+			return
+		case c := <-m.ch:
+			m.applyChange(c)
+		}
 	}
 }
 
