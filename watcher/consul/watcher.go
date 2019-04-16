@@ -27,16 +27,15 @@ func NewPrefixWatchItem(key string) WatchItem {
 
 // Config for configuring the watcher.
 type Config struct {
-	Address             string
-	Datacenter          string
-	Token               string
-	IgnoreInitialChange bool
-	ch                  chan<- *harvester.Change
-	chErr               chan<- error
+	Address    string
+	Datacenter string
+	Token      string
+	ch         chan<- []*harvester.Change
+	chErr      chan<- error
 }
 
 // NewConfig constructor.
-func NewConfig(addr, dc, token string, ign bool, ch chan<- *harvester.Change, chErr chan<- error) (*Config, error) {
+func NewConfig(addr, dc, token string, ch chan<- []*harvester.Change, chErr chan<- error) (*Config, error) {
 	if addr == "" {
 		return nil, errors.New("address is empty")
 	}
@@ -47,12 +46,11 @@ func NewConfig(addr, dc, token string, ign bool, ch chan<- *harvester.Change, ch
 		return nil, errors.New("error channel is nil")
 	}
 	return &Config{
-		Address:             addr,
-		Datacenter:          dc,
-		Token:               token,
-		IgnoreInitialChange: ign,
-		ch:                  ch,
-		chErr:               chErr,
+		Address:    addr,
+		Datacenter: dc,
+		Token:      token,
+		ch:         ch,
+		chErr:      chErr,
 	}, nil
 }
 
@@ -112,21 +110,17 @@ func (w *Watcher) runKeyWatcher(key string) (*watch.Plan, error) {
 		return nil, err
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
-		if w.cfg.IgnoreInitialChange {
-			w.cfg.IgnoreInitialChange = false
-			return
-		}
 		pair, ok := data.(*api.KVPair)
 		if !ok {
 			w.cfg.chErr <- fmt.Errorf("data is not kv pair: %v", data)
 		}
 
-		w.cfg.ch <- &harvester.Change{
+		w.cfg.ch <- []*harvester.Change{&harvester.Change{
 			Src:     harvester.SourceConsul,
 			Key:     pair.Key,
 			Value:   string(pair.Value),
 			Version: pair.ModifyIndex,
-		}
+		}}
 	}
 	return pl, nil
 }
@@ -137,22 +131,20 @@ func (w *Watcher) runPrefixWatcher(key string) (*watch.Plan, error) {
 		return nil, err
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
-		if w.cfg.IgnoreInitialChange {
-			w.cfg.IgnoreInitialChange = false
-			return
-		}
 		pp, ok := data.(api.KVPairs)
 		if !ok {
 			w.cfg.chErr <- fmt.Errorf("data is not kv pairs: %v", data)
 		}
+		cc := make([]*harvester.Change, len(pp))
 		for _, p := range pp {
-			w.cfg.ch <- &harvester.Change{
+			cc = append(cc, &harvester.Change{
 				Src:     harvester.SourceConsul,
 				Key:     p.Key,
 				Value:   string(p.Value),
 				Version: p.ModifyIndex,
-			}
+			})
 		}
+		w.cfg.ch <- cc
 	}
 	return pl, nil
 }

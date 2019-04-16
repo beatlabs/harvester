@@ -9,11 +9,11 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
-	ch := make(chan *harvester.Change)
+	ch := make(chan []*harvester.Change)
 	chErr := make(chan error)
 	type args struct {
 		address string
-		ch      chan *harvester.Change
+		ch      chan []*harvester.Change
 		chErr   chan error
 	}
 	tests := []struct {
@@ -28,7 +28,7 @@ func TestNewConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewConfig(tt.args.address, "datacenter", "token", false, tt.args.ch, tt.args.chErr)
+			got, err := NewConfig(tt.args.address, "datacenter", "token", tt.args.ch, tt.args.chErr)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, got)

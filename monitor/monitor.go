@@ -20,8 +20,8 @@ type field struct {
 	ConsulKey string
 }
 
-// TypeMonitor definition.
-type TypeMonitor struct {
+// Monitor definition.
+type Monitor struct {
 	ch         <-chan *harvester.Change
 	monitorMap map[harvester.Source]map[string]*field
 	consulGet  harvester.GetValueFunc
@@ -30,7 +30,7 @@ type TypeMonitor struct {
 }
 
 // NewMonitor creates a new monitor.
-func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harvester.GetValueFunc) (*TypeMonitor, error) {
+func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harvester.GetValueFunc) (*Monitor, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
@@ -44,7 +44,7 @@ func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harveste
 	if tp.Kind() != reflect.Ptr {
 		return nil, errors.New("configuration should be a pointer type")
 	}
-	m := &TypeMonitor{
+	m := &Monitor{
 		ch:         ch,
 		cfg:        reflect.ValueOf(cfg).Elem(),
 		monitorMap: make(map[harvester.Source]map[string]*field),
@@ -56,26 +56,26 @@ func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harveste
 	return m, nil
 }
 
-func (tm *TypeMonitor) setup(tp reflect.Type) error {
+func (m *Monitor) setup(tp reflect.Type) error {
 	ff, err := getFields(tp.Elem())
 	if err != nil {
 		return err
 	}
-	err = tm.applyInitialValues(ff)
+	err = m.applyInitialValues(ff)
 	if err != nil {
 		return err
 	}
-	err = tm.createMonitorMap(ff)
+	err = m.createMonitorMap(ff)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (tm *TypeMonitor) applyInitialValues(ff []*field) error {
+func (m *Monitor) applyInitialValues(ff []*field) error {
 	for _, f := range ff {
 		if f.SeedValue != "" {
-			err := tm.setValue(f.Name, f.SeedValue, f.Kind)
+			err := m.setValue(f.Name, f.SeedValue, f.Kind)
 			if err != nil {
 				return err
 			}
@@ -85,17 +85,17 @@ func (tm *TypeMonitor) applyInitialValues(ff []*field) error {
 			if !ok {
 				continue
 			}
-			err := tm.setValue(f.Name, value, f.Kind)
+			err := m.setValue(f.Name, value, f.Kind)
 			if err != nil {
 				return err
 			}
 		}
 		if f.ConsulKey != "" {
-			value, err := tm.consulGet(f.ConsulKey)
+			value, err := m.consulGet(f.ConsulKey)
 			if err != nil {
 				return err
 			}
-			err = tm.setValue(f.Name, value, f.Kind)
+			err = m.setValue(f.Name, value, f.Kind)
 			if err != nil {
 				return err
 			}
@@ -134,29 +134,29 @@ func getFields(tp reflect.Type) ([]*field, error) {
 	return ff, nil
 }
 
-func (tm *TypeMonitor) createMonitorMap(ff []*field) error {
+func (m *Monitor) createMonitorMap(ff []*field) error {
 	for _, f := range ff {
 		if f.ConsulKey == "" {
 			continue
 		}
-		_, ok := tm.monitorMap[harvester.SourceConsul]
+		_, ok := m.monitorMap[harvester.SourceConsul]
 		if !ok {
-			tm.monitorMap[harvester.SourceConsul] = map[string]*field{f.ConsulKey: f}
+			m.monitorMap[harvester.SourceConsul] = map[string]*field{f.ConsulKey: f}
 		} else {
-			_, ok := tm.monitorMap[harvester.SourceConsul][f.ConsulKey]
+			_, ok := m.monitorMap[harvester.SourceConsul][f.ConsulKey]
 			if ok {
 				return fmt.Errorf("consul key %s already exist in monitor map", f.ConsulKey)
 			}
-			tm.monitorMap[harvester.SourceConsul][f.ConsulKey] = f
+			m.monitorMap[harvester.SourceConsul][f.ConsulKey] = f
 		}
 	}
 	return nil
 }
 
-func (tm *TypeMonitor) setValue(name, value string, kind reflect.Kind) error {
-	tm.Lock()
-	defer tm.Unlock()
-	f := tm.cfg.FieldByName(name)
+func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
+	m.Lock()
+	defer m.Unlock()
+	f := m.cfg.FieldByName(name)
 	switch kind {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(value)
@@ -194,14 +194,14 @@ func isKindSupported(kind reflect.Kind) bool {
 }
 
 // Monitor changes and apply them.
-func (tm *TypeMonitor) Monitor() {
-	for c := range tm.ch {
-		tm.applyChange(c)
+func (m *Monitor) Monitor() {
+	for c := range m.ch {
+		m.applyChange(c)
 	}
 }
 
-func (tm *TypeMonitor) applyChange(c *harvester.Change) {
-	mp, ok := tm.monitorMap[c.Src]
+func (m *Monitor) applyChange(c *harvester.Change) {
+	mp, ok := m.monitorMap[c.Src]
 	if !ok {
 		harvester.LogWarnf("source %s not found", c.Src)
 		return
@@ -216,7 +216,7 @@ func (tm *TypeMonitor) applyChange(c *harvester.Change) {
 		return
 	}
 
-	err := tm.setValue(fld.Name, c.Value, fld.Kind)
+	err := m.setValue(fld.Name, c.Value, fld.Kind)
 	if err != nil {
 		harvester.LogErrorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
 		return

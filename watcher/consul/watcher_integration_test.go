@@ -41,10 +41,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestWatch(t *testing.T) {
-
-	ch := make(chan *harvester.Change)
+	ch := make(chan []*harvester.Change)
 	chErr := make(chan error)
-	cfg, err := NewConfig(addr, "", "", false, ch, chErr)
+	cfg, err := NewConfig(addr, "", "", ch, chErr)
 	require.NoError(t, err)
 	w, err := New(cfg)
 	require.NoError(t, err)
@@ -55,17 +54,19 @@ func TestWatch(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 0; i < 3; i++ {
-		cng := <-ch
-		switch cng.Key {
-		case "prefix1/key2":
-			assert.Equal(t, "2", cng.Value)
-		case "prefix1/key3":
-			assert.Equal(t, "3", cng.Value)
-		case "key1":
-		default:
-			assert.Fail(t, "key invalid", cng.Key)
+		cc := <-ch
+		for _, cng := range cc {
+			switch cng.Key {
+			case "prefix1/key2":
+				assert.Equal(t, "2", cng.Value)
+			case "prefix1/key3":
+				assert.Equal(t, "3", cng.Value)
+			case "key1":
+			default:
+				assert.Fail(t, "key invalid", cng.Key)
+			}
+			assert.True(t, cng.Version > 0)
 		}
-		assert.True(t, cng.Version > 0)
 	}
 }
 
