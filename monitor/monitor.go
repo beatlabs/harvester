@@ -13,6 +13,9 @@ import (
 	"github.com/taxibeat/harvester/watcher"
 )
 
+// GetValueFunc function definition for getting a value for a key from a source.
+type GetValueFunc func(key string) (string, error)
+
 type field struct {
 	Name      string
 	Kind      reflect.Kind
@@ -26,14 +29,14 @@ type field struct {
 type Monitor struct {
 	ch         <-chan []*watcher.Change
 	monitorMap map[watcher.Source]map[string]*field
-	consulGet  harvester.GetValueFunc
+	consulGet  GetValueFunc
 	name       string
 	sync.Mutex
 	cfg reflect.Value
 }
 
 // New creates a new monitor.
-func New(cfg interface{}, ch <-chan []*watcher.Change, consulGet harvester.GetValueFunc) (*Monitor, error) {
+func New(cfg interface{}, ch <-chan []*watcher.Change, consulGet GetValueFunc) (*Monitor, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}

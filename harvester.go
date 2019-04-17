@@ -53,9 +53,6 @@ func LogErrorf(format string, v ...interface{}) {
 	logErrorf(format, v...)
 }
 
-// GetValueFunc function definition for getting a value for a key from a source.
-type GetValueFunc func(key string) (string, error)
-
 // Monitorer defines a monitoring interface.
 type Monitorer interface {
 	Monitor(ctx context.Context)

@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester"
 	"github.com/taxibeat/harvester/watcher"
 )
 
@@ -41,7 +40,7 @@ func TestNewMonitor(t *testing.T) {
 	type args struct {
 		cfg       interface{}
 		ch        <-chan []*watcher.Change
-		consulGet harvester.GetValueFunc
+		consulGet GetValueFunc
 	}
 	tests := []struct {
 		name    string
