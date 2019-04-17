@@ -10,13 +10,18 @@ type Monitor interface {
 	Monitor(ctx context.Context, cfg interface{})
 }
 
+// MonitorFactory defines a monitoring interface.
+type MonitorFactory interface {
+	Create(ctx context.Context, cfg interface{}) (Monitor, error)
+}
+
 // Harvester interface.
 type Harvester interface {
 	Harvest(ctx context.Context, cfg interface{}) error
 }
 
 type harvester struct {
-	mon Monitor
+	mf MonitorFactory
 }
 
 // New constructor.
@@ -25,13 +30,19 @@ func New() (Harvester, error) {
 }
 
 func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
-
 	wg := sync.WaitGroup{}
+
+	mon, err := h.mf.Create(ctx, cfg)
+	if err != nil {
+		return err
+	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		h.mon.Monitor(ctx, cfg)
+		mon.Monitor(ctx, cfg)
 	}()
+
+	// TODO: Watch
 
 	wg.Wait()
 	return nil
