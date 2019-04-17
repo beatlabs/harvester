@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/taxibeat/harvester"
+	"github.com/taxibeat/harvester/log"
 	"github.com/taxibeat/harvester/watcher"
 )
 
@@ -98,6 +98,9 @@ func (m *Monitor) applyInitialValues(ff []*field) error {
 			}
 		}
 		if f.ConsulKey != "" {
+			if m.consulGet == nil {
+				return errors.New("consul getter required")
+			}
 			value, err := m.consulGet(f.ConsulKey)
 			if err != nil {
 				return err
@@ -205,7 +208,7 @@ func (m *Monitor) Monitor(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			harvester.LogInfof("exiting configuration monitor for %s", m.name)
+			log.Infof("exiting configuration monitor for %s", m.name)
 			return
 		case cc := <-m.ch:
 			for _, c := range cc {
@@ -218,22 +221,22 @@ func (m *Monitor) Monitor(ctx context.Context) {
 func (m *Monitor) applyChange(c *watcher.Change) {
 	mp, ok := m.monitorMap[c.Src]
 	if !ok {
-		harvester.LogWarnf("source %s not found", c.Src)
+		log.Warnf("source %s not found", c.Src)
 		return
 	}
 	fld, ok := mp[c.Key]
 	if !ok {
-		harvester.LogWarnf("key %s not found", c.Key)
+		log.Warnf("key %s not found", c.Key)
 		return
 	}
 	if fld.Version > c.Version {
-		harvester.LogWarnf("version %d is older than %d", c.Version, fld.Version)
+		log.Warnf("version %d is older than %d", c.Version, fld.Version)
 		return
 	}
 
 	err := m.setValue(fld.Name, c.Value, fld.Kind)
 	if err != nil {
-		harvester.LogErrorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
+		log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
 		return
 	}
 	fld.Version = c.Version
