@@ -21,19 +21,19 @@ var (
 )
 
 // Setup allows for setting up custom loggers.
-func Setup(infof, warnf, errorf Func) error {
-	if infof == nil {
+func Setup(inf, waf, erf Func) error {
+	if inf == nil {
 		return errors.New("info log function is nil")
 	}
-	if warnf == nil {
+	if waf == nil {
 		return errors.New("warn log function is nil")
 	}
-	if errorf == nil {
+	if erf == nil {
 		return errors.New("error log function is nil")
 	}
-	infof = infof
-	warnf = warnf
-	errorf = errorf
+	infof = inf
+	warnf = waf
+	errorf = erf
 	return nil
 }
 
