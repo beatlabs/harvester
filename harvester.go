@@ -18,7 +18,6 @@ type Harvester interface {
 }
 
 type harvester struct {
-	cfg *config.Config
 }
 
 // New constructor.
@@ -31,7 +30,6 @@ func New() (Harvester, error) {
 
 // Harvest take the configuration object, initializes it and monitors for changes.
 func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
-
 	c, err := config.New(cfg)
 	if err != nil {
 		return err
