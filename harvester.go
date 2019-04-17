@@ -2,17 +2,13 @@ package harvester
 
 import (
 	"context"
-	"sync"
+
+	"github.com/taxibeat/harvester/config"
 )
 
 // Monitor defines a monitoring interface.
 type Monitor interface {
 	Monitor(ctx context.Context, cfg interface{})
-}
-
-// MonitorFactory defines a monitoring interface.
-type MonitorFactory interface {
-	Create(ctx context.Context, cfg interface{}) (Monitor, error)
 }
 
 // Harvester interface.
@@ -21,29 +17,25 @@ type Harvester interface {
 }
 
 type harvester struct {
-	mf MonitorFactory
+	cfg *config.Config
 }
 
 // New constructor.
 func New() (Harvester, error) {
+
+	//TODO: support optional consul parameters (address etc.)
+
 	return &harvester{}, nil
 }
 
+// Harvest take the configuration object, initializes it and monitors for changes.
 func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
-	wg := sync.WaitGroup{}
 
-	mon, err := h.mf.Create(ctx, cfg)
-	if err != nil {
-		return err
-	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		mon.Monitor(ctx, cfg)
-	}()
+	// TODO: create the Value object
 
-	// TODO: Watch
+	// TODO: initialize the value object
 
-	wg.Wait()
+	// TODO: monitor and change the value object in a goroutine
+
 	return nil
 }
