@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/taxibeat/harvester/change"
 	"github.com/taxibeat/harvester/log"
-	"github.com/taxibeat/harvester/watcher"
 )
 
 // GetValueFunc function definition for getting a value for a key from a source.
@@ -27,8 +27,8 @@ type field struct {
 
 // Monitor definition.
 type Monitor struct {
-	ch         <-chan []*watcher.Change
-	monitorMap map[watcher.Source]map[string]*field
+	ch         <-chan []*change.Change
+	monitorMap map[change.Source]map[string]*field
 	consulGet  GetValueFunc
 	name       string
 	sync.Mutex
@@ -36,7 +36,7 @@ type Monitor struct {
 }
 
 // New creates a new monitor.
-func New(cfg interface{}, ch <-chan []*watcher.Change, consulGet GetValueFunc) (*Monitor, error) {
+func New(cfg interface{}, ch <-chan []*change.Change, consulGet GetValueFunc) (*Monitor, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
@@ -53,7 +53,7 @@ func New(cfg interface{}, ch <-chan []*watcher.Change, consulGet GetValueFunc) (
 	m := &Monitor{
 		ch:         ch,
 		cfg:        reflect.ValueOf(cfg).Elem(),
-		monitorMap: make(map[watcher.Source]map[string]*field),
+		monitorMap: make(map[change.Source]map[string]*field),
 		consulGet:  consulGet,
 		name:       tp.Name(),
 	}
@@ -127,15 +127,15 @@ func getFields(tp reflect.Type) ([]*field, error) {
 			Kind:    kind,
 			Version: 0,
 		}
-		value, ok := fld.Tag.Lookup(string(watcher.SourceSeed))
+		value, ok := fld.Tag.Lookup(string(change.SourceSeed))
 		if ok {
 			f.SeedValue = value
 		}
-		value, ok = fld.Tag.Lookup(string(watcher.SourceEnv))
+		value, ok = fld.Tag.Lookup(string(change.SourceEnv))
 		if ok {
 			f.EnvVarKey = value
 		}
-		value, ok = fld.Tag.Lookup(string(watcher.SourceConsul))
+		value, ok = fld.Tag.Lookup(string(change.SourceConsul))
 		if ok {
 			f.ConsulKey = value
 		}
@@ -149,15 +149,15 @@ func (m *Monitor) createMonitorMap(ff []*field) error {
 		if f.ConsulKey == "" {
 			continue
 		}
-		_, ok := m.monitorMap[watcher.SourceConsul]
+		_, ok := m.monitorMap[change.SourceConsul]
 		if !ok {
-			m.monitorMap[watcher.SourceConsul] = map[string]*field{f.ConsulKey: f}
+			m.monitorMap[change.SourceConsul] = map[string]*field{f.ConsulKey: f}
 		} else {
-			_, ok := m.monitorMap[watcher.SourceConsul][f.ConsulKey]
+			_, ok := m.monitorMap[change.SourceConsul][f.ConsulKey]
 			if ok {
 				return fmt.Errorf("consul key %s already exist in monitor map", f.ConsulKey)
 			}
-			m.monitorMap[watcher.SourceConsul][f.ConsulKey] = f
+			m.monitorMap[change.SourceConsul][f.ConsulKey] = f
 		}
 	}
 	return nil
@@ -218,7 +218,7 @@ func (m *Monitor) Monitor(ctx context.Context) {
 	}
 }
 
-func (m *Monitor) applyChange(c *watcher.Change) {
+func (m *Monitor) applyChange(c *change.Change) {
 	mp, ok := m.monitorMap[c.Src]
 	if !ok {
 		log.Warnf("source %s not found", c.Src)

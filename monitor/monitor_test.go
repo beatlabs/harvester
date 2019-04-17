@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester/watcher"
+	"github.com/taxibeat/harvester/change"
 )
 
 func TestNewMonitor(t *testing.T) {
@@ -36,10 +36,10 @@ func TestNewMonitor(t *testing.T) {
 	}
 	require.NoError(t, os.Setenv("ENV_AGE", "18"))
 	require.NoError(t, os.Setenv("ENV_XXX", "aaa"))
-	ch := make(chan []*watcher.Change)
+	ch := make(chan []*change.Change)
 	type args struct {
 		cfg       interface{}
-		ch        <-chan []*watcher.Change
+		ch        <-chan []*change.Change
 		consulGet GetValueFunc
 	}
 	tests := []struct {
@@ -73,14 +73,14 @@ func TestNewMonitor(t *testing.T) {
 				assert.Equal(t, int64(25), cfg.Age)
 				assert.Equal(t, 99.9, cfg.Balance)
 				assert.True(t, cfg.HasJob)
-				assert.Contains(t, got.monitorMap, watcher.SourceConsul)
-				assert.Len(t, got.monitorMap[watcher.SourceConsul], 3)
-				assert.Contains(t, got.monitorMap[watcher.SourceConsul], "/config/age")
-				assert.Equal(t, expectedAgeField, *got.monitorMap[watcher.SourceConsul]["/config/age"])
-				assert.Contains(t, got.monitorMap[watcher.SourceConsul], "/config/balance")
-				assert.Equal(t, expectedBalanceField, *got.monitorMap[watcher.SourceConsul]["/config/balance"])
-				assert.Contains(t, got.monitorMap[watcher.SourceConsul], "/config/has-job")
-				assert.Equal(t, expectedHasJobField, *got.monitorMap[watcher.SourceConsul]["/config/has-job"])
+				assert.Contains(t, got.monitorMap, change.SourceConsul)
+				assert.Len(t, got.monitorMap[change.SourceConsul], 3)
+				assert.Contains(t, got.monitorMap[change.SourceConsul], "/config/age")
+				assert.Equal(t, expectedAgeField, *got.monitorMap[change.SourceConsul]["/config/age"])
+				assert.Contains(t, got.monitorMap[change.SourceConsul], "/config/balance")
+				assert.Equal(t, expectedBalanceField, *got.monitorMap[change.SourceConsul]["/config/balance"])
+				assert.Contains(t, got.monitorMap[change.SourceConsul], "/config/has-job")
+				assert.Equal(t, expectedHasJobField, *got.monitorMap[change.SourceConsul]["/config/has-job"])
 			}
 		})
 	}
@@ -89,7 +89,7 @@ func TestNewMonitor(t *testing.T) {
 func TestMonitor_Monitor(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_AGE", "18"))
 	chDone := make(chan struct{})
-	ch := make(chan []*watcher.Change)
+	ch := make(chan []*change.Change)
 	cfg := &testConfig{}
 	mon, err := New(cfg, ch, stubGetFunc)
 	require.NoError(t, err)
@@ -103,8 +103,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		chDone <- struct{}{}
 	}()
 	t.Run("change age", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/age",
 			Value:   "23",
 			Version: 1,
@@ -115,8 +115,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("age does not change due to version check", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/age",
 			Value:   "99",
 			Version: 0,
@@ -127,8 +127,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("balance change", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/balance",
 			Value:   "123.4",
 			Version: 1,
@@ -139,8 +139,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, 123.4, cfg.Balance)
 	})
 	t.Run("has job(bool) change", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/has-job",
 			Value:   "false",
 			Version: 1,
@@ -151,8 +151,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid source, no change", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.Source("XXX"),
+		ch <- []*change.Change{&change.Change{
+			Src:     change.Source("XXX"),
 			Key:     "/config/has-job",
 			Value:   "true",
 			Version: 2,
@@ -163,8 +163,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("key not found, no change", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/has-job1",
 			Value:   "true",
 			Version: 2,
@@ -175,8 +175,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid bool, no change", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/has-job",
 			Value:   "XXX",
 			Version: 2,
@@ -187,8 +187,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid int, no change", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/age",
 			Value:   "XXX",
 			Version: 4,
@@ -199,8 +199,8 @@ func TestMonitor_Monitor(t *testing.T) {
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("invalid float, no change", func(t *testing.T) {
-		ch <- []*watcher.Change{&watcher.Change{
-			Src:     watcher.SourceConsul,
+		ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     "/config/balance",
 			Value:   "XXX",
 			Version: 5,
