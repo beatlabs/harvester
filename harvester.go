@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/taxibeat/harvester/config"
+	"github.com/taxibeat/harvester/seed"
 )
 
 // Monitor defines a monitoring interface.
@@ -31,11 +32,15 @@ func New() (Harvester, error) {
 // Harvest take the configuration object, initializes it and monitors for changes.
 func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 
-	// TODO: create the Value object
-
-	// TODO: initialize the value object
-
-	// TODO: monitor and change the value object in a goroutine
+	c, err := config.New(cfg)
+	if err != nil {
+		return err
+	}
+	s := seed.New(nil)
+	err = s.Seed(c)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

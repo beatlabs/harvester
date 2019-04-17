@@ -9,7 +9,7 @@ import (
 )
 
 // GetValueFunc function definition for getting a value for a key from a source.
-type GetValueFunc func(key string) (string, error)
+type GetValueFunc func(string) (string, error)
 
 // Seeder handles initializing the configuration value.
 type Seeder struct {
@@ -18,7 +18,7 @@ type Seeder struct {
 
 // New constructor.
 func New(consulGet GetValueFunc) *Seeder {
-	return &Seeder{}
+	return &Seeder{consulGet: consulGet}
 }
 
 // Seed the provided config with values for their sources.
