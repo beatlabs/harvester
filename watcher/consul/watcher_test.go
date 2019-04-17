@@ -5,15 +5,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester"
+	"github.com/taxibeat/harvester/watcher"
 )
 
 func TestNewConfig(t *testing.T) {
-	ch := make(chan []*harvester.Change)
+	ch := make(chan []*watcher.Change)
 	chErr := make(chan error)
 	type args struct {
 		address string
-		ch      chan []*harvester.Change
+		ch      chan []*watcher.Change
 		chErr   chan error
 	}
 	tests := []struct {
@@ -68,7 +68,7 @@ func TestNew(t *testing.T) {
 
 func TestWatcher_Watch(t *testing.T) {
 	type args struct {
-		ww []harvester.WatchItem
+		ww []watcher.Item
 	}
 	tests := []struct {
 		name    string

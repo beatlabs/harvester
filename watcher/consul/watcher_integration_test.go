@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester"
+	"github.com/taxibeat/harvester/watcher"
 )
 
 const (
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestWatch(t *testing.T) {
-	ch := make(chan []*harvester.Change)
+	ch := make(chan []*watcher.Change)
 	chErr := make(chan error)
 	cfg, err := NewConfig(addr, "", "", ch, chErr)
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestWatch(t *testing.T) {
 	require.NotNil(t, w)
 	defer w.Stop()
 
-	err = w.Watch(harvester.NewPrefixWatchItem("prefix1"), harvester.NewKeyWatchItem("key1"))
+	err = w.Watch(watcher.NewPrefixWatchItem("prefix1"), watcher.NewKeyWatchItem("key1"))
 	require.NoError(t, err)
 
 	for i := 0; i < 1; i++ {
