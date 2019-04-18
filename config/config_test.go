@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+
 func TestNew(t *testing.T) {
 	type args struct {
 		cfg interface{}
@@ -95,7 +96,7 @@ func TestConfig_Set(t *testing.T) {
 	}
 }
 
-func assertField(t *testing.T, fld *field, name string, kind reflect.Kind, version uint64, sources map[Source]string) {
+func assertField(t *testing.T, fld *Field, name string, kind reflect.Kind, version uint64, sources map[Source]string) {
 	assert.Equal(t, name, fld.Name)
 	assert.Equal(t, kind, fld.Kind)
 	assert.Equal(t, version, fld.Version)

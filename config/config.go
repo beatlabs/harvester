@@ -20,7 +20,7 @@ const (
 	SourceConsul Source = "consul"
 )
 
-type field struct {
+type Field struct {
 	Name    string
 	Kind    reflect.Kind
 	Version uint64
@@ -29,7 +29,7 @@ type field struct {
 
 // Config manages configuration and handles updates on the values.
 type Config struct {
-	Fields []*field
+	Fields []*Field
 	sync.Mutex
 	cfg reflect.Value
 }
@@ -82,16 +82,16 @@ func (v *Config) Set(name, value string, kind reflect.Kind) error {
 	return nil
 }
 
-func getFields(tp reflect.Type) ([]*field, error) {
+func getFields(tp reflect.Type) ([]*Field, error) {
 	dup := make(map[Source]string)
-	var ff []*field
+	var ff []*Field
 	for i := 0; i < tp.NumField(); i++ {
 		fld := tp.Field(i)
 		kind := fld.Type.Kind()
 		if !isKindSupported(kind) {
 			return nil, fmt.Errorf("field %s is not supported(only bool, int64, float64 and string)", fld.Name)
 		}
-		f := &field{
+		f := &Field{
 			Name:    fld.Name,
 			Kind:    kind,
 			Version: 0,
