@@ -1,6 +1,10 @@
 package watch
 
-import "context"
+import (
+	"context"
+
+	"github.com/taxibeat/harvester/config"
+)
 
 // Item definition.
 type Item struct {
@@ -19,6 +23,11 @@ func NewPrefixItem(key string) Item {
 }
 
 // Watcher defines methods to watch for configuration changes.
-type Watcher interface {
-	Watch(ctx context.Context, ww ...Item) error
+type Watcher struct {
+}
+
+// Watch keys and update accordingly.
+func (w *Watcher) Watch(ctx context.Context, cfg *config.Config, ww ...Item) error {
+
+	return nil
 }
