@@ -6,7 +6,8 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
-	"github.com/taxibeat/harvester"
+	"github.com/taxibeat/harvester/change"
+	"github.com/taxibeat/harvester/watcher"
 )
 
 // Config for configuring the watcher.
@@ -14,12 +15,12 @@ type Config struct {
 	Address    string
 	Datacenter string
 	Token      string
-	ch         chan<- []*harvester.Change
+	ch         chan<- []*change.Change
 	chErr      chan<- error
 }
 
 // NewConfig constructor.
-func NewConfig(addr, dc, token string, ch chan<- []*harvester.Change, chErr chan<- error) (*Config, error) {
+func NewConfig(addr, dc, token string, ch chan<- []*change.Change, chErr chan<- error) (*Config, error) {
 	if addr == "" {
 		return nil, errors.New("address is empty")
 	}
@@ -53,7 +54,7 @@ func New(cfg *Config) (*Watcher, error) {
 }
 
 // Watch the setup key and prefixes for changes.
-func (w *Watcher) Watch(ww ...harvester.WatchItem) error {
+func (w *Watcher) Watch(ww ...watcher.Item) error {
 	if len(ww) == 0 {
 		return errors.New("watch items are empty")
 	}
@@ -99,8 +100,8 @@ func (w *Watcher) runKeyWatcher(key string) (*watch.Plan, error) {
 			w.cfg.chErr <- fmt.Errorf("data is not kv pair: %v", data)
 		}
 
-		w.cfg.ch <- []*harvester.Change{&harvester.Change{
-			Src:     harvester.SourceConsul,
+		w.cfg.ch <- []*change.Change{&change.Change{
+			Src:     change.SourceConsul,
 			Key:     pair.Key,
 			Value:   string(pair.Value),
 			Version: pair.ModifyIndex,
@@ -119,10 +120,10 @@ func (w *Watcher) runPrefixWatcher(key string) (*watch.Plan, error) {
 		if !ok {
 			w.cfg.chErr <- fmt.Errorf("data is not kv pairs: %v", data)
 		}
-		cc := make([]*harvester.Change, len(pp))
+		cc := make([]*change.Change, len(pp))
 		for i := 0; i < len(pp); i++ {
-			cc[i] = &harvester.Change{
-				Src:     harvester.SourceConsul,
+			cc[i] = &change.Change{
+				Src:     change.SourceConsul,
 				Key:     pp[i].Key,
 				Value:   string(pp[i].Value),
 				Version: pp[i].ModifyIndex,

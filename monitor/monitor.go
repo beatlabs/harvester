@@ -9,8 +9,12 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/taxibeat/harvester"
+	"github.com/taxibeat/harvester/change"
+	"github.com/taxibeat/harvester/log"
 )
+
+// GetValueFunc function definition for getting a value for a key from a source.
+type GetValueFunc func(key string) (string, error)
 
 type field struct {
 	Name      string
@@ -23,16 +27,16 @@ type field struct {
 
 // Monitor definition.
 type Monitor struct {
-	ch         <-chan *harvester.Change
-	monitorMap map[harvester.Source]map[string]*field
-	consulGet  harvester.GetValueFunc
+	ch         <-chan []*change.Change
+	monitorMap map[change.Source]map[string]*field
+	consulGet  GetValueFunc
 	name       string
 	sync.Mutex
 	cfg reflect.Value
 }
 
-// NewMonitor creates a new monitor.
-func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harvester.GetValueFunc) (*Monitor, error) {
+// New creates a new monitor.
+func New(cfg interface{}, ch <-chan []*change.Change, consulGet GetValueFunc) (*Monitor, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
@@ -49,7 +53,7 @@ func NewMonitor(cfg interface{}, ch <-chan *harvester.Change, consulGet harveste
 	m := &Monitor{
 		ch:         ch,
 		cfg:        reflect.ValueOf(cfg).Elem(),
-		monitorMap: make(map[harvester.Source]map[string]*field),
+		monitorMap: make(map[change.Source]map[string]*field),
 		consulGet:  consulGet,
 		name:       tp.Name(),
 	}
@@ -94,6 +98,9 @@ func (m *Monitor) applyInitialValues(ff []*field) error {
 			}
 		}
 		if f.ConsulKey != "" {
+			if m.consulGet == nil {
+				return errors.New("consul getter required")
+			}
 			value, err := m.consulGet(f.ConsulKey)
 			if err != nil {
 				return err
@@ -120,15 +127,15 @@ func getFields(tp reflect.Type) ([]*field, error) {
 			Kind:    kind,
 			Version: 0,
 		}
-		value, ok := fld.Tag.Lookup(string(harvester.SourceSeed))
+		value, ok := fld.Tag.Lookup(string(change.SourceSeed))
 		if ok {
 			f.SeedValue = value
 		}
-		value, ok = fld.Tag.Lookup(string(harvester.SourceEnv))
+		value, ok = fld.Tag.Lookup(string(change.SourceEnv))
 		if ok {
 			f.EnvVarKey = value
 		}
-		value, ok = fld.Tag.Lookup(string(harvester.SourceConsul))
+		value, ok = fld.Tag.Lookup(string(change.SourceConsul))
 		if ok {
 			f.ConsulKey = value
 		}
@@ -142,15 +149,15 @@ func (m *Monitor) createMonitorMap(ff []*field) error {
 		if f.ConsulKey == "" {
 			continue
 		}
-		_, ok := m.monitorMap[harvester.SourceConsul]
+		_, ok := m.monitorMap[change.SourceConsul]
 		if !ok {
-			m.monitorMap[harvester.SourceConsul] = map[string]*field{f.ConsulKey: f}
+			m.monitorMap[change.SourceConsul] = map[string]*field{f.ConsulKey: f}
 		} else {
-			_, ok := m.monitorMap[harvester.SourceConsul][f.ConsulKey]
+			_, ok := m.monitorMap[change.SourceConsul][f.ConsulKey]
 			if ok {
 				return fmt.Errorf("consul key %s already exist in monitor map", f.ConsulKey)
 			}
-			m.monitorMap[harvester.SourceConsul][f.ConsulKey] = f
+			m.monitorMap[change.SourceConsul][f.ConsulKey] = f
 		}
 	}
 	return nil
@@ -201,33 +208,35 @@ func (m *Monitor) Monitor(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			harvester.LogInfof("exiting configuration monitor for %s", m.name)
+			log.Infof("exiting configuration monitor for %s", m.name)
 			return
-		case c := <-m.ch:
-			m.applyChange(c)
+		case cc := <-m.ch:
+			for _, c := range cc {
+				m.applyChange(c)
+			}
 		}
 	}
 }
 
-func (m *Monitor) applyChange(c *harvester.Change) {
+func (m *Monitor) applyChange(c *change.Change) {
 	mp, ok := m.monitorMap[c.Src]
 	if !ok {
-		harvester.LogWarnf("source %s not found", c.Src)
+		log.Warnf("source %s not found", c.Src)
 		return
 	}
 	fld, ok := mp[c.Key]
 	if !ok {
-		harvester.LogWarnf("key %s not found", c.Key)
+		log.Warnf("key %s not found", c.Key)
 		return
 	}
 	if fld.Version > c.Version {
-		harvester.LogWarnf("version %d is older than %d", c.Version, fld.Version)
+		log.Warnf("version %d is older than %d", c.Version, fld.Version)
 		return
 	}
 
 	err := m.setValue(fld.Name, c.Value, fld.Kind)
 	if err != nil {
-		harvester.LogErrorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
+		log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
 		return
 	}
 	fld.Version = c.Version
