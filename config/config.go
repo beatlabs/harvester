@@ -20,6 +20,7 @@ const (
 	SourceConsul Source = "consul"
 )
 
+// Field definition of a config value that can change.
 type Field struct {
 	Name    string
 	Kind    reflect.Kind
