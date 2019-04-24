@@ -1,32 +1,22 @@
 package change
 
-// Source definition.
-type Source string
-
-const (
-	// SourceSeed defines a seed value.
-	SourceSeed Source = "seed"
-	// SourceEnv defines a value from environment variables.
-	SourceEnv Source = "env"
-	// SourceConsul defines a value from consul.
-	SourceConsul Source = "consul"
-)
+import "github.com/taxibeat/harvester/config"
 
 // Change contains all the information of a change.
 type Change struct {
-	src     Source
+	src     config.Source
 	key     string
 	value   string
 	version uint64
 }
 
 // New constructor.
-func New(src Source, key string, value string, version uint64) *Change {
+func New(src config.Source, key string, value string, version uint64) *Change {
 	return &Change{src: src, key: key, value: value, version: version}
 }
 
 // Source of the change.
-func (c Change) Source() Source {
+func (c Change) Source() config.Source {
 	return c.src
 }
 

@@ -4,222 +4,129 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"reflect"
-	"strconv"
-	"sync"
 
 	"github.com/taxibeat/harvester/change"
+	"github.com/taxibeat/harvester/config"
 	"github.com/taxibeat/harvester/log"
 )
 
-// GetValueFunc function definition for getting a value for a key from a source.
-type GetValueFunc func(key string) (string, error)
-
-type field struct {
-	Name      string
-	Kind      reflect.Kind
-	Version   uint64
-	SeedValue string
-	EnvVarKey string
-	ConsulKey string
+// Watcher interface definition.
+type Watcher interface {
+	Watch(ctx context.Context, ch <-chan *change.Change, ii []Item) error
 }
 
-// Monitor definition.
+// Item definition.
+type Item struct {
+	Source config.Source
+	Type   string
+	Key    string
+}
+
+// NewKeyItem creates a new key watch item for the watcher.
+func NewKeyItem(src config.Source, key string) Item {
+	return Item{Type: "key", Key: key}
+}
+
+// NewPrefixItem creates a prefix key watch item for the watcher.
+func NewPrefixItem(src config.Source, key string) Item {
+	return Item{Type: "keyprefix", Key: key}
+}
+
+type sourceMap map[config.Source]map[string]*config.Field
+
+// Monitor for configuration changes.
 type Monitor struct {
-	ch         <-chan []*change.Change
-	monitorMap map[change.Source]map[string]*field
-	consulGet  GetValueFunc
-	name       string
-	sync.Mutex
-	cfg reflect.Value
+	cfg   *config.Config
+	items []Item
+	mp    sourceMap
+	ww    map[config.Source]Watcher
 }
 
-// New creates a new monitor.
-func New(cfg interface{}, ch <-chan []*change.Change, consulGet GetValueFunc) (*Monitor, error) {
+// New constructor.
+func New(cfg *config.Config, ii []Item, ww map[config.Source]Watcher) (*Monitor, error) {
 	if cfg == nil {
-		return nil, errors.New("configuration is nil")
+		return nil, errors.New("config is nil")
 	}
-	if ch == nil {
-		return nil, errors.New("change channel is nil")
+	if len(ii) == 0 {
+		return nil, errors.New("items are empty")
 	}
-	if consulGet == nil {
-		return nil, errors.New("consul get is nil")
+	if len(ww) == 0 {
+		return nil, errors.New("watchers are empty")
 	}
-	tp := reflect.TypeOf(cfg)
-	if tp.Kind() != reflect.Ptr {
-		return nil, errors.New("configuration should be a pointer type")
-	}
-	m := &Monitor{
-		ch:         ch,
-		cfg:        reflect.ValueOf(cfg).Elem(),
-		monitorMap: make(map[change.Source]map[string]*field),
-		consulGet:  consulGet,
-		name:       tp.Name(),
-	}
-	if err := m.setup(tp); err != nil {
+	mp, err := generateMap(cfg.Fields)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return &Monitor{cfg: cfg, items: ii, mp: mp}, nil
 }
 
-func (m *Monitor) setup(tp reflect.Type) error {
-	ff, err := getFields(tp.Elem())
-	if err != nil {
-		return err
-	}
-	err = m.applyInitialValues(ff)
-	if err != nil {
-		return err
-	}
-	err = m.createMonitorMap(ff)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Monitor) applyInitialValues(ff []*field) error {
+func generateMap(ff []*config.Field) (sourceMap, error) {
+	mp := make(sourceMap)
 	for _, f := range ff {
-		if f.SeedValue != "" {
-			err := m.setValue(f.Name, f.SeedValue, f.Kind)
-			if err != nil {
-				return err
-			}
-		}
-		if f.EnvVarKey != "" {
-			value, ok := os.LookupEnv(f.EnvVarKey)
-			if !ok {
-				continue
-			}
-			err := m.setValue(f.Name, value, f.Kind)
-			if err != nil {
-				return err
-			}
-		}
-		if f.ConsulKey != "" {
-			if m.consulGet == nil {
-				return errors.New("consul getter required")
-			}
-			value, err := m.consulGet(f.ConsulKey)
-			if err != nil {
-				return err
-			}
-			err = m.setValue(f.Name, value, f.Kind)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func getFields(tp reflect.Type) ([]*field, error) {
-	var ff []*field
-	for i := 0; i < tp.NumField(); i++ {
-		fld := tp.Field(i)
-		kind := fld.Type.Kind()
-		if !isKindSupported(kind) {
-			return nil, fmt.Errorf("field %s is not supported(only bool, int64, float64 and string)", fld.Name)
-		}
-		f := &field{
-			Name:    fld.Name,
-			Kind:    kind,
-			Version: 0,
-		}
-		value, ok := fld.Tag.Lookup(string(change.SourceSeed))
-		if ok {
-			f.SeedValue = value
-		}
-		value, ok = fld.Tag.Lookup(string(change.SourceEnv))
-		if ok {
-			f.EnvVarKey = value
-		}
-		value, ok = fld.Tag.Lookup(string(change.SourceConsul))
-		if ok {
-			f.ConsulKey = value
-		}
-		ff = append(ff, f)
-	}
-	return ff, nil
-}
-
-func (m *Monitor) createMonitorMap(ff []*field) error {
-	for _, f := range ff {
-		if f.ConsulKey == "" {
+		key, ok := f.Sources[config.SourceConsul]
+		if !ok {
 			continue
 		}
-		_, ok := m.monitorMap[change.SourceConsul]
+		_, ok = mp[config.SourceConsul]
 		if !ok {
-			m.monitorMap[change.SourceConsul] = map[string]*field{f.ConsulKey: f}
+			mp[config.SourceConsul] = map[string]*config.Field{key: f}
 		} else {
-			_, ok := m.monitorMap[change.SourceConsul][f.ConsulKey]
+			_, ok := mp[config.SourceConsul][key]
 			if ok {
-				return fmt.Errorf("consul key %s already exist in monitor map", f.ConsulKey)
+				return nil, fmt.Errorf("consul key %s already exist in monitor map", key)
 			}
-			m.monitorMap[change.SourceConsul][f.ConsulKey] = f
+			mp[config.SourceConsul][key] = f
 		}
 	}
+	return mp, nil
+}
+
+// Monitor configuration changes by starting watchers per source.
+func (m *Monitor) Monitor(ctx context.Context) error {
+	ch := make(chan *change.Change)
+	go m.monitor(ctx, ch)
+
+	for src, ii := range generateSourceItems(m.items) {
+		wtc, ok := m.ww[src]
+		if !ok {
+			return fmt.Errorf("source watcher %s not available", src)
+		}
+		err := wtc.Watch(ctx, ch, ii)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (m *Monitor) setValue(name, value string, kind reflect.Kind) error {
-	m.Lock()
-	defer m.Unlock()
-	f := m.cfg.FieldByName(name)
-	switch kind {
-	case reflect.Bool:
-		b, err := strconv.ParseBool(value)
-		if err != nil {
-			return err
+func generateSourceItems(ii []Item) map[config.Source][]Item {
+	sourceItems := make(map[config.Source][]Item)
+	for _, i := range ii {
+		items, ok := sourceItems[i.Source]
+		if !ok {
+			items = []Item{i}
+		} else {
+			items = append(items, i)
 		}
-		f.SetBool(b)
-	case reflect.String:
-		f.SetString(value)
-	case reflect.Int64:
-		v, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			return err
-		}
-		f.SetInt(v)
-	case reflect.Float64:
-		v, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err
-		}
-		f.SetFloat(v)
-	default:
-		return fmt.Errorf("unsupported kind: %v", kind)
+		sourceItems[i.Source] = items
 	}
-	return nil
+	return sourceItems
 }
 
-func isKindSupported(kind reflect.Kind) bool {
-	switch kind {
-	case reflect.Bool, reflect.Int64, reflect.Float64, reflect.String:
-		return true
-	default:
-		return false
-	}
-}
-
-// Monitor changes and apply them.
-func (m *Monitor) Monitor(ctx context.Context) {
+func (m *Monitor) monitor(ctx context.Context, ch <-chan *change.Change) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Infof("exiting configuration monitor for %s", m.name)
 			return
-		case cc := <-m.ch:
-			for _, c := range cc {
-				m.applyChange(c)
-			}
+		case c := <-ch:
+			m.applyChange(c)
 		}
 	}
 }
 
 func (m *Monitor) applyChange(c *change.Change) {
-	mp, ok := m.monitorMap[c.Source()]
+	mp, ok := m.mp[c.Source()]
 	if !ok {
 		log.Warnf("source %s not found", c.Source())
 		return
@@ -233,8 +140,7 @@ func (m *Monitor) applyChange(c *change.Change) {
 		log.Warnf("version %d is older than %d", c.Version, fld.Version)
 		return
 	}
-
-	err := m.setValue(fld.Name, c.Value(), fld.Kind)
+	err := m.cfg.Set(fld.Name, c.Value(), fld.Kind)
 	if err != nil {
 		log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Source())
 		return

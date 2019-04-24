@@ -2,14 +2,19 @@ package harvester
 
 import (
 	"context"
+	"errors"
 
 	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/seed"
 )
 
-// Monitor defines a monitoring interface.
+// Seeder interface for seeding initial values of the configuration.
+type Seeder interface {
+	Seed(cfg *config.Config) error
+}
+
+// Monitor defines a interface for monitoring configuration changes from various sources.
 type Monitor interface {
-	Monitor(ctx context.Context, cfg interface{})
+	Monitor(ctx context.Context) error
 }
 
 // Harvester interface.
@@ -18,14 +23,19 @@ type Harvester interface {
 }
 
 type harvester struct {
+	seeder  Seeder
+	monitor Monitor
 }
 
 // New constructor.
-func New() (Harvester, error) {
-
-	//TODO: support optional consul parameters (address etc.)
-
-	return &harvester{}, nil
+func New(s Seeder, m Monitor) (Harvester, error) {
+	if s == nil {
+		return nil, errors.New("seeder is nil")
+	}
+	if m == nil {
+		return nil, errors.New("monitor is nil")
+	}
+	return &harvester{seeder: s, monitor: m}, nil
 }
 
 // Harvest take the configuration object, initializes it and monitors for changes.
@@ -34,11 +44,9 @@ func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 	if err != nil {
 		return err
 	}
-	s := seed.New(nil)
-	err = s.Seed(c)
+	err = h.seeder.Seed(c)
 	if err != nil {
 		return err
 	}
-
-	return nil
+	return h.monitor.Monitor(ctx)
 }
