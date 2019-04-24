@@ -5,3 +5,4 @@ Harvest configuration, watch and notify subscriber
 
 - Support nesting (structs...)
 - Consul log to std log...
+- Support change events

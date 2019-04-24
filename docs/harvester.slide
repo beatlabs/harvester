@@ -1,0 +1,76 @@
+Harvester
+Dynamic configuration package for go
+15:30 24 Apr 2019
+Tags: go, configuration
+
+Sotirios Mantziaris
+Refreshment Engineer (καφετζής)
+smantziaris@gmail.com
+http://blog.mantziaris.eu
+https://github.com/mantzas
+https://gr.linkedin.com/in/mantzas
+@smantziaris
+
+* Goals
+
+- Easy to use configuration support for microservices
+- Support for seeding (fixed value, env vars, consul)
+- Dynamic reconfiguration support (Consul, etc)
+- Support for our Master of Puppets configuration management system, but can be used standalone
+- extensible seed and monitor
+- Open Source by default
+
+* Configuration
+
+- Struct filed tags e.g. see, env, consul
+- Precedence matters
+- Supported types are string, bool, int64, float64.
+- Config is propagated in our code as a pointer
+
+    type Config struct {
+        Name    string  `seed:"John Doe" env:"ENV_NAME"`
+        Age     int64   `env:"ENV_AGE" consul:"/config/age"`
+        Balance float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+        HasJob  bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+    }
+
+* Reflection phase
+
+    // Field definition of a config value that can change.
+    type Field struct {
+        Name    string
+        Kind    reflect.Kind
+        Version uint64
+        Sources map[Source]string
+    }
+
+    // Config manages configuration and handles updates on the values.
+    type Config struct {
+        Fields []*Field
+        sync.Mutex
+        cfg reflect.Value
+    }
+
+
+* Seeding phase
+
+- seed value
+
+    Apply the value or return error if setting the value return a error.
+
+- env vars
+
+    If the env var does not exist log.Warnf
+
+- consul
+
+    If the consul key does not exist return error.
+
+* Monitoring phase
+
+- Consul support only at this point
+- Support for keys and key prefixes
+- Changes are applied on reflected value
+- Versioning support 
+
+* QnA
