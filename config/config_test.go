@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func TestNew(t *testing.T) {
 	type args struct {
 		cfg interface{}

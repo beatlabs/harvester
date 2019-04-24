@@ -100,12 +100,7 @@ func (w *Watcher) runKeyWatcher(key string) (*watch.Plan, error) {
 			w.cfg.chErr <- fmt.Errorf("data is not kv pair: %v", data)
 		}
 
-		w.cfg.ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     pair.Key,
-			Value:   string(pair.Value),
-			Version: pair.ModifyIndex,
-		}}
+		w.cfg.ch <- []*change.Change{change.New(change.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
 	}
 	return pl, nil
 }
@@ -122,12 +117,7 @@ func (w *Watcher) runPrefixWatcher(key string) (*watch.Plan, error) {
 		}
 		cc := make([]*change.Change, len(pp))
 		for i := 0; i < len(pp); i++ {
-			cc[i] = &change.Change{
-				Src:     change.SourceConsul,
-				Key:     pp[i].Key,
-				Value:   string(pp[i].Value),
-				Version: pp[i].ModifyIndex,
-			}
+			cc[i] = change.New(change.SourceConsul, pp[i].Key, string(pp[i].Value), pp[i].ModifyIndex)
 		}
 		w.cfg.ch <- cc
 	}

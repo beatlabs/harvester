@@ -219,25 +219,25 @@ func (m *Monitor) Monitor(ctx context.Context) {
 }
 
 func (m *Monitor) applyChange(c *change.Change) {
-	mp, ok := m.monitorMap[c.Src]
+	mp, ok := m.monitorMap[c.Source()]
 	if !ok {
-		log.Warnf("source %s not found", c.Src)
+		log.Warnf("source %s not found", c.Source())
 		return
 	}
-	fld, ok := mp[c.Key]
+	fld, ok := mp[c.Key()]
 	if !ok {
 		log.Warnf("key %s not found", c.Key)
 		return
 	}
-	if fld.Version > c.Version {
+	if fld.Version > c.Version() {
 		log.Warnf("version %d is older than %d", c.Version, fld.Version)
 		return
 	}
 
-	err := m.setValue(fld.Name, c.Value, fld.Kind)
+	err := m.setValue(fld.Name, c.Value(), fld.Kind)
 	if err != nil {
-		log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Src)
+		log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Source())
 		return
 	}
-	fld.Version = c.Version
+	fld.Version = c.Version()
 }

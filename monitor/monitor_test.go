@@ -103,108 +103,63 @@ func TestMonitor_Monitor(t *testing.T) {
 		chDone <- struct{}{}
 	}()
 	t.Run("change age", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/age",
-			Value:   "23",
-			Version: 1,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/age", "23", 1)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("age does not change due to version check", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/age",
-			Value:   "99",
-			Version: 0,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/age", "99", 0)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("balance change", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/balance",
-			Value:   "123.4",
-			Version: 1,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/balance", "123.4", 1)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.Equal(t, 123.4, cfg.Balance)
 	})
 	t.Run("has job(bool) change", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/has-job",
-			Value:   "false",
-			Version: 1,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/has-job", "false", 1)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid source, no change", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.Source("XXX"),
-			Key:     "/config/has-job",
-			Value:   "true",
-			Version: 2,
-		}}
+		ch <- []*change.Change{change.New(change.Source("XXX"), "/config/has-job", "true", 2)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("key not found, no change", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/has-job1",
-			Value:   "true",
-			Version: 2,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/has-job1", "true", 2)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid bool, no change", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/has-job",
-			Value:   "XXX",
-			Version: 2,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/has-job", "XXX", 2)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.False(t, cfg.HasJob)
 	})
 	t.Run("invalid int, no change", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/age",
-			Value:   "XXX",
-			Version: 4,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/age", "XXX", 4)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()
 		require.Equal(t, int64(23), cfg.Age)
 	})
 	t.Run("invalid float, no change", func(t *testing.T) {
-		ch <- []*change.Change{&change.Change{
-			Src:     change.SourceConsul,
-			Key:     "/config/balance",
-			Value:   "XXX",
-			Version: 5,
-		}}
+		ch <- []*change.Change{change.New(change.SourceConsul, "/config/balance", "XXX", 5)}
 		time.Sleep(10 * time.Millisecond)
 		mon.Lock()
 		defer mon.Unlock()

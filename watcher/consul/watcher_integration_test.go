@@ -57,17 +57,17 @@ func TestWatch(t *testing.T) {
 	for i := 0; i < 1; i++ {
 		cc := <-ch
 		for _, cng := range cc {
-			switch cng.Key {
+			switch cng.Key() {
 			case "prefix1/key2":
-				assert.Equal(t, "2", cng.Value)
+				assert.Equal(t, "2", cng.Value())
 			case "prefix1/key3":
-				assert.Equal(t, "3", cng.Value)
+				assert.Equal(t, "3", cng.Value())
 			case "key1":
-				assert.Equal(t, "1", cng.Value)
+				assert.Equal(t, "1", cng.Value())
 			default:
-				assert.Fail(t, "key invalid", cng.Key)
+				assert.Fail(t, "key invalid", cng.Key())
 			}
-			assert.True(t, cng.Version > 0)
+			assert.True(t, cng.Version() > 0)
 		}
 	}
 }
