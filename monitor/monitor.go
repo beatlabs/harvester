@@ -82,9 +82,8 @@ func generateMap(ff []*config.Field) (sourceMap, error) {
 }
 
 // Monitor configuration changes by starting watchers per source.
-func (m *Monitor) Monitor(ctx context.Context) error {
+func (m *Monitor) Monitor(ctx context.Context, chErr chan<- error) error {
 	ch := make(chan []*change.Change)
-	chErr := make(chan error)
 	go m.monitor(ctx, ch)
 
 	for src, ii := range generateSourceItems(m.items) {

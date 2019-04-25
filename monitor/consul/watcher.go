@@ -29,7 +29,10 @@ func New(addr, dc, token string) (*Watcher, error) {
 }
 
 // Watch key and prefixes for changes.
-func (w *Watcher) Watch(ctx context.Context, ii []monitor.Item, ch chan<- []*change.Change) error {
+func (w *Watcher) Watch(ctx context.Context, ii []monitor.Item, ch chan<- []*change.Change, chErr chan<- error) error {
+	if ctx == nil {
+		return errors.New("context is nil")
+	}
 	if len(ii) == 0 {
 		return errors.New("items are empty")
 	}
@@ -41,21 +44,23 @@ func (w *Watcher) Watch(ctx context.Context, ii []monitor.Item, ch chan<- []*cha
 		var err error
 		switch i.Type {
 		case "key":
-			pl, err = w.runKeyWatcher(i.Key, ch)
+			pl, err = w.runKeyWatcher(i.Key, ch, chErr)
 		case "keyprefix":
-			pl, err = w.runPrefixWatcher(i.Key, ch)
+			pl, err = w.runPrefixWatcher(i.Key, ch, chErr)
 		}
 		if err != nil {
 			return err
 		}
 		w.pp = append(w.pp, pl)
-		go func() {
+		go func(tp, key string) {
 			err := pl.Run(w.addr)
 			if err != nil {
-				//TODO: error handling in monitor...
-				log.Errorf("", err)
+				if chErr != nil {
+					chErr <- err
+				}
+				log.Errorf("plan %s of type %s failed: %v", tp, key, err)
 			}
-		}()
+		}(i.Type, i.Key)
 	}
 	go func() {
 		<-ctx.Done()
@@ -67,7 +72,7 @@ func (w *Watcher) Watch(ctx context.Context, ii []monitor.Item, ch chan<- []*cha
 	return nil
 }
 
-func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change) (*watch.Plan, error) {
+func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change, chErr chan<- error) (*watch.Plan, error) {
 	pl, err := w.getPlan("key", key)
 	if err != nil {
 		return nil, err
@@ -75,6 +80,9 @@ func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change) (*watch.
 	pl.Handler = func(idx uint64, data interface{}) {
 		pair, ok := data.(*api.KVPair)
 		if !ok {
+			if chErr != nil {
+				chErr <- err
+			}
 			log.Errorf("data is not kv pair: %v", data)
 		}
 		ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
@@ -82,7 +90,7 @@ func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change) (*watch.
 	return pl, nil
 }
 
-func (w *Watcher) runPrefixWatcher(key string, ch chan<- []*change.Change) (*watch.Plan, error) {
+func (w *Watcher) runPrefixWatcher(key string, ch chan<- []*change.Change, chErr chan<- error) (*watch.Plan, error) {
 	pl, err := w.getPlan("keyprefix", key)
 	if err != nil {
 		return nil, err
@@ -90,6 +98,9 @@ func (w *Watcher) runPrefixWatcher(key string, ch chan<- []*change.Change) (*wat
 	pl.Handler = func(idx uint64, data interface{}) {
 		pp, ok := data.(api.KVPairs)
 		if !ok {
+			if chErr != nil {
+				chErr <- err
+			}
 			log.Errorf("data is not kv pairs: %v", data)
 		}
 		cc := make([]*change.Change, len(pp))

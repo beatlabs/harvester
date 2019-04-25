@@ -14,7 +14,7 @@ type Seeder interface {
 
 // Monitor defines a interface for monitoring configuration changes from various sources.
 type Monitor interface {
-	Monitor(ctx context.Context) error
+	Monitor(ctx context.Context, chErr chan<- error) error
 }
 
 // Harvester interface.
@@ -25,17 +25,18 @@ type Harvester interface {
 type harvester struct {
 	seeder  Seeder
 	monitor Monitor
+	chErr   chan<- error
 }
 
 // New constructor.
-func New(s Seeder, m Monitor) (Harvester, error) {
+func New(s Seeder, m Monitor, chErr chan<- error) (Harvester, error) {
 	if s == nil {
 		return nil, errors.New("seeder is nil")
 	}
 	if m == nil {
 		return nil, errors.New("monitor is nil")
 	}
-	return &harvester{seeder: s, monitor: m}, nil
+	return &harvester{seeder: s, monitor: m, chErr: chErr}, nil
 }
 
 // Harvest take the configuration object, initializes it and monitors for changes.
@@ -48,5 +49,5 @@ func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 	if err != nil {
 		return err
 	}
-	return h.monitor.Monitor(ctx)
+	return h.monitor.Monitor(ctx, h.chErr)
 }

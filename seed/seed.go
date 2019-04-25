@@ -16,7 +16,7 @@ type Seeder struct {
 	consulGet GetValueFunc
 }
 
-//TODO: support other seeders too, meaning, abstract seeding mechanaism and support multiple sources...
+//TODO: support other seeders too, meaning, abstract seeding mechanism and support multiple sources...
 
 // New constructor.
 func New(consulGet GetValueFunc) *Seeder {

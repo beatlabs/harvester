@@ -43,6 +43,7 @@ func TestMain(m *testing.M) {
 
 func TestWatch(t *testing.T) {
 	ch := make(chan []*change.Change)
+	chErr := make(chan error)
 	w, err := New(addr, "", "")
 	require.NoError(t, err)
 	require.NotNil(t, w)
@@ -52,7 +53,7 @@ func TestWatch(t *testing.T) {
 		monitor.NewPrefixItem(config.SourceConsul, "prefix1"),
 		monitor.NewKeyItem(config.SourceConsul, "key1"),
 	}
-	err = w.Watch(ctx, ii, ch)
+	err = w.Watch(ctx, ii, ch, chErr)
 	require.NoError(t, err)
 
 	for i := 0; i < 1; i++ {
