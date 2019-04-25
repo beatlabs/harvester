@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/taxibeat/harvester/config"
+	"github.com/taxibeat/harvester/monitor"
+	"github.com/taxibeat/harvester/seed"
 )
 
 // Seeder interface for seeding initial values of the configuration.
@@ -28,17 +30,6 @@ type harvester struct {
 	chErr   chan<- error
 }
 
-// New constructor.
-func New(s Seeder, m Monitor, chErr chan<- error) (Harvester, error) {
-	if s == nil {
-		return nil, errors.New("seeder is nil")
-	}
-	if m == nil {
-		return nil, errors.New("monitor is nil")
-	}
-	return &harvester{seeder: s, monitor: m, chErr: chErr}, nil
-}
-
 // Harvest take the configuration object, initializes it and monitors for changes.
 func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 	c, err := config.New(cfg)
@@ -50,4 +41,68 @@ func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 		return err
 	}
 	return h.monitor.Monitor(ctx, h.chErr)
+}
+
+// Builder of a harvester instance.
+type Builder struct {
+	cfg         *config.Config
+	consulGet   seed.GetValueFunc
+	consulitems []monitor.Item
+	watchers    map[config.Source]monitor.Watcher
+	addr        string
+	err         error
+}
+
+// New constructor.
+func New(cfg interface{}) *Builder {
+	b := &Builder{}
+	c, err := config.New(cfg)
+	if err != nil {
+		b.err = err
+	}
+	b.cfg = c
+	return b
+}
+
+// WithConsul enables support for consul seed and monitor.
+func (b *Builder) WithConsul(addr string) *Builder {
+	if addr == "" {
+		b.err = errors.New("consul address is empty")
+	}
+	b.addr = addr
+	return b
+}
+
+// WithConsulSeed enables support for seeding values with consul.
+func (b *Builder) WithConsulSeed() *Builder {
+	if b.err != nil {
+		return b
+	}
+	// TODO: create consul seeder
+	return b
+}
+
+// WithConsulMonitor enables support for monitoring key/prefixes on consul.
+func (b *Builder) WithConsulMonitor(ii ...monitor.Item) *Builder {
+	if b.err != nil {
+		return b
+	}
+	b.consulitems = ii
+
+	// TODO: create consul monitor
+	return b
+}
+
+// Create the harvester instance.
+func (b *Builder) Create() (Harvester, error) {
+	if b.err != nil {
+		return nil, b.err
+	}
+	chErr := make(chan<- error)
+	seed := seed.New(b.consulGet)
+	mon, err := monitor.New(b.cfg, b.consulitems, b.watchers)
+	if err != nil {
+		return nil, err
+	}
+	return &harvester{seeder: seed, monitor: mon, chErr: chErr}, nil
 }

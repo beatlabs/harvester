@@ -9,8 +9,23 @@ import (
 	"github.com/taxibeat/harvester/change"
 	"github.com/taxibeat/harvester/config"
 	"github.com/taxibeat/harvester/log"
-	"github.com/taxibeat/harvester/monitor"
 )
+
+// Item definition.
+type Item struct {
+	tp  string
+	key string
+}
+
+// NewKeyItem creates a new key watch item for the watcher.
+func NewKeyItem(src config.Source, key string) Item {
+	return Item{tp: "key", key: key}
+}
+
+// NewPrefixItem creates a prefix key watch item for the watcher.
+func NewPrefixItem(src config.Source, key string) Item {
+	return Item{tp: "keyprefix", key: key}
+}
 
 // Watcher of Consul changes.
 type Watcher struct {
@@ -18,35 +33,36 @@ type Watcher struct {
 	dc    string
 	token string
 	pp    []*watch.Plan
+	ii    []Item
 }
 
 // New creates a new watcher.
-func New(addr, dc, token string) (*Watcher, error) {
+func New(addr, dc, token string, ii ...Item) (*Watcher, error) {
 	if addr == "" {
 		return nil, errors.New("address is empty")
 	}
-	return &Watcher{addr: addr, dc: dc, token: token}, nil
+	if len(ii) == 0 {
+		return nil, errors.New("items are empty")
+	}
+	return &Watcher{addr: addr, dc: dc, token: token, ii: ii}, nil
 }
 
 // Watch key and prefixes for changes.
-func (w *Watcher) Watch(ctx context.Context, ii []monitor.Item, ch chan<- []*change.Change, chErr chan<- error) error {
+func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change, chErr chan<- error) error {
 	if ctx == nil {
 		return errors.New("context is nil")
-	}
-	if len(ii) == 0 {
-		return errors.New("items are empty")
 	}
 	if ch == nil {
 		return errors.New("change channel is nil")
 	}
-	for _, i := range ii {
+	for _, i := range w.ii {
 		var pl *watch.Plan
 		var err error
-		switch i.Type {
+		switch i.tp {
 		case "key":
-			pl, err = w.runKeyWatcher(i.Key, ch, chErr)
+			pl, err = w.runKeyWatcher(i.key, ch, chErr)
 		case "keyprefix":
-			pl, err = w.runPrefixWatcher(i.Key, ch, chErr)
+			pl, err = w.runPrefixWatcher(i.key, ch, chErr)
 		}
 		if err != nil {
 			return err
@@ -60,7 +76,7 @@ func (w *Watcher) Watch(ctx context.Context, ii []monitor.Item, ch chan<- []*cha
 				}
 				log.Errorf("plan %s of type %s failed: %v", tp, key, err)
 			}
-		}(i.Type, i.Key)
+		}(i.tp, i.key)
 	}
 	go func() {
 		<-ctx.Done()

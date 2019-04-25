@@ -7,8 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/monitor"
 )
 
 func TestNew(t *testing.T) {
@@ -43,7 +41,6 @@ func TestWatcher_Watch(t *testing.T) {
 	chErr := make(chan error)
 	type args struct {
 		ctx context.Context
-		ii  []monitor.Item
 		ch  chan<- []*change.Change
 	}
 	tests := []struct {
@@ -52,12 +49,11 @@ func TestWatcher_Watch(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "missing context", args: args{}, wantErr: true},
-		{name: "missing items", args: args{ctx: context.Background()}, wantErr: true},
-		{name: "missing chan", args: args{ctx: context.Background(), ii: []monitor.Item{monitor.NewKeyItem(config.SourceConsul, "xxx")}}, wantErr: true},
+		{name: "missing chan", args: args{ctx: context.Background()}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err = w.Watch(tt.args.ctx, tt.args.ii, tt.args.ch, chErr)
+			err = w.Watch(tt.args.ctx, tt.args.ch, chErr)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

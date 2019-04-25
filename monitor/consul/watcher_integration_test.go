@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/monitor"
 )
 
 const (
@@ -49,11 +47,7 @@ func TestWatch(t *testing.T) {
 	require.NotNil(t, w)
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
-	ii := []monitor.Item{
-		monitor.NewPrefixItem(config.SourceConsul, "prefix1"),
-		monitor.NewKeyItem(config.SourceConsul, "key1"),
-	}
-	err = w.Watch(ctx, ii, ch, chErr)
+	err = w.Watch(ctx, ch, chErr)
 	require.NoError(t, err)
 
 	for i := 0; i < 1; i++ {
