@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"context"
 	"log"
 	"os"
 	"testing"
@@ -9,7 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/watcher"
+	"github.com/taxibeat/harvester/config"
+	"github.com/taxibeat/harvester/monitor"
 )
 
 const (
@@ -41,15 +43,16 @@ func TestMain(m *testing.M) {
 
 func TestWatch(t *testing.T) {
 	ch := make(chan []*change.Change)
-	chErr := make(chan error)
-	cfg, err := NewConfig(addr, "", "", ch, chErr)
-	require.NoError(t, err)
-	w, err := New(cfg)
+	w, err := New(addr, "", "")
 	require.NoError(t, err)
 	require.NotNil(t, w)
-	defer w.Stop()
-
-	err = w.Watch(watcher.NewPrefixItem("prefix1"), watcher.NewKeyItem("key1"))
+	ctx, cnl := context.WithCancel(context.Background())
+	defer cnl()
+	ii := []monitor.Item{
+		monitor.NewPrefixItem(config.SourceConsul, "prefix1"),
+		monitor.NewKeyItem(config.SourceConsul, "key1"),
+	}
+	err = w.Watch(ctx, ii, ch)
 	require.NoError(t, err)
 
 	for i := 0; i < 1; i++ {

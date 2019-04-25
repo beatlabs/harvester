@@ -12,7 +12,7 @@ import (
 
 // Watcher interface definition.
 type Watcher interface {
-	Watch(ctx context.Context, ch <-chan *change.Change, ii []Item) error
+	Watch(ctx context.Context, ii []Item, ch <-chan []*change.Change, chErr chan<- error) error
 }
 
 // Item definition.
@@ -83,7 +83,8 @@ func generateMap(ff []*config.Field) (sourceMap, error) {
 
 // Monitor configuration changes by starting watchers per source.
 func (m *Monitor) Monitor(ctx context.Context) error {
-	ch := make(chan *change.Change)
+	ch := make(chan []*change.Change)
+	chErr := make(chan error)
 	go m.monitor(ctx, ch)
 
 	for src, ii := range generateSourceItems(m.items) {
@@ -91,7 +92,7 @@ func (m *Monitor) Monitor(ctx context.Context) error {
 		if !ok {
 			return fmt.Errorf("source watcher %s not available", src)
 		}
-		err := wtc.Watch(ctx, ch, ii)
+		err := wtc.Watch(ctx, ii, ch, chErr)
 		if err != nil {
 			return err
 		}
@@ -114,7 +115,7 @@ func generateSourceItems(ii []Item) map[config.Source][]Item {
 	return sourceItems
 }
 
-func (m *Monitor) monitor(ctx context.Context, ch <-chan *change.Change) {
+func (m *Monitor) monitor(ctx context.Context, ch <-chan []*change.Change) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -125,25 +126,27 @@ func (m *Monitor) monitor(ctx context.Context, ch <-chan *change.Change) {
 	}
 }
 
-func (m *Monitor) applyChange(c *change.Change) {
-	mp, ok := m.mp[c.Source()]
-	if !ok {
-		log.Warnf("source %s not found", c.Source())
-		return
+func (m *Monitor) applyChange(cc []*change.Change) {
+	for _, c := range cc {
+		mp, ok := m.mp[c.Source()]
+		if !ok {
+			log.Warnf("source %s not found", c.Source())
+			return
+		}
+		fld, ok := mp[c.Key()]
+		if !ok {
+			log.Warnf("key %s not found", c.Key)
+			return
+		}
+		if fld.Version > c.Version() {
+			log.Warnf("version %d is older than %d", c.Version, fld.Version)
+			return
+		}
+		err := m.cfg.Set(fld.Name, c.Value(), fld.Kind)
+		if err != nil {
+			log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Source())
+			return
+		}
+		fld.Version = c.Version()
 	}
-	fld, ok := mp[c.Key()]
-	if !ok {
-		log.Warnf("key %s not found", c.Key)
-		return
-	}
-	if fld.Version > c.Version() {
-		log.Warnf("version %d is older than %d", c.Version, fld.Version)
-		return
-	}
-	err := m.cfg.Set(fld.Name, c.Value(), fld.Kind)
-	if err != nil {
-		log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Source())
-		return
-	}
-	fld.Version = c.Version()
 }
