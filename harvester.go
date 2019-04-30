@@ -6,6 +6,7 @@ import (
 
 	"github.com/taxibeat/harvester/config"
 	"github.com/taxibeat/harvester/monitor"
+	"github.com/taxibeat/harvester/monitor/consul"
 	"github.com/taxibeat/harvester/seed"
 )
 
@@ -47,9 +48,11 @@ func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 type Builder struct {
 	cfg         *config.Config
 	consulGet   seed.GetValueFunc
-	consulitems []monitor.Item
+	consulItems []consul.Item
 	watchers    map[config.Source]monitor.Watcher
-	addr        string
+	consulAddr  string
+	consulDC    string
+	consulToken string
 	err         error
 }
 
@@ -65,11 +68,13 @@ func New(cfg interface{}) *Builder {
 }
 
 // WithConsul enables support for consul seed and monitor.
-func (b *Builder) WithConsul(addr string) *Builder {
+func (b *Builder) WithConsul(addr, dc, token string) *Builder {
 	if addr == "" {
 		b.err = errors.New("consul address is empty")
 	}
-	b.addr = addr
+	b.consulAddr = addr
+	b.consulDC = dc
+	b.consulToken = token
 	return b
 }
 
@@ -83,11 +88,11 @@ func (b *Builder) WithConsulSeed() *Builder {
 }
 
 // WithConsulMonitor enables support for monitoring key/prefixes on consul.
-func (b *Builder) WithConsulMonitor(ii ...monitor.Item) *Builder {
+func (b *Builder) WithConsulMonitor(ii ...consul.Item) *Builder {
 	if b.err != nil {
 		return b
 	}
-	b.consulitems = ii
+	b.consulItems = ii
 
 	// TODO: create consul monitor
 	return b
@@ -100,7 +105,11 @@ func (b *Builder) Create() (Harvester, error) {
 	}
 	chErr := make(chan<- error)
 	seed := seed.New(b.consulGet)
-	mon, err := monitor.New(b.cfg, b.consulitems, b.watchers)
+	wtc, err := consul.New(b.consulAddr, b.consulDC, b.consulToken, b.consulItems...)
+	if err != nil {
+		return nil, err
+	}
+	mon, err := monitor.New(b.cfg, wtc)
 	if err != nil {
 		return nil, err
 	}

@@ -18,12 +18,12 @@ type Item struct {
 }
 
 // NewKeyItem creates a new key watch item for the watcher.
-func NewKeyItem(src config.Source, key string) Item {
+func NewKeyItem(key string) Item {
 	return Item{tp: "key", key: key}
 }
 
 // NewPrefixItem creates a prefix key watch item for the watcher.
-func NewPrefixItem(src config.Source, key string) Item {
+func NewPrefixItem(key string) Item {
 	return Item{tp: "keyprefix", key: key}
 }
 

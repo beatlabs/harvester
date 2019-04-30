@@ -12,7 +12,7 @@ import (
 
 // Watcher interface definition.
 type Watcher interface {
-	Watch(ctx context.Context, ch <-chan []*change.Change, chErr chan<- error) error
+	Watch(ctx context.Context, ch chan<- []*change.Change, chErr chan<- error) error
 }
 
 type sourceMap map[config.Source]map[string]*config.Field
@@ -23,8 +23,6 @@ type Monitor struct {
 	mp  sourceMap
 	ww  []Watcher
 }
-
-// TODO: items and watcher should be merged in the map...
 
 // New constructor.
 func New(cfg *config.Config, ww ...Watcher) (*Monitor, error) {
