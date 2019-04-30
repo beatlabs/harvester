@@ -33,5 +33,8 @@ func (g *Getter) Get(key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if pair == nil {
+		return "", nil
+	}
 	return string(pair.Value), nil
 }

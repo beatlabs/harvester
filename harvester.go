@@ -2,7 +2,6 @@ package harvester
 
 import (
 	"context"
-	"errors"
 
 	"github.com/taxibeat/harvester/config"
 	"github.com/taxibeat/harvester/monitor"
@@ -42,18 +41,18 @@ func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 	if err != nil {
 		return err
 	}
+	if h.monitor == nil {
+		return nil
+	}
 	return h.monitor.Monitor(ctx, h.chErr)
 }
 
 // Builder of a harvester instance.
 type Builder struct {
-	cfg         *config.Config
-	watchers    []monitor.Watcher
-	seedParams  []seed.Param
-	consulAddr  string
-	consulDC    string
-	consulToken string
-	err         error
+	cfg        *config.Config
+	watchers   []monitor.Watcher
+	seedParams []seed.Param
+	err        error
 }
 
 // New constructor.
@@ -68,23 +67,12 @@ func New(cfg interface{}) *Builder {
 	return b
 }
 
-// WithConsul enables support for consul seed and monitor.
-func (b *Builder) WithConsul(addr, dc, token string) *Builder {
-	if addr == "" {
-		b.err = errors.New("consul address is empty")
-	}
-	b.consulAddr = addr
-	b.consulDC = dc
-	b.consulToken = token
-	return b
-}
-
 // WithConsulSeed enables support for seeding values with consul.
-func (b *Builder) WithConsulSeed() *Builder {
+func (b *Builder) WithConsulSeed(addr, dc, token string) *Builder {
 	if b.err != nil {
 		return b
 	}
-	getter, err := seedConsul.New(b.consulAddr, b.consulDC, b.consulToken)
+	getter, err := seedConsul.New(addr, dc, token)
 	if err != nil {
 		b.err = err
 		return b
@@ -99,11 +87,11 @@ func (b *Builder) WithConsulSeed() *Builder {
 }
 
 // WithConsulMonitor enables support for monitoring key/prefixes on consul.
-func (b *Builder) WithConsulMonitor(ii ...consul.Item) *Builder {
+func (b *Builder) WithConsulMonitor(addr, dc, token string, ii ...consul.Item) *Builder {
 	if b.err != nil {
 		return b
 	}
-	wtc, err := consul.New(b.consulAddr, b.consulDC, b.consulToken, ii...)
+	wtc, err := consul.New(addr, dc, token, ii...)
 	if err != nil {
 		b.err = err
 		return b
@@ -120,6 +108,10 @@ func (b *Builder) Create() (Harvester, error) {
 	chErr := make(chan<- error)
 	seed := seed.New(b.seedParams...)
 
+	var mon Monitor
+	if len(b.watchers) == 0 {
+		return &harvester{seeder: seed, chErr: chErr}, nil
+	}
 	mon, err := monitor.New(b.cfg, b.watchers...)
 	if err != nil {
 		return nil, err
