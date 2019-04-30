@@ -8,6 +8,7 @@ import (
 	"github.com/taxibeat/harvester/monitor"
 	"github.com/taxibeat/harvester/monitor/consul"
 	"github.com/taxibeat/harvester/seed"
+	seedConsul "github.com/taxibeat/harvester/seed/consul"
 )
 
 // Seeder interface for seeding initial values of the configuration.
@@ -47,9 +48,8 @@ func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 // Builder of a harvester instance.
 type Builder struct {
 	cfg         *config.Config
-	consulGet   seed.GetValueFunc
-	consulItems []consul.Item
 	watchers    []monitor.Watcher
+	seedParams  []seed.Param
 	consulAddr  string
 	consulDC    string
 	consulToken string
@@ -64,6 +64,7 @@ func New(cfg interface{}) *Builder {
 		b.err = err
 	}
 	b.cfg = c
+	b.seedParams = []seed.Param{}
 	return b
 }
 
@@ -83,7 +84,17 @@ func (b *Builder) WithConsulSeed() *Builder {
 	if b.err != nil {
 		return b
 	}
-	// TODO: create consul seeder
+	getter, err := seedConsul.New(b.consulAddr, b.consulDC, b.consulToken)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	p, err := seed.NewParam(config.SourceConsul, getter)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	b.seedParams = append(b.seedParams, *p)
 	return b
 }
 
@@ -92,8 +103,7 @@ func (b *Builder) WithConsulMonitor(ii ...consul.Item) *Builder {
 	if b.err != nil {
 		return b
 	}
-	b.consulItems = ii
-	wtc, err := consul.New(b.consulAddr, b.consulDC, b.consulToken, b.consulItems...)
+	wtc, err := consul.New(b.consulAddr, b.consulDC, b.consulToken, ii...)
 	if err != nil {
 		b.err = err
 		return b
@@ -108,7 +118,7 @@ func (b *Builder) Create() (Harvester, error) {
 		return nil, b.err
 	}
 	chErr := make(chan<- error)
-	seed := seed.New(b.consulGet)
+	seed := seed.New(b.seedParams...)
 
 	mon, err := monitor.New(b.cfg, b.watchers...)
 	if err != nil {
