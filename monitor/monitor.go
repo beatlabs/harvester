@@ -90,21 +90,21 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 		mp, ok := m.mp[c.Source()]
 		if !ok {
 			log.Warnf("source %s not found", c.Source())
-			return
+			continue
 		}
 		fld, ok := mp[c.Key()]
 		if !ok {
 			log.Warnf("key %s not found", c.Key)
-			return
+			continue
 		}
 		if fld.Version > c.Version() {
 			log.Warnf("version %d is older than %d", c.Version, fld.Version)
-			return
+			continue
 		}
 		err := m.cfg.Set(fld.Name, c.Value(), fld.Kind)
 		if err != nil {
 			log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Source())
-			return
+			continue
 		}
 		fld.Version = c.Version()
 	}

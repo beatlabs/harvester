@@ -10,6 +10,33 @@ import (
 	"github.com/taxibeat/harvester/config"
 )
 
+func TestNewParam(t *testing.T) {
+	type args struct {
+		src    config.Source
+		getter Getter
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{name: "success", args: args{src: config.SourceConsul, getter: &testConsulGet{}}, wantErr: false},
+		{name: "missing getter", args: args{src: config.SourceConsul, getter: nil}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewParam(tt.args.src, tt.args.getter)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, got)
+			}
+		})
+	}
+}
+
 func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_XXX", "XXX"))
 	require.NoError(t, os.Setenv("ENV_AGE", "25"))
@@ -22,8 +49,13 @@ func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, err)
 	invalidBoolCfg, err := config.New(&testInvalidBool{})
 	require.NoError(t, err)
+	consulParamSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
+	require.NoError(t, err)
+	consulParamError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
+	require.NoError(t, err)
+
 	type fields struct {
-		consulGet GetValueFunc
+		consulParam *Param
 	}
 	type args struct {
 		cfg *config.Config
@@ -34,16 +66,21 @@ func TestSeeder_Seed(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", fields: fields{consulGet: testConsulGetSuccess}, args: args{cfg: goodCfg}, wantErr: false},
+		{name: "success", fields: fields{consulParam: consulParamSuccess}, args: args{cfg: goodCfg}, wantErr: false},
 		{name: "consul get nil", args: args{cfg: goodCfg}, wantErr: true},
-		{name: "consul get error", fields: fields{consulGet: testConsulGetError}, args: args{cfg: goodCfg}, wantErr: true},
+		{name: "consul get error", fields: fields{consulParam: consulParamError}, args: args{cfg: goodCfg}, wantErr: true},
 		{name: "invalid int", args: args{cfg: invalidIntCfg}, wantErr: true},
 		{name: "invalid float", args: args{cfg: invalidFloatCfg}, wantErr: true},
-		{name: "invalid bool", fields: fields{consulGet: testConsulGetSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
+		{name: "invalid bool", fields: fields{consulParam: consulParamSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := New(tt.fields.consulGet)
+			var s *Seeder
+			if tt.fields.consulParam == nil {
+				s = New()
+			} else {
+				s = New(*tt.fields.consulParam)
+			}
 			err := s.Seed(tt.args.cfg)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -77,13 +114,16 @@ type testInvalidBool struct {
 	HasJob bool `consul:"/config/XXX"`
 }
 
-func testConsulGetSuccess(key string) (string, error) {
+type testConsulGet struct {
+	err bool
+}
+
+func (tcg *testConsulGet) Get(key string) (string, error) {
+	if tcg.err {
+		return "", errors.New("TEST")
+	}
 	if key == "/config/XXX" {
 		return "XXX", nil
 	}
 	return "true", nil
-}
-
-func testConsulGetError(key string) (string, error) {
-	return "", errors.New("TEST")
 }

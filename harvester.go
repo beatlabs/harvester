@@ -2,12 +2,12 @@ package harvester
 
 import (
 	"context"
-	"errors"
 
 	"github.com/taxibeat/harvester/config"
 	"github.com/taxibeat/harvester/monitor"
 	"github.com/taxibeat/harvester/monitor/consul"
 	"github.com/taxibeat/harvester/seed"
+	seedConsul "github.com/taxibeat/harvester/seed/consul"
 )
 
 // Seeder interface for seeding initial values of the configuration.
@@ -41,19 +41,18 @@ func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
 	if err != nil {
 		return err
 	}
+	if h.monitor == nil {
+		return nil
+	}
 	return h.monitor.Monitor(ctx, h.chErr)
 }
 
 // Builder of a harvester instance.
 type Builder struct {
-	cfg         *config.Config
-	consulGet   seed.GetValueFunc
-	consulItems []consul.Item
-	watchers    []monitor.Watcher
-	consulAddr  string
-	consulDC    string
-	consulToken string
-	err         error
+	cfg        *config.Config
+	watchers   []monitor.Watcher
+	seedParams []seed.Param
+	err        error
 }
 
 // New constructor.
@@ -64,36 +63,35 @@ func New(cfg interface{}) *Builder {
 		b.err = err
 	}
 	b.cfg = c
-	return b
-}
-
-// WithConsul enables support for consul seed and monitor.
-func (b *Builder) WithConsul(addr, dc, token string) *Builder {
-	if addr == "" {
-		b.err = errors.New("consul address is empty")
-	}
-	b.consulAddr = addr
-	b.consulDC = dc
-	b.consulToken = token
+	b.seedParams = []seed.Param{}
 	return b
 }
 
 // WithConsulSeed enables support for seeding values with consul.
-func (b *Builder) WithConsulSeed() *Builder {
+func (b *Builder) WithConsulSeed(addr, dc, token string) *Builder {
 	if b.err != nil {
 		return b
 	}
-	// TODO: create consul seeder
+	getter, err := seedConsul.New(addr, dc, token)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	p, err := seed.NewParam(config.SourceConsul, getter)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	b.seedParams = append(b.seedParams, *p)
 	return b
 }
 
 // WithConsulMonitor enables support for monitoring key/prefixes on consul.
-func (b *Builder) WithConsulMonitor(ii ...consul.Item) *Builder {
+func (b *Builder) WithConsulMonitor(addr, dc, token string, ii ...consul.Item) *Builder {
 	if b.err != nil {
 		return b
 	}
-	b.consulItems = ii
-	wtc, err := consul.New(b.consulAddr, b.consulDC, b.consulToken, b.consulItems...)
+	wtc, err := consul.New(addr, dc, token, ii...)
 	if err != nil {
 		b.err = err
 		return b
@@ -108,8 +106,12 @@ func (b *Builder) Create() (Harvester, error) {
 		return nil, b.err
 	}
 	chErr := make(chan<- error)
-	seed := seed.New(b.consulGet)
+	seed := seed.New(b.seedParams...)
 
+	var mon Monitor
+	if len(b.watchers) == 0 {
+		return &harvester{seeder: seed, chErr: chErr}, nil
+	}
 	mon, err := monitor.New(b.cfg, b.watchers...)
 	if err != nil {
 		return nil, err

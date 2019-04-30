@@ -8,19 +8,37 @@ import (
 	"github.com/taxibeat/harvester/log"
 )
 
-// GetValueFunc function definition for getting a value for a key from a source.
-type GetValueFunc func(string) (string, error)
+// Getter interface for fetching a value for a specific key.
+type Getter interface {
+	Get(key string) (string, error)
+}
+
+// Param parameters for setting a getter for a specific source.
+type Param struct {
+	src    config.Source
+	getter Getter
+}
+
+// NewParam constructor.
+func NewParam(src config.Source, getter Getter) (*Param, error) {
+	if getter == nil {
+		return nil, errors.New("getter is nil")
+	}
+	return &Param{src: src, getter: getter}, nil
+}
 
 // Seeder handles initializing the configuration value.
 type Seeder struct {
-	consulGet GetValueFunc
+	getters map[config.Source]Getter
 }
 
-//TODO: support other seeders too, meaning, abstract seeding mechanism and support multiple sources...
-
 // New constructor.
-func New(consulGet GetValueFunc) *Seeder {
-	return &Seeder{consulGet: consulGet}
+func New(pp ...Param) *Seeder {
+	gg := make(map[config.Source]Getter)
+	for _, p := range pp {
+		gg[p.src] = p.getter
+	}
+	return &Seeder{getters: gg}
 }
 
 // Seed the provided config with values for their sources.
@@ -49,10 +67,11 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		}
 		key, ok = f.Sources[config.SourceConsul]
 		if ok {
-			if s.consulGet == nil {
+			gtr, ok := s.getters[config.SourceConsul]
+			if !ok {
 				return errors.New("consul getter required")
 			}
-			value, err := s.consulGet(key)
+			value, err := gtr.Get(key)
 			if err != nil {
 				return err
 			}
