@@ -7,6 +7,7 @@ Harvest configuration, watch and notify subscriber
 - harvester builder
 - Support nesting (structs...)
 - Consul log to std log...
+- consul client timeouts should be set
 - OPTIONAL: Support change events which can be fired (chan with change...)
 - Error handling
   - Logging

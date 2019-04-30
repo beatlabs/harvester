@@ -8,12 +8,18 @@ import (
 	"github.com/taxibeat/harvester/log"
 )
 
+// Getter interface for fetching a value for a specific key.
+type Getter interface {
+	Get(key string) (string, error)
+}
+
 // GetValueFunc function definition for getting a value for a key from a source.
 type GetValueFunc func(string) (string, error)
 
 // Seeder handles initializing the configuration value.
 type Seeder struct {
 	consulGet GetValueFunc
+	getters   map[config.Source]Getter
 }
 
 //TODO: support other seeders too, meaning, abstract seeding mechanism and support multiple sources...
