@@ -49,7 +49,7 @@ type Builder struct {
 	cfg         *config.Config
 	consulGet   seed.GetValueFunc
 	consulItems []consul.Item
-	watchers    map[config.Source]monitor.Watcher
+	watchers    []monitor.Watcher
 	consulAddr  string
 	consulDC    string
 	consulToken string
@@ -93,8 +93,12 @@ func (b *Builder) WithConsulMonitor(ii ...consul.Item) *Builder {
 		return b
 	}
 	b.consulItems = ii
-
-	// TODO: create consul monitor
+	wtc, err := consul.New(b.consulAddr, b.consulDC, b.consulToken, b.consulItems...)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	b.watchers = append(b.watchers, wtc)
 	return b
 }
 
@@ -105,11 +109,8 @@ func (b *Builder) Create() (Harvester, error) {
 	}
 	chErr := make(chan<- error)
 	seed := seed.New(b.consulGet)
-	wtc, err := consul.New(b.consulAddr, b.consulDC, b.consulToken, b.consulItems...)
-	if err != nil {
-		return nil, err
-	}
-	mon, err := monitor.New(b.cfg, wtc)
+
+	mon, err := monitor.New(b.cfg, b.watchers...)
 	if err != nil {
 		return nil, err
 	}
