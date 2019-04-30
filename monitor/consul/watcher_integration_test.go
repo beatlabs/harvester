@@ -1,8 +1,7 @@
-// +build integration
-
 package consul
 
 import (
+	"context"
 	"log"
 	"os"
 	"testing"
@@ -11,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/watcher"
 )
 
 const (
@@ -44,30 +42,28 @@ func TestMain(m *testing.M) {
 func TestWatch(t *testing.T) {
 	ch := make(chan []*change.Change)
 	chErr := make(chan error)
-	cfg, err := NewConfig(addr, "", "", ch, chErr)
-	require.NoError(t, err)
-	w, err := New(cfg)
+	w, err := New(addr, "", "", NewKeyItem("key1"), NewPrefixItem("prefix1"))
 	require.NoError(t, err)
 	require.NotNil(t, w)
-	defer w.Stop()
-
-	err = w.Watch(watcher.NewPrefixItem("prefix1"), watcher.NewKeyItem("key1"))
+	ctx, cnl := context.WithCancel(context.Background())
+	defer cnl()
+	err = w.Watch(ctx, ch, chErr)
 	require.NoError(t, err)
 
 	for i := 0; i < 1; i++ {
 		cc := <-ch
 		for _, cng := range cc {
-			switch cng.Key {
+			switch cng.Key() {
 			case "prefix1/key2":
-				assert.Equal(t, "2", cng.Value)
+				assert.Equal(t, "2", cng.Value())
 			case "prefix1/key3":
-				assert.Equal(t, "3", cng.Value)
+				assert.Equal(t, "3", cng.Value())
 			case "key1":
-				assert.Equal(t, "1", cng.Value)
+				assert.Equal(t, "1", cng.Value())
 			default:
-				assert.Fail(t, "key invalid", cng.Key)
+				assert.Fail(t, "key invalid", cng.Key())
 			}
-			assert.True(t, cng.Version > 0)
+			assert.True(t, cng.Version() > 0)
 		}
 	}
 }

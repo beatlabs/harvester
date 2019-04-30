@@ -33,13 +33,13 @@ func TestNew(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, got)
 				assert.Len(t, got.Fields, 4)
-				assertField(t, got.Fields[0], "Name", reflect.String, uint64(0),
+				assertField(t, got.Fields[0], "Name", reflect.String,
 					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME"})
-				assertField(t, got.Fields[1], "Age", reflect.Int64, uint64(0),
+				assertField(t, got.Fields[1], "Age", reflect.Int64,
 					map[Source]string{SourceEnv: "ENV_AGE", SourceConsul: "/config/age"})
-				assertField(t, got.Fields[2], "Balance", reflect.Float64, uint64(0),
+				assertField(t, got.Fields[2], "Balance", reflect.Float64,
 					map[Source]string{SourceSeed: "99.9", SourceEnv: "ENV_BALANCE", SourceConsul: "/config/balance"})
-				assertField(t, got.Fields[3], "HasJob", reflect.Bool, uint64(0),
+				assertField(t, got.Fields[3], "HasJob", reflect.Bool,
 					map[Source]string{SourceSeed: "true", SourceEnv: "ENV_HAS_JOB", SourceConsul: "/config/has-job"})
 			}
 		})
@@ -95,10 +95,10 @@ func TestConfig_Set(t *testing.T) {
 	}
 }
 
-func assertField(t *testing.T, fld *field, name string, kind reflect.Kind, version uint64, sources map[Source]string) {
+func assertField(t *testing.T, fld *Field, name string, kind reflect.Kind, sources map[Source]string) {
 	assert.Equal(t, name, fld.Name)
 	assert.Equal(t, kind, fld.Kind)
-	assert.Equal(t, version, fld.Version)
+	assert.Equal(t, uint64(0), fld.Version)
 	assert.Equal(t, sources, fld.Sources)
 }
 
