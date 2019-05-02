@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
@@ -62,20 +61,6 @@ func Test_harvester_Harvest(t *testing.T) {
 	assert.Equal(t, int64(99), cfg.Age)
 	assert.Equal(t, 111.1, cfg.Balance)
 	assert.Equal(t, false, cfg.HasJob)
-	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Jones")}, nil)
-	require.NoError(t, err)
-	_, err = csl.Put(&api.KVPair{Key: "harvester/age", Value: []byte("101")}, nil)
-	require.NoError(t, err)
-	_, err = csl.Put(&api.KVPair{Key: "harvester/balance", Value: []byte("222.22")}, nil)
-	require.NoError(t, err)
-	_, err = csl.Put(&api.KVPair{Key: "harvester/has-job", Value: []byte("true")}, nil)
-	require.NoError(t, err)
-	time.Sleep(100 * time.Millisecond)
-	assert.Equal(t, "Mr. Jones", cfg.Name)
-	assert.Equal(t, int64(101), cfg.Age)
-	assert.Equal(t, 222.22, cfg.Balance)
-	assert.Equal(t, true, cfg.HasJob)
-
 }
 
 func cleanup() error {
