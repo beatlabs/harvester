@@ -42,8 +42,8 @@ func TestCreate(t *testing.T) {
 }
 
 type testConfig struct {
-	Name    string  `seed:"John Doe" consul:"/harvester1/name"`
-	Age     int64   `seed:"18"  consul:"/harvester/age"`
-	Balance float64 `seed:"99.9"  consul:"/harvester/balance"`
-	HasJob  bool    `seed:"true"  consul:"/harvester/has-job"`
+	Name    string  `seed:"John Doe" consul:"harvester1/name"`
+	Age     int64   `seed:"18"  consul:"harvester/age"`
+	Balance float64 `seed:"99.9"  consul:"harvester/balance"`
+	HasJob  bool    `seed:"true"  consul:"harvester/has-job"`
 }

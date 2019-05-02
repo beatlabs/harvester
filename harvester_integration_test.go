@@ -17,23 +17,28 @@ const (
 	addr = "127.0.0.1:8501"
 )
 
+var (
+	csl *api.KV
+)
+
 func TestMain(m *testing.M) {
 	config := api.DefaultConfig()
 	config.Address = addr
-	consul, err := api.NewClient(config)
+	c, err := api.NewClient(config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = cleanup(consul)
+	csl = c.KV()
+	err = cleanup()
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = setup(consul)
+	err = setup()
 	if err != nil {
 		log.Fatal(err)
 	}
 	ret := m.Run()
-	err = cleanup(consul)
+	err = cleanup()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,39 +58,52 @@ func Test_harvester_Harvest(t *testing.T) {
 	defer cnl()
 	err = h.Harvest(ctx)
 	assert.NoError(t, err)
-	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, "Mr. Smith", cfg.Name)
 	assert.Equal(t, int64(99), cfg.Age)
 	assert.Equal(t, 111.1, cfg.Balance)
 	assert.Equal(t, false, cfg.HasJob)
+	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Jones")}, nil)
+	require.NoError(t, err)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/age", Value: []byte("101")}, nil)
+	require.NoError(t, err)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/balance", Value: []byte("222.22")}, nil)
+	require.NoError(t, err)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/has-job", Value: []byte("true")}, nil)
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, "Mr. Jones", cfg.Name)
+	assert.Equal(t, int64(101), cfg.Age)
+	assert.Equal(t, 222.22, cfg.Balance)
+	assert.Equal(t, true, cfg.HasJob)
+
 }
 
-func cleanup(consul *api.Client) error {
-	_, err := consul.KV().Delete("harvester1/name", nil)
+func cleanup() error {
+	_, err := csl.Delete("harvester1/name", nil)
 	if err != nil {
 		return err
 	}
-	_, err = consul.KV().DeleteTree("harvester", nil)
+	_, err = csl.DeleteTree("harvester", nil)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func setup(consul *api.Client) error {
-	_, err := consul.KV().Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Smith")}, nil)
+func setup() error {
+	_, err := csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Smith")}, nil)
 	if err != nil {
 		return err
 	}
-	_, err = consul.KV().Put(&api.KVPair{Key: "harvester/age", Value: []byte("99")}, nil)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/age", Value: []byte("99")}, nil)
 	if err != nil {
 		return err
 	}
-	_, err = consul.KV().Put(&api.KVPair{Key: "harvester/balance", Value: []byte("111.1")}, nil)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/balance", Value: []byte("111.1")}, nil)
 	if err != nil {
 		return err
 	}
-	_, err = consul.KV().Put(&api.KVPair{Key: "harvester/has-job", Value: []byte("false")}, nil)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/has-job", Value: []byte("false")}, nil)
 	if err != nil {
 		return err
 	}
