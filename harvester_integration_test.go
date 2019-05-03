@@ -1,3 +1,5 @@
+// +build integration
+
 package harvester
 
 import (
@@ -10,10 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/monitor/consul"
-)
-
-const (
-	addr = "127.0.0.1:8501"
 )
 
 var (

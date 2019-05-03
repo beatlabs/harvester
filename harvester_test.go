@@ -8,6 +8,10 @@ import (
 	"github.com/taxibeat/harvester/monitor/consul"
 )
 
+const (
+	addr = "127.0.0.1:8501"
+)
+
 func TestCreateWithConsul(t *testing.T) {
 	ii := []consul.Item{consul.NewKeyItem("harvester1/name"), consul.NewPrefixItem("harvester")}
 	type args struct {
