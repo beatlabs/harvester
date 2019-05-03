@@ -30,10 +30,12 @@ The above defines the following fields:
 `Harvester` works as follows given a config struct:
 
 - Seeding phase
-  - Apply, if exists, the seed tag value
-  - Apply, if exists, the value contained in the env var
-  - Apply, if exists and setup, the value return from
-- Monitoring phase
+  - Apply the seed tag value, if present
+  - Apply the value contained in the env var, if present
+  - Apply the value return from Consul, if present and harvester is setup
+- Monitoring phase (Consul only)
+  - Monitor a key and apply if tag key matches
+  - Monitor a key-prefix and apply if tag key matches
 
 ## Seeder
 
