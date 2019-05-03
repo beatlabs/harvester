@@ -87,7 +87,6 @@ Will be github issues once we move to thebeatapp organization.
 - Support change events which can be fired (chan with change...)
 - Support nesting (structs...)
 
-
 ## How to Contribute
 
 See [Contribution Guidelines](CONTRIBUTE.md).
