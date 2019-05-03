@@ -79,7 +79,6 @@ Consul has support for versioning (`ModifyIndex`) which allows us to change the 
 
 Will be github issues once we move to thebeatapp organization.
 
-- consul client timeouts should be set
 - move to circle-ci
 - Error handling
   - Logging

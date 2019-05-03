@@ -27,7 +27,6 @@ func New(addr, dc, token string, timeout time.Duration) (*Getter, error) {
 	config.Address = addr
 
 	var err error
-
 	config.HttpClient, err = api.NewHttpClient(config.Transport, config.TLSConfig)
 	if err != nil {
 		return nil, err
