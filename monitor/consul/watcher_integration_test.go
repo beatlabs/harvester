@@ -50,7 +50,7 @@ func TestWatch(t *testing.T) {
 	err = w.Watch(ctx, ch, chErr)
 	require.NoError(t, err)
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 2; i++ {
 		cc := <-ch
 		for _, cng := range cc {
 			switch cng.Key() {

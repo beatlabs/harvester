@@ -39,7 +39,8 @@ func TestMain(m *testing.M) {
 
 func TestGetter_Get(t *testing.T) {
 	type args struct {
-		key string
+		key  string
+		addr string
 	}
 	tests := []struct {
 		name    string
@@ -47,17 +48,18 @@ func TestGetter_Get(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "success", args: args{key: "get_key1"}, want: "1", wantErr: false},
-		{name: "missing key", args: args{key: "get_key2"}, want: "", wantErr: false},
+		{name: "success", args: args{addr: addr, key: "get_key1"}, want: "1", wantErr: false},
+		{name: "missing key", args: args{addr: addr, key: "get_key2"}, want: "", wantErr: false},
+		{name: "wrong address", args: args{addr: "xxx", key: "get_key1"}, want: "", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gtr, err := New(addr, "", "")
+			gtr, err := New(tt.args.addr, "", "")
 			require.NoError(t, err)
 			got, err := gtr.Get(tt.args.key)
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Nil(t, got)
+				assert.Empty(t, got)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
