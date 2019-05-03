@@ -22,22 +22,19 @@ type Monitor interface {
 
 // Harvester interface.
 type Harvester interface {
-	Harvest(ctx context.Context, cfg interface{}) error
+	Harvest(ctx context.Context) error
 }
 
 type harvester struct {
+	cfg     *config.Config
 	seeder  Seeder
 	monitor Monitor
 	chErr   chan<- error
 }
 
 // Harvest take the configuration object, initializes it and monitors for changes.
-func (h *harvester) Harvest(ctx context.Context, cfg interface{}) error {
-	c, err := config.New(cfg)
-	if err != nil {
-		return err
-	}
-	err = h.seeder.Seed(c)
+func (h *harvester) Harvest(ctx context.Context) error {
+	err := h.seeder.Seed(h.cfg)
 	if err != nil {
 		return err
 	}
@@ -61,6 +58,7 @@ func New(cfg interface{}) *Builder {
 	c, err := config.New(cfg)
 	if err != nil {
 		b.err = err
+		return b
 	}
 	b.cfg = c
 	b.seedParams = []seed.Param{}
@@ -110,11 +108,11 @@ func (b *Builder) Create() (Harvester, error) {
 
 	var mon Monitor
 	if len(b.watchers) == 0 {
-		return &harvester{seeder: seed, chErr: chErr}, nil
+		return &harvester{seeder: seed, chErr: chErr, cfg: b.cfg}, nil
 	}
 	mon, err := monitor.New(b.cfg, b.watchers...)
 	if err != nil {
 		return nil, err
 	}
-	return &harvester{seeder: seed, monitor: mon, chErr: chErr}, nil
+	return &harvester{seeder: seed, monitor: mon, chErr: chErr, cfg: b.cfg}, nil
 }

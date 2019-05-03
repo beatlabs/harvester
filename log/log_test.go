@@ -1,10 +1,25 @@
 package log
 
 import (
+	"bytes"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestLog(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	Infof("Test %s", "logging")
+	assert.Contains(t, buf.String(), "INFO: Test logging")
+	buf.Reset()
+	Warnf("Test %s", "logging")
+	assert.Contains(t, buf.String(), "WARN: Test logging")
+	buf.Reset()
+	Errorf("Test %s", "logging")
+	assert.Contains(t, buf.String(), "ERROR: Test logging")
+}
 
 func TestSetupLogging(t *testing.T) {
 	stubLogf := func(string, ...interface{}) {}

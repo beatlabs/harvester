@@ -94,11 +94,11 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 		}
 		fld, ok := mp[c.Key()]
 		if !ok {
-			log.Warnf("key %s not found", c.Key)
+			log.Warnf("key %s not found", c.Key())
 			continue
 		}
 		if fld.Version > c.Version() {
-			log.Warnf("version %d is older than %d", c.Version, fld.Version)
+			log.Warnf("version %d is older than %d", c.Version(), fld.Version)
 			continue
 		}
 		err := m.cfg.Set(fld.Name, c.Value(), fld.Kind)
