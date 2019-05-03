@@ -47,7 +47,9 @@ func TestCreate_NoConsul(t *testing.T) {
 	got, err := New(cfg).Create()
 	assert.NoError(t, err)
 	assert.NotNil(t, got)
-	err = got.Harvest(context.Background())
+	ctx, cnl := context.WithCancel(context.Background())
+	defer cnl()
+	err = got.Harvest(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", cfg.Name)
 	assert.Equal(t, int64(18), cfg.Age)
@@ -60,7 +62,9 @@ func TestCreate_SeedError(t *testing.T) {
 	got, err := New(cfg).Create()
 	assert.NoError(t, err)
 	assert.NotNil(t, got)
-	err = got.Harvest(context.Background())
+	ctx, cnl := context.WithCancel(context.Background())
+	defer cnl()
+	err = got.Harvest(ctx)
 	assert.Error(t, err)
 }
 

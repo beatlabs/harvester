@@ -70,10 +70,10 @@ func TestConfig_Set(t *testing.T) {
 		exp     testConfig
 		wantErr bool
 	}{
-		{name: "set name", args: args{name: "Name", value: "John Doe Test", kind: reflect.String}, exp: expName, wantErr: false},
-		{name: "set age", args: args{name: "Age", value: "18", kind: reflect.Int64}, exp: expAge, wantErr: false},
-		{name: "set balance", args: args{name: "Balance", value: "99.9", kind: reflect.Float64}, exp: expBalance, wantErr: false},
-		{name: "set has job", args: args{name: "HasJob", value: "true", kind: reflect.Bool}, exp: expHasJob, wantErr: false},
+		{name: "set name", args: args{name: "Name", value: "John Doe Test", kind: reflect.String}, exp: expName},
+		{name: "set age", args: args{name: "Age", value: "18", kind: reflect.Int64}, exp: expAge},
+		{name: "set balance", args: args{name: "Balance", value: "99.9", kind: reflect.Float64}, exp: expBalance},
+		{name: "set has job", args: args{name: "HasJob", value: "true", kind: reflect.Bool}, exp: expHasJob},
 		{name: "invalid kind", args: args{name: "HasJob", value: "true", kind: reflect.Int}, wantErr: true},
 		{name: "invalid int", args: args{name: "Age", value: "XXX", kind: reflect.Int64}, wantErr: true},
 		{name: "invalid float64", args: args{name: "Balance", value: "XXX", kind: reflect.Float64}, wantErr: true},
