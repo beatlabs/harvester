@@ -35,9 +35,9 @@ Please note that this project is released with a [Contributor Code of Conduct](h
 ## Todo
 
 - Support nesting (structs...)
-- Consul log to std log...
 - consul client timeouts should be set
 - OPTIONAL: Support change events which can be fired (chan with change...)
+- move to circle-ci
 - Error handling
   - Logging
   - return chan error and let the client handle it
