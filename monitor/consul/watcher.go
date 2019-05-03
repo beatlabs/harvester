@@ -69,7 +69,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change, chErr c
 		}
 		w.pp = append(w.pp, pl)
 		go func(tp, key string) {
-			err := pl.Run(w.addr)
+			err := pl.RunWithClient(w.addr)
 			if err != nil {
 				if chErr != nil {
 					chErr <- err
