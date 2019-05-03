@@ -1,4 +1,4 @@
-# Harvester configuration package
+# Harvester [![CircleCI](https://circleci.com/gh/thebeatapp/harvester.svg?style=svg)](https://circleci.com/gh/thebeatapp/harvester) [![codecov](https://codecov.io/gh/thebeatapp/harvester/branch/master/graph/badge.svg)](https://codecov.io/gh/thebeatapp/harvester) [![Go Report Card](https://goreportcard.com/badge/github.com/thebeatapp/harvester)](https://goreportcard.com/report/github.com/thebeatapp/harvester) [![GoDoc](https://godoc.org/github.com/thebeatapp/harvester?status.svg)](https://godoc.org/github.com/thebeatapp/harvester) ![GitHub release](https://img.shields.io/github/release/thebeatapp/harvester.svg)
 
 `Harvester` is a configuration library which helps setting up and monitoring configuration values in order to dynamically
 reconfigure your application.
@@ -71,15 +71,22 @@ The `Harvester` builder pattern is used to create a `Harvester` instance. The bu
 
 The above snippet set's up a `Harvester` instance with consul seed and monitor.
 
+## Consul
+
+Consul has support for versioning (`ModifyIndex`) which allows us to change the value only if the version is higher than the one currently applied.
+
 ## Todo
 
-- Support nesting (structs...)
+Will be github issues once we move to thebeatapp organization.
+
 - consul client timeouts should be set
-- OPTIONAL: Support change events which can be fired (chan with change...)
 - move to circle-ci
 - Error handling
   - Logging
   - return chan error and let the client handle it
+- Support change events which can be fired (chan with change...)
+- Support nesting (structs...)
+
 
 ## How to Contribute
 
