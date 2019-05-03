@@ -81,6 +81,7 @@ Consul has support for versioning (`ModifyIndex`) which allows us to change the 
 
 Will be github issues once we move to thebeatapp organization.
 
+- create a example service in the examples folder (d.baltas)
 - move to circle-ci
 - Error handling
   - Logging
