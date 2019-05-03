@@ -2,6 +2,7 @@ package harvester
 
 import (
 	"context"
+	"time"
 
 	"github.com/taxibeat/harvester/config"
 	"github.com/taxibeat/harvester/monitor"
@@ -66,11 +67,11 @@ func New(cfg interface{}) *Builder {
 }
 
 // WithConsulSeed enables support for seeding values with consul.
-func (b *Builder) WithConsulSeed(addr, dc, token string) *Builder {
+func (b *Builder) WithConsulSeed(addr, dc, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
-	getter, err := seedConsul.New(addr, dc, token)
+	getter, err := seedConsul.New(addr, dc, token, timeout)
 	if err != nil {
 		b.err = err
 		return b

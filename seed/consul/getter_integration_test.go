@@ -1,5 +1,3 @@
-// +build integration
-
 package consul
 
 import (
@@ -56,7 +54,7 @@ func TestGetter_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gtr, err := New(tt.args.addr, "", "")
+			gtr, err := New(tt.args.addr, "", "", 0)
 			require.NoError(t, err)
 			got, err := gtr.Get(tt.args.key)
 			if tt.wantErr {

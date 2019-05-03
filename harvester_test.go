@@ -32,7 +32,7 @@ func TestCreateWithConsul(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.cfg).
-				WithConsulSeed(tt.args.addr, "", "").
+				WithConsulSeed(tt.args.addr, "", "", 0).
 				WithConsulMonitor(tt.args.addr, "", "", tt.args.items...).
 				Create()
 			if tt.wantErr {
