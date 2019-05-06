@@ -49,9 +49,9 @@ func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, err)
 	invalidBoolCfg, err := config.New(&testInvalidBool{})
 	require.NoError(t, err)
-	consulParamSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
+	prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
 	require.NoError(t, err)
-	consulParamError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
+	prmError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
 	require.NoError(t, err)
 
 	type fields struct {
@@ -66,12 +66,12 @@ func TestSeeder_Seed(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", fields: fields{consulParam: consulParamSuccess}, args: args{cfg: goodCfg}, wantErr: false},
+		{name: "success", fields: fields{consulParam: prmSuccess}, args: args{cfg: goodCfg}, wantErr: false},
 		{name: "consul get nil", args: args{cfg: goodCfg}, wantErr: true},
-		{name: "consul get error", fields: fields{consulParam: consulParamError}, args: args{cfg: goodCfg}, wantErr: true},
+		{name: "consul get error", fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}, wantErr: true},
 		{name: "invalid int", args: args{cfg: invalidIntCfg}, wantErr: true},
 		{name: "invalid float", args: args{cfg: invalidFloatCfg}, wantErr: true},
-		{name: "invalid bool", fields: fields{consulParam: consulParamSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
+		{name: "invalid bool", fields: fields{consulParam: prmSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
