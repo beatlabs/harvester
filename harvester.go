@@ -67,11 +67,11 @@ func New(cfg interface{}) *Builder {
 }
 
 // WithConsulSeed enables support for seeding values with consul.
-func (b *Builder) WithConsulSeed(addr, dc, token string, timeout time.Duration) *Builder {
+func (b *Builder) WithConsulSeed(addr, datacenter, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
-	getter, err := seedConsul.New(addr, dc, token, timeout)
+	getter, err := seedConsul.New(addr, datacenter, token, timeout)
 	if err != nil {
 		b.err = err
 		return b
