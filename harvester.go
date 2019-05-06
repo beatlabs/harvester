@@ -86,11 +86,11 @@ func (b *Builder) WithConsulSeed(addr, dc, token string, timeout time.Duration) 
 }
 
 // WithConsulMonitor enables support for monitoring key/prefixes on consul.
-func (b *Builder) WithConsulMonitor(addr, dc, token string, ii ...consul.Item) *Builder {
+func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duration, ii ...consul.Item) *Builder {
 	if b.err != nil {
 		return b
 	}
-	wtc, err := consul.New(addr, dc, token, ii...)
+	wtc, err := consul.New(addr, dc, token, timeout, ii...)
 	if err != nil {
 		b.err = err
 		return b

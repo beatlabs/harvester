@@ -33,7 +33,7 @@ func TestCreateWithConsul(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.cfg).
 				WithConsulSeed(tt.args.addr, "", "", 0).
-				WithConsulMonitor(tt.args.addr, "", "", tt.args.items...).
+				WithConsulMonitor(tt.args.addr, "", "", 0, tt.args.items...).
 				Create()
 			if tt.wantErr {
 				assert.Error(t, err)
