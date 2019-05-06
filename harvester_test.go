@@ -8,6 +8,10 @@ import (
 	"github.com/taxibeat/harvester/monitor/consul"
 )
 
+const (
+	addr = "127.0.0.1:8501"
+)
+
 func TestCreateWithConsul(t *testing.T) {
 	ii := []consul.Item{consul.NewKeyItem("harvester1/name"), consul.NewPrefixItem("harvester")}
 	type args struct {
@@ -28,8 +32,8 @@ func TestCreateWithConsul(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.cfg).
-				WithConsulSeed(tt.args.addr, "", "").
-				WithConsulMonitor(tt.args.addr, "", "", tt.args.items...).
+				WithConsulSeed(tt.args.addr, "", "", 0).
+				WithConsulMonitor(tt.args.addr, "", "", 0, tt.args.items...).
 				Create()
 			if tt.wantErr {
 				assert.Error(t, err)

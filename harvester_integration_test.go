@@ -1,3 +1,5 @@
+// +build integration
+
 package harvester
 
 import (
@@ -10,10 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/monitor/consul"
-)
-
-const (
-	addr = "127.0.0.1:8501"
 )
 
 var (
@@ -48,8 +46,8 @@ func Test_harvester_Harvest(t *testing.T) {
 	cfg := testConfig{}
 	ii := []consul.Item{consul.NewKeyItem("harvester1/name"), consul.NewPrefixItem("harvester")}
 	h, err := New(&cfg).
-		WithConsulSeed(addr, "", "").
-		WithConsulMonitor(addr, "", "", ii...).
+		WithConsulSeed(addr, "", "", 0).
+		WithConsulMonitor(addr, "", "", 0, ii...).
 		Create()
 	require.NoError(t, err)
 

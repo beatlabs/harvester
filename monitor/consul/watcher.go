@@ -3,12 +3,15 @@ package consul
 import (
 	"context"
 	"errors"
+	"log"
+	"os"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
 	"github.com/taxibeat/harvester/change"
 	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/log"
+	harvesterlog "github.com/taxibeat/harvester/log"
 )
 
 // Item definition.
@@ -29,7 +32,7 @@ func NewPrefixItem(key string) Item {
 
 // Watcher of Consul changes.
 type Watcher struct {
-	addr  string
+	cl    *api.Client
 	dc    string
 	token string
 	pp    []*watch.Plan
@@ -37,14 +40,30 @@ type Watcher struct {
 }
 
 // New creates a new watcher.
-func New(addr, dc, token string, ii ...Item) (*Watcher, error) {
+func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, error) {
 	if addr == "" {
 		return nil, errors.New("address is empty")
 	}
 	if len(ii) == 0 {
 		return nil, errors.New("items are empty")
 	}
-	return &Watcher{addr: addr, dc: dc, token: token, ii: ii}, nil
+	if timeout == 0 {
+		timeout = 60 * time.Second
+	}
+	cfg := api.DefaultConfig()
+	cfg.Address = addr
+	var err error
+	cfg.HttpClient, err = api.NewHttpClient(cfg.Transport, cfg.TLSConfig)
+	if err != nil {
+		return nil, err
+	}
+	cfg.HttpClient.Timeout = timeout
+
+	cl, err := api.NewClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Watcher{cl: cl, dc: dc, token: token, ii: ii}, nil
 }
 
 // Watch key and prefixes for changes.
@@ -69,12 +88,18 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change, chErr c
 		}
 		w.pp = append(w.pp, pl)
 		go func(tp, key string) {
-			err := pl.Run(w.addr)
+			//TODO: Logger...
+			output := pl.LogOutput
+			if output == nil {
+				output = os.Stderr
+			}
+			logger := log.New(output, "", log.LstdFlags)
+			err := pl.RunWithClientAndLogger(w.cl, logger)
 			if err != nil {
 				if chErr != nil {
 					chErr <- err
 				}
-				log.Errorf("plan %s of type %s failed: %v", tp, key, err)
+				harvesterlog.Errorf("plan %s of type %s failed: %v", tp, key, err)
 			}
 		}(i.tp, i.key)
 	}
@@ -99,7 +124,7 @@ func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change, chErr ch
 			if chErr != nil {
 				chErr <- err
 			}
-			log.Errorf("data is not kv pair: %v", data)
+			harvesterlog.Errorf("data is not kv pair: %v", data)
 		}
 		ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
 	}
@@ -117,7 +142,7 @@ func (w *Watcher) runPrefixWatcher(key string, ch chan<- []*change.Change, chErr
 			if chErr != nil {
 				chErr <- err
 			}
-			log.Errorf("data is not kv pairs: %v", data)
+			harvesterlog.Errorf("data is not kv pairs: %v", data)
 		}
 		cc := make([]*change.Change, len(pp))
 		for i := 0; i < len(pp); i++ {

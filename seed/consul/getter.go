@@ -2,6 +2,7 @@ package consul
 
 import (
 	"errors"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 )
@@ -13,18 +14,30 @@ type Getter struct {
 	token string
 }
 
-// New constructor.
-func New(addr, dc, token string) (*Getter, error) {
+// New constructor. Timeout is set to 60s when 0 is provided
+func New(addr, dc, token string, timeout time.Duration) (*Getter, error) {
 	if addr == "" {
 		return nil, errors.New("address is empty")
 	}
+	if timeout == 0 {
+		timeout = 60 * time.Second
+	}
+
 	config := api.DefaultConfig()
 	config.Address = addr
+
+	var err error
+	config.HttpClient, err = api.NewHttpClient(config.Transport, config.TLSConfig)
+	if err != nil {
+		return nil, err
+	}
+	config.HttpClient.Timeout = timeout
+
 	consul, err := api.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
-	return &Getter{kv: consul.KV()}, nil
+	return &Getter{kv: consul.KV(), dc: dc, token: token}, nil
 }
 
 // Get the specific key value from consul.

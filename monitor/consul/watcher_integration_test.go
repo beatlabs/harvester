@@ -1,3 +1,5 @@
+// +build integration
+
 package consul
 
 import (
@@ -42,7 +44,7 @@ func TestMain(m *testing.M) {
 func TestWatch(t *testing.T) {
 	ch := make(chan []*change.Change)
 	chErr := make(chan error)
-	w, err := New(addr, "", "", NewKeyItem("key1"), NewPrefixItem("prefix1"))
+	w, err := New(addr, "", "", 0, NewKeyItem("key1"), NewPrefixItem("prefix1"))
 	require.NoError(t, err)
 	require.NotNil(t, w)
 	ctx, cnl := context.WithCancel(context.Background())
