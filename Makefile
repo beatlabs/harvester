@@ -27,6 +27,7 @@ deeplint: fmtcheck
 
 ci: fmtcheck lint	
 	go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
+	curl -s https://codecov.io/bash | bash -s
 
 local-k8s-portfwd:
 	@sh -c "'$(CURDIR)/scripts/k8s_port_forward_local.sh'"
