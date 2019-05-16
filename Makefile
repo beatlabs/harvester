@@ -9,7 +9,7 @@ testint: fmtcheck
 	go test ./... -cover -race -tags=integration -count=1
 
 cover: fmtcheck
-	go test ./... -coverprofile cover.out -tags=integration && \
+	go test ./... -race -coverprofile cover.out -tags=integration && \
 	go tool cover -func cover.out && \
 	rm cover.out
 
