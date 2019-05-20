@@ -2,7 +2,9 @@ package seed
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/taxibeat/harvester/config"
 	"github.com/taxibeat/harvester/log"
@@ -43,6 +45,7 @@ func New(pp ...Param) *Seeder {
 
 // Seed the provided config with values for their sources.
 func (s *Seeder) Seed(cfg *config.Config) error {
+	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
 	for _, f := range cfg.Fields {
 		val, ok := f.Sources[config.SourceSeed]
 		if ok {
@@ -50,7 +53,8 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			if err != nil {
 				return err
 			}
-			log.Infof("seed value %s applied on %s", val, f.Name)
+			log.Infof("seed value %s applied on field %s", val, f.Name)
+			seedMap[f] = true
 		}
 		key, ok := f.Sources[config.SourceEnv]
 		if ok {
@@ -60,9 +64,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				if err != nil {
 					return err
 				}
-				log.Infof("env var value %s applied on %s", val, f.Name)
+				log.Infof("env var value %s applied on field %s", val, f.Name)
+				seedMap[f] = true
 			} else {
-				log.Warnf("env var %s did not exist for %s", key, f.Name)
+				log.Warnf("env var %s did not exist for field %s", key, f.Name)
 			}
 		}
 		key, ok = f.Sources[config.SourceConsul]
@@ -73,14 +78,29 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			}
 			value, err := gtr.Get(key)
 			if err != nil {
-				return err
+				log.Errorf("failed to get consul key %s for field %s: %v", key, f.Name, err)
+				continue
+			}
+			if value == "" {
+				log.Warnf("consul key %s did not exist or was empty for field %s", key, f.Name)
+				continue
 			}
 			err = cfg.Set(f.Name, value, f.Kind)
 			if err != nil {
 				return err
 			}
-			log.Infof("consul value %s applied on %s", val, f.Name)
+			log.Infof("consul value %s applied on filed %s", val, f.Name)
+			seedMap[f] = true
 		}
+	}
+	sb := strings.Builder{}
+	for f, seeded := range seedMap {
+		if !seeded {
+			sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name))
+		}
+	}
+	if sb.Len() > 0 {
+		return errors.New(sb.String())
 	}
 	return nil
 }
