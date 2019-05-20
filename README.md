@@ -32,7 +32,10 @@ The above defines the following fields:
 - Seeding phase
   - Apply the seed tag value, if present
   - Apply the value contained in the env var, if present
-  - Apply the value return from Consul, if present and harvester is setup
+  - Apply the value return from Consul, if present and harvester is setup to seed from consul
+
+At the end of the seeding phase all filed should have been seeded from any source, if not the seeding phase will fail.
+
 - Monitoring phase (Consul only)
   - Monitor a key and apply if tag key matches
   - Monitor a key-prefix and apply if tag key matches
