@@ -12,7 +12,7 @@ import (
 
 // Getter interface for fetching a value for a specific key.
 type Getter interface {
-	Get(key string) (string, error)
+	Get(key string) (*string, error)
 }
 
 // Param parameters for setting a getter for a specific source.
@@ -81,11 +81,11 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				log.Errorf("failed to get consul key %s for field %s: %v", key, f.Name, err)
 				continue
 			}
-			if value == "" {
-				log.Warnf("consul key %s did not exist or was empty for field %s", key, f.Name)
+			if value == nil {
+				log.Warnf("consul key %s did not exist for field %s", key, f.Name)
 				continue
 			}
-			err = cfg.Set(f.Name, value, f.Kind)
+			err = cfg.Set(f.Name, *value, f.Kind)
 			if err != nil {
 				return err
 			}

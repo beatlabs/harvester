@@ -41,13 +41,14 @@ func New(addr, dc, token string, timeout time.Duration) (*Getter, error) {
 }
 
 // Get the specific key value from consul.
-func (g *Getter) Get(key string) (string, error) {
+func (g *Getter) Get(key string) (*string, error) {
 	pair, _, err := g.kv.Get(key, &api.QueryOptions{Datacenter: g.dc, Token: g.token})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if pair == nil {
-		return "", nil
+		return nil, nil
 	}
-	return string(pair.Value), nil
+	val := string(pair.Value)
+	return &val, nil
 }

@@ -58,6 +58,9 @@ func (v *Config) Set(name, value string, kind reflect.Kind) error {
 	f := v.cfg.FieldByName(name)
 	switch kind {
 	case reflect.Bool:
+		if value == "" {
+			return errors.New("value is empty")
+		}
 		b, err := strconv.ParseBool(value)
 		if err != nil {
 			return err
@@ -66,12 +69,18 @@ func (v *Config) Set(name, value string, kind reflect.Kind) error {
 	case reflect.String:
 		f.SetString(value)
 	case reflect.Int64:
+		if value == "" {
+			return errors.New("value is empty")
+		}
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return err
 		}
 		f.SetInt(v)
 	case reflect.Float64:
+		if value == "" {
+			return errors.New("value is empty")
+		}
 		v, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return err

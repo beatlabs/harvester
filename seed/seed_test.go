@@ -118,12 +118,17 @@ type testConsulGet struct {
 	err bool
 }
 
-func (tcg *testConsulGet) Get(key string) (string, error) {
+func (tcg *testConsulGet) Get(key string) (*string, error) {
 	if tcg.err {
-		return "", errors.New("TEST")
+		return nil, errors.New("TEST")
 	}
+	if key == "/config/YYY" {
+		return nil, nil
+	}
+	val := "XXX"
 	if key == "/config/XXX" {
-		return "XXX", nil
+		return &val, nil
 	}
-	return "true", nil
+	val = "true"
+	return &val, nil
 }
