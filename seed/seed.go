@@ -47,6 +47,7 @@ func New(pp ...Param) *Seeder {
 func (s *Seeder) Seed(cfg *config.Config) error {
 	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
 	for _, f := range cfg.Fields {
+		seedMap[f] = false
 		val, ok := f.Sources[config.SourceSeed]
 		if ok {
 			err := cfg.Set(f.Name, val, f.Kind)
