@@ -27,17 +27,20 @@ The above defines the following fields:
 - Age, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_AGE` holds
 - IsAdmin, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_AGE` holds and then from consul if the consul seeder and/or watcher are provided.
 
-`Harvester` works as follows given a config struct:
+`Harvester` has a seeding phase and an optional monitoring phase.
 
-- Seeding phase
-  - Apply the seed tag value, if present
-  - Apply the value contained in the env var, if present
-  - Apply the value return from Consul, if present and harvester is setup
-- Monitoring phase (Consul only)
-  - Monitor a key and apply if tag key matches
-  - Monitor a key-prefix and apply if tag key matches
+## Seeding phase
+  
+- Apply the seed tag value, if present
+- Apply the value contained in the env var, if present
+- Apply the value returned from Consul, if present and harvester is setup to seed from consul
 
-## Seeder
+Conditions where seeding fails:
+
+- If at the end of the seeding phase one or more fields have not been seeded
+- If the seed value is invalid
+
+### Seeder
 
 `Harvester` allows the creation of custom getters which are used by the seeder and implement the following interface:
 
@@ -49,7 +52,12 @@ type Getter interface {
 
 Seed and env tags are supported by default, the Consul getter has to be setup when creating a `Harvester` with the builder.
 
-## Monitor
+## Monitoring phase (Consul only)
+  
+- Monitor a key and apply if tag key matches
+- Monitor a key-prefix and apply if tag key matches
+
+### Monitor
 
 `Harvester` allows for dynamically changing the config value by monitoring a source. The following sources are available:
 
@@ -65,7 +73,7 @@ The `Harvester` builder pattern is used to create a `Harvester` instance. The bu
 - Consul monitor, for setting up monitoring from Consul
 
 ```go
-    h, err := New(tt.args.cfg).
+    h, err := New(cfg).
                 WithConsulSeed("address", "dc", "token").
                 WithConsulMonitor("address", "dc", "token", items...).
                 Create()

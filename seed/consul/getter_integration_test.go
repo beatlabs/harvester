@@ -40,6 +40,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetter_Get(t *testing.T) {
+	one := "1"
 	type args struct {
 		key  string
 		addr string
@@ -47,12 +48,12 @@ func TestGetter_Get(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    string
+		want    *string
 		wantErr bool
 	}{
-		{name: "success", args: args{addr: addr, key: "get_key1"}, want: "1", wantErr: false},
-		{name: "missing key", args: args{addr: addr, key: "get_key2"}, want: "", wantErr: false},
-		{name: "wrong address", args: args{addr: "xxx", key: "get_key1"}, want: "", wantErr: true},
+		{name: "success", args: args{addr: addr, key: "get_key1"}, want: &one, wantErr: false},
+		{name: "missing key", args: args{addr: addr, key: "get_key2"}, want: nil, wantErr: false},
+		{name: "wrong address", args: args{addr: "xxx", key: "get_key1"}, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -49,6 +49,8 @@ func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, err)
 	invalidBoolCfg, err := config.New(&testInvalidBool{})
 	require.NoError(t, err)
+	missingCfg, err := config.New(&testMissingValue{})
+	require.NoError(t, err)
 	prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
 	require.NoError(t, err)
 	prmError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
@@ -68,7 +70,8 @@ func TestSeeder_Seed(t *testing.T) {
 	}{
 		{name: "success", fields: fields{consulParam: prmSuccess}, args: args{cfg: goodCfg}, wantErr: false},
 		{name: "consul get nil", args: args{cfg: goodCfg}, wantErr: true},
-		{name: "consul get error", fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}, wantErr: true},
+		{name: "consul get error but previous seed successful", fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}, wantErr: false},
+		{name: "consul missing value", fields: fields{consulParam: prmSuccess}, args: args{cfg: missingCfg}, wantErr: true},
 		{name: "invalid int", args: args{cfg: invalidIntCfg}, wantErr: true},
 		{name: "invalid float", args: args{cfg: invalidFloatCfg}, wantErr: true},
 		{name: "invalid bool", fields: fields{consulParam: prmSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
@@ -114,16 +117,25 @@ type testInvalidBool struct {
 	HasJob bool `consul:"/config/XXX"`
 }
 
+type testMissingValue struct {
+	HasJob bool `consul:"/config/YYY"`
+}
+
 type testConsulGet struct {
 	err bool
 }
 
-func (tcg *testConsulGet) Get(key string) (string, error) {
+func (tcg *testConsulGet) Get(key string) (*string, error) {
 	if tcg.err {
-		return "", errors.New("TEST")
+		return nil, errors.New("TEST")
 	}
+	if key == "/config/YYY" {
+		return nil, nil
+	}
+	val := "XXX"
 	if key == "/config/XXX" {
-		return "XXX", nil
+		return &val, nil
 	}
-	return "true", nil
+	val = "true"
+	return &val, nil
 }
