@@ -1,5 +1,3 @@
-// +build integration
-
 package harvester
 
 import (
@@ -7,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
@@ -59,6 +58,10 @@ func Test_harvester_Harvest(t *testing.T) {
 	assert.Equal(t, int64(99), cfg.Age)
 	assert.Equal(t, 111.1, cfg.Balance)
 	assert.Equal(t, false, cfg.HasJob)
+	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Anderson")}, nil)
+	require.NoError(t, err)
+	time.Sleep(1000 * time.Millisecond)
+	assert.Equal(t, "Mr. Anderson", cfg.Name)
 }
 
 func cleanup() error {
