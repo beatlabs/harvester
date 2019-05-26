@@ -1,44 +1,34 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"reflect"
 
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/seed"
+	"github.com/taxibeat/harvester"
 )
 
-// ConfigAttrs sample config struct
-type ConfigAttrs struct {
+type configAttrs struct {
 	Name string `seed:"John Doe"`
 	Age  int64  `seed:"18" env:"ENV_AGE"`
 }
 
 func main() {
-	attrs := ConfigAttrs{}
-
-	cfg, err := config.New(&attrs)
-	if err != nil {
-		fmt.Printf("Oops, something went wrong creating config: %v", err)
+	attrs := configAttrs{
+		Name: "Jim",
 	}
 
-	printAttrs(attrs)
-
-	s := seed.New()
-	s.Seed(cfg)
-
-	printAttrs(attrs)
-
-	fmt.Println("Setting name to: boo")
-	err = cfg.Set("Name", "boo", reflect.String)
+	h, err := harvester.New(&attrs).Create()
 	if err != nil {
-		fmt.Printf("Oops, something went wrong setting field: %v", err)
+		fmt.Printf("Oops, something went wrong creating harvester instance: %v", err)
 	}
+	ctx, cnl := context.WithCancel(context.Background())
+	defer cnl()
+	h.Harvest(ctx)
 
 	printAttrs(attrs)
 }
 
-func printAttrs(attrs ConfigAttrs) {
+func printAttrs(attrs configAttrs) {
 	log.Printf("Attribute State: name: %s, age: %d\n", attrs.Name, attrs.Age)
 }

@@ -92,6 +92,10 @@ The above snippet set's up a `Harvester` instance with consul seed and monitor.
 
 Consul has support for versioning (`ModifyIndex`) which allows us to change the value only if the version is higher than the one currently.
 
+## Examples
+
+Head over to [examples](examples) readme on how to use harvester
+
 ## How to Contribute
 
 See [Contribution Guidelines](CONTRIBUTE.md).
