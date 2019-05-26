@@ -43,7 +43,7 @@ func main() {
 	printAttrs(attrs)
 
 	time.Sleep(5 * time.Second)
-	seedConsulVars(consulConfig, "bazz")
+	seedConsulVars(consulConfig, "baz")
 
 	time.Sleep(5 * time.Second)
 	printAttrs(attrs)

@@ -17,5 +17,5 @@
 12:43:45 ➜  harvester git:(examples) ✗  go run examples/03_consul_monitor/main.go
 2019/05/26 12:44:14 Attribute State: name: John Doe, age: 18, consulVar: bar
 # after changing the consul value
-2019/05/26 12:44:34 Attribute State: name: John Doe, age: 18, consulVar: bar
+2019/05/26 12:44:34 Attribute State: name: John Doe, age: 18, consulVar: baz
 ```
