@@ -99,6 +99,7 @@ Will be github issues once we move to thebeatapp organization.
 - The code has a data race and cannot be used with safety.
 - The config struct should check for null fields and initialize with default pointer value
 - !!! base64 decode string in value of the kv
+- support codecov for forks by adding environment variable of the project
 - create examples folder with a service implementation (@d.baltas)
 - Error handling
   - Logging
