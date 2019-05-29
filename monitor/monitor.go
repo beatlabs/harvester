@@ -97,13 +97,9 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 			log.Warnf("key %s not found", c.Key())
 			continue
 		}
-		if fld.Version > c.Version() {
-			log.Warnf("version %d is older than %d", c.Version(), fld.Version)
-			continue
-		}
-		err := m.cfg.Set(fld.Name, c.Value(), fld.Kind)
+		err := m.cfg.Set(fld.Name, c.Value(), c.Version())
 		if err != nil {
-			log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Source())
+			log.Errorf("failed to set value %s of type %d on field %s from source %s", c.Value, fld.Type, fld.Name, c.Source())
 			continue
 		}
 		fld.Version = c.Version()

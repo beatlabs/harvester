@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/change"
 	"github.com/taxibeat/harvester/config"
+	"github.com/taxibeat/harvester/sync"
 )
 
 func TestNew(t *testing.T) {
@@ -71,16 +72,16 @@ func TestMonitor_Monitor(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(100 * time.Millisecond)
 	cnl()
-	assert.Equal(t, int64(25), c.Age)
-	assert.Equal(t, 111.11, c.Balance)
-	assert.Equal(t, false, c.HasJob)
+	assert.Equal(t, int64(25), c.Age.Get())
+	assert.Equal(t, 111.11, c.Balance.Get())
+	assert.Equal(t, false, c.HasJob.Get())
 }
 
 type testConfig struct {
-	Name    string  `seed:"John Doe" env:"ENV_NAME"`
-	Age     int64   `env:"ENV_AGE" consul:"/config/age"`
-	Balance float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
-	HasJob  bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Name    sync.String  `seed:"John Doe" env:"ENV_NAME"`
+	Age     sync.Int64   `env:"ENV_AGE" consul:"/config/age"`
+	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }
 
 type testWatcher struct {

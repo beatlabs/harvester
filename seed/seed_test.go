@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/config"
+	"github.com/taxibeat/harvester/sync"
 )
 
 func TestNewParam(t *testing.T) {
@@ -89,53 +90,53 @@ func TestSeeder_Seed(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, "John Doe", c.Name)
-				assert.Equal(t, int64(25), c.Age)
-				assert.Equal(t, 99.9, c.Balance)
-				assert.True(t, c.HasJob)
+				assert.Equal(t, "John Doe", c.Name.Get())
+				assert.Equal(t, int64(25), c.Age.Get())
+				assert.Equal(t, 99.9, c.Balance.Get())
+				assert.True(t, c.HasJob.Get())
 			}
 		})
 	}
 }
 
 type testConfig struct {
-	Name    string  `seed:"John Doe"`
-	Age     int64   `seed:"18" env:"ENV_AGE"`
-	Balance float64 `seed:"99.9" env:"ENV_BALANCE"`
-	HasJob  bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Name    sync.String  `seed:"John Doe"`
+	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
+	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE"`
+	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }
 
 type testInvalidInt struct {
-	Age int64 `seed:"XXX"`
+	Age sync.Int64 `seed:"XXX"`
 }
 
 type testInvalidFloat struct {
-	Balance float64 `env:"ENV_XXX"`
+	Balance sync.Float64 `env:"ENV_XXX"`
 }
 
 type testInvalidBool struct {
-	HasJob bool `consul:"/config/XXX"`
+	HasJob sync.Bool `consul:"/config/XXX"`
 }
 
 type testMissingValue struct {
-	HasJob bool `consul:"/config/YYY"`
+	HasJob sync.Bool `consul:"/config/YYY"`
 }
 
 type testConsulGet struct {
 	err bool
 }
 
-func (tcg *testConsulGet) Get(key string) (*string, error) {
+func (tcg *testConsulGet) Get(key string) (*string, uint64, error) {
 	if tcg.err {
-		return nil, errors.New("TEST")
+		return nil, 0, errors.New("TEST")
 	}
 	if key == "/config/YYY" {
-		return nil, nil
+		return nil, 0, nil
 	}
 	val := "XXX"
 	if key == "/config/XXX" {
-		return &val, nil
+		return &val, 0, nil
 	}
 	val = "true"
-	return &val, nil
+	return &val, 1, nil
 }
