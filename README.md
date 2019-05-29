@@ -90,6 +90,7 @@ Consul has support for versioning (`ModifyIndex`) which allows us to change the 
 Will be github issues once we move to thebeatapp organization.
 
 - The code has a data race and cannot be used with safety.
+- The config struct should check for null fields and initialize with default pointer value
 - create examples folder with a service implementation (@d.baltas)
 - move to circle-ci
 - Error handling
