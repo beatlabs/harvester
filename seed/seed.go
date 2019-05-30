@@ -90,7 +90,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			if err != nil {
 				return err
 			}
-			log.Infof("consul value %s applied on filed %s", val, f.Name)
+			log.Infof("consul value %s applied on field %s", *value, f.Name)
 			seedMap[f] = true
 		}
 	}
