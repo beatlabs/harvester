@@ -47,23 +47,38 @@ func TestNew(t *testing.T) {
 }
 
 func TestConfig_Set(t *testing.T) {
+	c := testConfig{
+		Name:    &sync.String{},
+		Age:     &sync.Int64{},
+		Balance: &sync.Float64{},
+		HasJob:  &sync.Bool{},
+	}
+	cfg, err := New(&c)
+	require.NoError(t, err)
+	err = cfg.Set("Name", "John Doe", 1)
+	err = cfg.Set("Age", "18", 1)
+	err = cfg.Set("Balance", "99.9", 1)
+	err = cfg.Set("HasJob", "true", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, "John Doe", c.Name.Get())
+	assert.Equal(t, int64(18), c.Age.Get())
+	assert.Equal(t, 99.9, c.Balance.Get())
+	assert.Equal(t, true, c.HasJob.Get())
+}
+
+func TestConfig_Set_Error(t *testing.T) {
 	type args struct {
 		name  string
 		value string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		args args
 	}{
-		{name: "set name", args: args{name: "Name", value: "John Doe Test"}},
-		{name: "set age", args: args{name: "Age", value: "18"}},
-		// {name: "set balance", args: args{name: "Balance", value: "99.9"}},
-		// {name: "set has job", args: args{name: "HasJob", value: "true"}},
-		// {name: "invalid kind", args: args{name: "HasJob", value: "true"}, wantErr: true},
-		// {name: "invalid int", args: args{name: "Age", value: "XXX"}, wantErr: true},
-		// {name: "invalid float64", args: args{name: "Balance", value: "XXX"}, wantErr: true},
-		// {name: "invalid bool", args: args{name: "HasJob", value: "XXX"}, wantErr: true},
+		{name: "invalid kind", args: args{name: "HasJob", value: "XXX"}},
+		{name: "invalid int", args: args{name: "Age", value: "XXX"}},
+		{name: "invalid float64", args: args{name: "Balance", value: "XXX"}},
+		{name: "invalid bool", args: args{name: "HasJob", value: "XXX"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -76,15 +91,7 @@ func TestConfig_Set(t *testing.T) {
 			cfg, err := New(&c)
 			require.NoError(t, err)
 			err = cfg.Set(tt.args.name, tt.args.value, 1)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, "John Doe Test", c.Name.Get())
-				// assert.Equal(t, 18, c.Age.Get())
-				// assert.Equal(t, 99.9, c.Balance.Get())
-				// assert.True(t, c.HasJob.Get())
-			}
+			assert.Error(t, err)
 		})
 	}
 }
