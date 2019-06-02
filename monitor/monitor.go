@@ -42,7 +42,7 @@ func New(cfg *config.Config, ww ...Watcher) (*Monitor, error) {
 func generateMap(ff []*config.Field) (sourceMap, error) {
 	mp := make(sourceMap)
 	for _, f := range ff {
-		key, ok := f.Sources[config.SourceConsul]
+		key, ok := f.Sources()[config.SourceConsul]
 		if !ok {
 			continue
 		}
@@ -97,11 +97,11 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 			log.Warnf("key %s not found", c.Key())
 			continue
 		}
-		err := m.cfg.Set(fld.Name, c.Value(), c.Version())
+
+		err := fld.Set(c.Value(), c.Version())
 		if err != nil {
-			log.Errorf("failed to set value %s of type %d on field %s from source %s", c.Value, fld.Type, fld.Name, c.Source())
+			log.Errorf("failed to set value %s of type %d on field %s from source %s", c.Value, fld.Type(), fld.Name(), c.Source())
 			continue
 		}
-		fld.Version = c.Version()
 	}
 }

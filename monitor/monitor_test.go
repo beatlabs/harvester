@@ -17,7 +17,7 @@ func TestNew(t *testing.T) {
 	cfg, err := config.New(&testConfig{})
 	require.NoError(t, err)
 	errCfg, err := config.New(&testConfig{})
-	errCfg.Fields[3].Sources[config.SourceConsul] = "/config/balance"
+	errCfg.Fields[3].Sources()[config.SourceConsul] = "/config/balance"
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}}
 	type args struct {

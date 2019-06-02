@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"sync"
 
 	"github.com/taxibeat/harvester/log"
 )
@@ -24,17 +23,68 @@ const (
 
 // Field definition of a config value that can change.
 type Field struct {
-	Name    string
-	Type    string
-	Version uint64
-	Sources map[Source]string
+	name    string
+	tp      string
+	version uint64
+	setter  reflect.Value
+	sources map[Source]string
+}
+
+// Name getter.
+func (f *Field) Name() string {
+	return f.name
+}
+
+// Type getter.
+func (f *Field) Type() string {
+	return f.tp
+}
+
+// Sources getter.
+func (f *Field) Sources() map[Source]string {
+	return f.sources
+}
+
+// Set the value of the field.
+func (f *Field) Set(value string, version uint64) error {
+	if version != 0 && version <= f.version {
+		log.Warnf("version %d is older or same as field's %s version %d", version, f.name, f.version)
+		return nil
+	}
+	var arg interface{}
+	switch f.tp {
+	case "Bool":
+		v, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		arg = v
+	case "String":
+		arg = value
+	case "Int64":
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		arg = v
+	case "Float64":
+		v, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return err
+		}
+		arg = v
+	}
+	rr := f.setter.Call([]reflect.Value{reflect.ValueOf(arg)})
+	if len(rr) > 0 {
+		return fmt.Errorf("the set call returned %d values: %v", len(rr), rr)
+	}
+	f.version = version
+	return nil
 }
 
 // Config manages configuration and handles updates on the values.
 type Config struct {
 	Fields []*Field
-	sync.Mutex
-	cfg reflect.Value
 }
 
 // New creates a new monitor.
@@ -51,58 +101,7 @@ func New(cfg interface{}) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Config{cfg: val, Fields: ff}, nil
-}
-
-// Set the value of a property of the provided config.
-func (c *Config) Set(name, value string, version uint64) error {
-	fld := c.getField(name)
-	if fld == nil {
-		return fmt.Errorf("field %s not found", name)
-	}
-	if version != 0 && version <= fld.Version {
-		log.Warnf("version %d is older or same as field's %s version %d", version, fld.Name, fld.Version)
-		return nil
-	}
-	switch fld.Type {
-	case "Bool":
-		v, err := strconv.ParseBool(value)
-		if err != nil {
-			return err
-		}
-		c.callSetter(name, v)
-	case "String":
-		c.callSetter(name, value)
-	case "Int64":
-		v, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			return err
-		}
-		c.callSetter(name, v)
-	case "Float64":
-		v, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err
-		}
-		c.callSetter(name, v)
-	}
-	return nil
-}
-
-func (c *Config) getField(name string) *Field {
-	for _, f := range c.Fields {
-		if f.Name == name {
-			return f
-		}
-	}
-	return nil
-}
-
-func (c *Config) callSetter(name string, arg interface{}) {
-	rr := c.cfg.FieldByName(name).Addr().MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(arg)})
-	if len(rr) > 0 {
-		log.Warnf("the set call returned %d values: %v", len(rr), rr)
-	}
+	return &Config{Fields: ff}, nil
 }
 
 func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
@@ -114,25 +113,26 @@ func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 			return nil, fmt.Errorf("field %s is not supported(only *Bool, *Int64, *Float64 and *String from the sync package of harvester)", fld.Name)
 		}
 		f := &Field{
-			Name:    fld.Name,
-			Type:    fld.Type.Name(),
-			Version: 0,
-			Sources: make(map[Source]string),
+			name:    fld.Name,
+			tp:      fld.Type.Name(),
+			version: 0,
+			setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
+			sources: make(map[Source]string),
 		}
 		value, ok := fld.Tag.Lookup(string(SourceSeed))
 		if ok {
-			f.Sources[SourceSeed] = value
+			f.sources[SourceSeed] = value
 		}
 		value, ok = fld.Tag.Lookup(string(SourceEnv))
 		if ok {
-			f.Sources[SourceEnv] = value
+			f.sources[SourceEnv] = value
 		}
 		value, ok = fld.Tag.Lookup(string(SourceConsul))
 		if ok {
 			if isKeyValueDuplicate(dup, SourceConsul, value) {
 				return nil, fmt.Errorf("duplicate value %s for source %s", value, SourceConsul)
 			}
-			f.Sources[SourceConsul] = value
+			f.sources[SourceConsul] = value
 		}
 		ff = append(ff, f)
 	}
