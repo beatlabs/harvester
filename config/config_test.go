@@ -12,6 +12,7 @@ func TestField_Set(t *testing.T) {
 	c := testConfig{}
 	cfg, err := New(&c)
 	require.NoError(t, err)
+	cfg.Fields[0].version = 2
 	type args struct {
 		value   string
 		version uint64
@@ -22,13 +23,14 @@ func TestField_Set(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "success String", field: *cfg.Fields[0], args: args{value: "John Doe", version: 1}, wantErr: false},
+		{name: "success String", field: *cfg.Fields[0], args: args{value: "John Doe", version: 3}, wantErr: false},
+		{name: "ignore String with lower version", field: *cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: false},
 		{name: "success Int64", field: *cfg.Fields[1], args: args{value: "18", version: 1}, wantErr: false},
 		{name: "success Float64", field: *cfg.Fields[2], args: args{value: "99.9", version: 1}, wantErr: false},
 		{name: "success Bool", field: *cfg.Fields[3], args: args{value: "true", version: 1}, wantErr: false},
 		{name: "failure Int64", field: *cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
 		{name: "failure Float64", field: *cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
-		{name: "failure Bool", field: *cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
+		{name: "failure Bool", field: *cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},		
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

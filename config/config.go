@@ -30,6 +30,33 @@ type Field struct {
 	sources map[Source]string
 }
 
+// NewField constructor.
+func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
+	if !isTypeSupported(fld.Type) {
+		return nil, fmt.Errorf("field %s is not supported(only *Bool, *Int64, *Float64 and *String from the sync package of harvester)", fld.Name)
+	}
+	f := &Field{
+		name:    fld.Name,
+		tp:      fld.Type.Name(),
+		version: 0,
+		setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
+		sources: make(map[Source]string),
+	}
+	value, ok := fld.Tag.Lookup(string(SourceSeed))
+	if ok {
+		f.sources[SourceSeed] = value
+	}
+	value, ok = fld.Tag.Lookup(string(SourceEnv))
+	if ok {
+		f.sources[SourceEnv] = value
+	}
+	value, ok = fld.Tag.Lookup(string(SourceConsul))
+	if ok {
+		f.sources[SourceConsul] = value
+	}
+	return f, nil
+}
+
 // Name getter.
 func (f *Field) Name() string {
 	return f.name
@@ -108,33 +135,18 @@ func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 	dup := make(map[Source]string)
 	var ff []*Field
 	for i := 0; i < tp.NumField(); i++ {
-		fld := tp.Field(i)
-		if !isTypeSupported(fld.Type) {
-			return nil, fmt.Errorf("field %s is not supported(only *Bool, *Int64, *Float64 and *String from the sync package of harvester)", fld.Name)
+		f := tp.Field(i)
+		fld, err := NewField(&f, val)
+		if err != nil {
+			return nil, err
 		}
-		f := &Field{
-			name:    fld.Name,
-			tp:      fld.Type.Name(),
-			version: 0,
-			setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
-			sources: make(map[Source]string),
-		}
-		value, ok := fld.Tag.Lookup(string(SourceSeed))
-		if ok {
-			f.sources[SourceSeed] = value
-		}
-		value, ok = fld.Tag.Lookup(string(SourceEnv))
-		if ok {
-			f.sources[SourceEnv] = value
-		}
-		value, ok = fld.Tag.Lookup(string(SourceConsul))
+		value, ok := fld.Sources()[SourceConsul]
 		if ok {
 			if isKeyValueDuplicate(dup, SourceConsul, value) {
 				return nil, fmt.Errorf("duplicate value %s for source %s", value, SourceConsul)
 			}
-			f.sources[SourceConsul] = value
 		}
-		ff = append(ff, f)
+		ff = append(ff, fld)
 	}
 	return ff, nil
 }
