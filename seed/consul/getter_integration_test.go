@@ -66,7 +66,7 @@ func TestGetter_Get(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
-				assert.True(t, version >= 0)
+				assert.True(t, version >= uint64(0))
 			}
 		})
 	}
