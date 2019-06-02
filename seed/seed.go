@@ -48,7 +48,8 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
 	for _, f := range cfg.Fields {
 		seedMap[f] = false
-		val, ok := f.Sources()[config.SourceSeed]
+		ss := f.Sources()
+		val, ok := ss[config.SourceSeed]
 		if ok {
 			err := f.Set(val, 0)
 			if err != nil {
@@ -57,7 +58,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			log.Infof("seed value %s applied on field %s", val, f.Name)
 			seedMap[f] = true
 		}
-		key, ok := f.Sources()[config.SourceEnv]
+		key, ok := ss[config.SourceEnv]
 		if ok {
 			val, ok := os.LookupEnv(key)
 			if ok {
@@ -71,7 +72,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				log.Warnf("env var %s did not exist for field %s", key, f.Name)
 			}
 		}
-		key, ok = f.Sources()[config.SourceConsul]
+		key, ok = ss[config.SourceConsul]
 		if ok {
 			gtr, ok := s.getters[config.SourceConsul]
 			if !ok {
