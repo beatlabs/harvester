@@ -30,7 +30,7 @@ func TestField_Set(t *testing.T) {
 		{name: "failure Int64", field: *cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
 		{name: "failure Float64", field: *cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
 		{name: "failure Bool", field: *cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
-		{name: "failure String with lower version", field: *cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: true},
+		{name: "failure String version", field: *cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

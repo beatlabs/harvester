@@ -98,7 +98,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 	sb := strings.Builder{}
 	for f, seeded := range seedMap {
 		if !seeded {
-			sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name()))
+			_, err := sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name()))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if sb.Len() > 0 {

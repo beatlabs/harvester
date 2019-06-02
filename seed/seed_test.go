@@ -69,9 +69,9 @@ func TestSeeder_Seed(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", fields: fields{consulParam: prmSuccess}, args: args{cfg: goodCfg}, wantErr: false},
+		{name: "success", fields: fields{consulParam: prmSuccess}, args: args{cfg: goodCfg}},
 		{name: "consul get nil", args: args{cfg: goodCfg}, wantErr: true},
-		{name: "consul get error but previous seed successful", fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}, wantErr: false},
+		{name: "consul get error, seed successful", fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}},
 		{name: "consul missing value", fields: fields{consulParam: prmSuccess}, args: args{cfg: missingCfg}, wantErr: true},
 		{name: "invalid int", args: args{cfg: invalidIntCfg}, wantErr: true},
 		{name: "invalid float", args: args{cfg: invalidFloatCfg}, wantErr: true},

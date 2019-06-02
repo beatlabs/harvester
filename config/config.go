@@ -31,7 +31,7 @@ type Field struct {
 // NewField constructor.
 func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 	if !isTypeSupported(fld.Type) {
-		return nil, fmt.Errorf("field %s is not supported(only *Bool, *Int64, *Float64 and *String from the sync package of harvester)", fld.Name)
+		return nil, fmt.Errorf("field %s is not supported(only types from the sync package of harvester)", fld.Name)
 	}
 	f := &Field{
 		name:    fld.Name,
