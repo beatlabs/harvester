@@ -15,9 +15,9 @@ The order is applied as it is listed above. Consul seeder and monitor are option
 
 ```go
 type Config struct {
-    Name    string  `seed:"John Doe"`
-    Age     int64   `seed:"18" env:"ENV_AGE"`
-    IsAdmin bool    `seed:"true" env:"ENV_IS_ADMIN" consul:"/config/is-admin"`
+    Name    sync.String  `seed:"John Doe"`
+    Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
+    IsAdmin sync.Bool    `seed:"true" env:"ENV_IS_ADMIN" consul:"/config/is-admin"`
 }
 ```
 
@@ -26,6 +26,13 @@ The above defines the following fields:
 - Name, which will be seeded with the value `John Doe`
 - Age, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_AGE` holds
 - IsAdmin, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_AGE` holds and then from consul if the consul seeder and/or watcher are provided.
+
+The fields have to be on of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
+
+- sync.String, allows for concurrent string manipulation
+- sync.Int64, allows for concurrent int64 manipulation
+- sync.Float64, allows for concurrent float64 manipulation
+- sync.Bool, allows for concurrent bool manipulation
 
 `Harvester` has a seeding phase and an optional monitoring phase.
 
