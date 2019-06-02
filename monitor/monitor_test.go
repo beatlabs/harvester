@@ -99,6 +99,7 @@ func (tw *testWatcher) Watch(ctx context.Context, ch chan<- []*change.Change, ch
 		change.New(config.SourceEnv, "/config/has-job", "false", 1),
 		change.New(config.SourceConsul, "/config/has-job1", "false", 1),
 		change.New(config.SourceConsul, "/config/has-job", "false", 0),
+		change.New(config.SourceConsul, "/config/has-job", "XXX", 2),
 	}
 	return nil
 }
