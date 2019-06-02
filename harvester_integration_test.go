@@ -56,14 +56,14 @@ func Test_harvester_Harvest(t *testing.T) {
 	defer cnl()
 	err = h.Harvest(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, "Mr. Smith", cfg.Name)
-	assert.Equal(t, int64(99), cfg.Age)
-	assert.Equal(t, 111.1, cfg.Balance)
-	assert.Equal(t, false, cfg.HasJob)
+	assert.Equal(t, "Mr. Smith", cfg.Name.Get())
+	assert.Equal(t, int64(99), cfg.Age.Get())
+	assert.Equal(t, 111.1, cfg.Balance.Get())
+	assert.Equal(t, false, cfg.HasJob.Get())
 	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Anderson")}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, "Mr. Anderson", cfg.Name)
+	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
 }
 
 func cleanup() error {

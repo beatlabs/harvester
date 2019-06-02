@@ -60,7 +60,7 @@ func (c *Config) Set(name, value string, version uint64) error {
 	if fld == nil {
 		return fmt.Errorf("field %s not found", name)
 	}
-	if version <= fld.Version {
+	if version != 0 && version <= fld.Version {
 		log.Warnf("version %d is older or same as field's %s version %d", version, fld.Name, fld.Version)
 		return nil
 	}
@@ -99,7 +99,7 @@ func (c *Config) getField(name string) *Field {
 }
 
 func (c *Config) callSetter(name string, arg interface{}) {
-	rr := c.cfg.FieldByName(name).MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(arg)})
+	rr := c.cfg.FieldByName(name).Addr().MethodByName("Set").Call([]reflect.Value{reflect.ValueOf(arg)})
 	if len(rr) > 0 {
 		log.Warnf("the set call returned %d values: %v", len(rr), rr)
 	}
@@ -115,7 +115,7 @@ func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 		}
 		f := &Field{
 			Name:    fld.Name,
-			Type:    fld.Type.Elem().Name(),
+			Type:    fld.Type.Name(),
 			Version: 0,
 			Sources: make(map[Source]string),
 		}
@@ -140,17 +140,13 @@ func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 }
 
 func isTypeSupported(t reflect.Type) bool {
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() != reflect.Struct {
 		return false
 	}
-	s := t.Elem()
-	if s.Kind() != reflect.Struct {
+	if t.PkgPath() != "github.com/taxibeat/harvester/sync" {
 		return false
 	}
-	if s.PkgPath() != "github.com/taxibeat/harvester/sync" {
-		return false
-	}
-	switch s.Name() {
+	switch t.Name() {
 	case "Bool", "Int64", "Float64", "String":
 		return true
 	default:

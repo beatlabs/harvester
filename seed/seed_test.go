@@ -44,6 +44,8 @@ func TestSeeder_Seed(t *testing.T) {
 	c := testConfig{}
 	goodCfg, err := config.New(&c)
 	require.NoError(t, err)
+	prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
+	require.NoError(t, err)
 	invalidIntCfg, err := config.New(&testInvalidInt{})
 	require.NoError(t, err)
 	invalidFloatCfg, err := config.New(&testInvalidFloat{})
@@ -51,8 +53,6 @@ func TestSeeder_Seed(t *testing.T) {
 	invalidBoolCfg, err := config.New(&testInvalidBool{})
 	require.NoError(t, err)
 	missingCfg, err := config.New(&testMissingValue{})
-	require.NoError(t, err)
-	prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
 	require.NoError(t, err)
 	prmError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
 	require.NoError(t, err)

@@ -47,12 +47,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConfig_Set(t *testing.T) {
-	c := testConfig{
-		Name:    &sync.String{},
-		Age:     &sync.Int64{},
-		Balance: &sync.Float64{},
-		HasJob:  &sync.Bool{},
-	}
+	c := testConfig{}
 	cfg, err := New(&c)
 	require.NoError(t, err)
 	err = cfg.Set("Name", "John Doe", 1)
@@ -91,12 +86,7 @@ func TestConfig_Set_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := testConfig{
-				Name:    &sync.String{},
-				Age:     &sync.Int64{},
-				Balance: &sync.Float64{},
-				HasJob:  &sync.Bool{},
-			}
+			c := testConfig{}
 			cfg, err := New(&c)
 			require.NoError(t, err)
 			err = cfg.Set(tt.args.name, tt.args.value, 1)
@@ -113,18 +103,18 @@ func assertField(t *testing.T, fld *Field, name, typ string, sources map[Source]
 }
 
 type testConfig struct {
-	Name    *sync.String  `seed:"John Doe" env:"ENV_NAME"`
-	Age     *sync.Int64   `env:"ENV_AGE" consul:"/config/age"`
-	Balance *sync.Float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
-	HasJob  *sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Name    sync.String  `seed:"John Doe" env:"ENV_NAME"`
+	Age     sync.Int64   `env:"ENV_AGE" consul:"/config/age"`
+	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }
 
 type testInvalidTypeConfig struct {
-	Balance *float32 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	Balance float32 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
 }
 
 type testDuplicateConfig struct {
-	Name *sync.String `seed:"John Doe" env:"ENV_NAME"`
-	Age1 *sync.Int64  `env:"ENV_AGE" consul:"/config/age"`
-	Age2 *sync.Int64  `env:"ENV_AGE" consul:"/config/age"`
+	Name sync.String `seed:"John Doe" env:"ENV_NAME"`
+	Age1 sync.Int64  `env:"ENV_AGE" consul:"/config/age"`
+	Age2 sync.Int64  `env:"ENV_AGE" consul:"/config/age"`
 }
