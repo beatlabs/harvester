@@ -20,7 +20,7 @@ func TestNew(t *testing.T) {
 		{name: "success", args: args{cfg: &testConfig{}}, wantErr: false},
 		{name: "cfg is nil", args: args{cfg: nil}, wantErr: true},
 		{name: "cfg is not pointer", args: args{cfg: testConfig{}}, wantErr: true},
-		{name: "cfg field not supported", args: args{cfg: &testInvalidConfig{}}, wantErr: true},
+		{name: "cfg field not supported", args: args{cfg: &testInvalidTypeConfig{}}, wantErr: true},
 		{name: "cfg duplicate consul key", args: args{cfg: &testDuplicateConfig{}}, wantErr: true},
 	}
 	for _, tt := range tests {
@@ -56,14 +56,23 @@ func TestConfig_Set(t *testing.T) {
 	cfg, err := New(&c)
 	require.NoError(t, err)
 	err = cfg.Set("Name", "John Doe", 1)
+	assert.NoError(t, err)
 	err = cfg.Set("Age", "18", 1)
+	assert.NoError(t, err)
 	err = cfg.Set("Balance", "99.9", 1)
+	assert.NoError(t, err)
 	err = cfg.Set("HasJob", "true", 1)
 	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
 	assert.Equal(t, 99.9, c.Balance.Get())
 	assert.Equal(t, true, c.HasJob.Get())
+
+	err = cfg.Set("XXX", "true", 1)
+	assert.Error(t, err)
+
+	err = cfg.Set("Name", "John Doe", 0)
+	assert.NoError(t, err)
 }
 
 func TestConfig_Set_Error(t *testing.T) {
@@ -110,11 +119,8 @@ type testConfig struct {
 	HasJob  *sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }
 
-type testInvalidConfig struct {
-	Name    *sync.String `seed:"John Doe" env:"ENV_NAME" consul:"/config/name"`
-	Age     *sync.Int64  `seed:"18" env:"ENV_AGE" consul:"/config/age"`
-	Balance float32      `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
-	HasJob  *sync.Bool   `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+type testInvalidTypeConfig struct {
+	Balance *float32 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
 }
 
 type testDuplicateConfig struct {
