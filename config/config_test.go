@@ -1,44 +1,42 @@
 package config
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/taxibeat/harvester/sync"
 )
 
 func TestField_Set(t *testing.T) {
-	type fields struct {
-		name    string
-		Type    string
-		Version uint64
-		Setter  reflect.Value
-		Sources map[Source]string
-	}
+	c := testConfig{}
+	cfg, err := New(&c)
+	require.NoError(t, err)
 	type args struct {
 		value   string
 		version uint64
 	}
 	tests := []struct {
 		name    string
-		fields  fields
+		field   Field
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{name: "success String", field: *cfg.Fields[0], args: args{value: "John Doe", version: 1}, wantErr: false},
+		{name: "success Int64", field: *cfg.Fields[1], args: args{value: "18", version: 1}, wantErr: false},
+		{name: "success Float64", field: *cfg.Fields[2], args: args{value: "99.9", version: 1}, wantErr: false},
+		{name: "success Bool", field: *cfg.Fields[3], args: args{value: "true", version: 1}, wantErr: false},
+		{name: "failure Int64", field: *cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
+		{name: "failure Float64", field: *cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
+		{name: "failure Bool", field: *cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Field{
-				name:    tt.fields.name,
-				tp:      tt.fields.Type,
-				version: tt.fields.Version,
-				setter:  tt.fields.Setter,
-				sources: tt.fields.Sources,
-			}
-			if err := f.Set(tt.args.value, tt.args.version); (err != nil) != tt.wantErr {
-				t.Errorf("Field.Set() error = %v, wantErr %v", err, tt.wantErr)
+			err := tt.field.Set(tt.args.value, tt.args.version)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -82,60 +80,29 @@ func TestNew(t *testing.T) {
 	}
 }
 
-// func TestConfig_Set(t *testing.T) {
-// 	c := testConfig{}
-// 	cfg, err := New(&c)
-// 	require.NoError(t, err)
-// 	err = cfg.Set("Name", "John Doe", 1)
-// 	assert.NoError(t, err)
-// 	err = cfg.Set("Age", "18", 1)
-// 	assert.NoError(t, err)
-// 	err = cfg.Set("Balance", "99.9", 1)
-// 	assert.NoError(t, err)
-// 	err = cfg.Set("HasJob", "true", 1)
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, "John Doe", c.Name.Get())
-// 	assert.Equal(t, int64(18), c.Age.Get())
-// 	assert.Equal(t, 99.9, c.Balance.Get())
-// 	assert.Equal(t, true, c.HasJob.Get())
-
-// 	err = cfg.Set("XXX", "true", 1)
-// 	assert.Error(t, err)
-
-// 	err = cfg.Set("Name", "John Doe", 0)
-// 	assert.NoError(t, err)
-// }
-
-// func TestConfig_Set_Error(t *testing.T) {
-// 	type args struct {
-// 		name  string
-// 		value string
-// 	}
-// 	tests := []struct {
-// 		name string
-// 		args args
-// 	}{
-// 		{name: "invalid kind", args: args{name: "HasJob", value: "XXX"}},
-// 		{name: "invalid int", args: args{name: "Age", value: "XXX"}},
-// 		{name: "invalid float64", args: args{name: "Balance", value: "XXX"}},
-// 		{name: "invalid bool", args: args{name: "HasJob", value: "XXX"}},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			c := testConfig{}
-// 			cfg, err := New(&c)
-// 			require.NoError(t, err)
-// 			err = cfg.Set(tt.args.name, tt.args.value, 1)
-// 			assert.Error(t, err)
-// 		})
-// 	}
-// }
-
 func assertField(t *testing.T, fld *Field, name, typ string, sources map[Source]string) {
 	assert.Equal(t, name, fld.Name())
-	assert.Equal(t, typ, fld.tp)
+	assert.Equal(t, typ, fld.Type())
 	assert.Equal(t, uint64(0), fld.version)
-	assert.Equal(t, sources, fld.sources)
+	assert.Equal(t, sources, fld.Sources())
+}
+
+func TestConfig_Set(t *testing.T) {
+	c := testConfig{}
+	cfg, err := New(&c)
+	require.NoError(t, err)
+	err = cfg.Fields[0].Set("John Doe", 1)
+	assert.NoError(t, err)
+	err = cfg.Fields[1].Set("18", 1)
+	assert.NoError(t, err)
+	err = cfg.Fields[2].Set("99.9", 1)
+	assert.NoError(t, err)
+	err = cfg.Fields[3].Set("true", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, "John Doe", c.Name.Get())
+	assert.Equal(t, int64(18), c.Age.Get())
+	assert.Equal(t, 99.9, c.Balance.Get())
+	assert.Equal(t, true, c.HasJob.Get())
 }
 
 type testConfig struct {
