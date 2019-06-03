@@ -27,6 +27,7 @@ deeplint: fmtcheck
 
 ci: fmtcheck lint	
 	go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
+	export CODECOV_TOKEN="34285c03-89af-4ff3-af0b-c846a6f43244"
 	curl -s https://codecov.io/bash | bash -s
 
 local-k8s-portfwd:
