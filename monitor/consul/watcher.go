@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/config"
+	harvesterlog "github.com/beatlabs/harvester/log"
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
-	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/config"
-	harvesterlog "github.com/taxibeat/harvester/log"
 )
 
 // Item definition.

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/log"
+	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/log"
 )
 
 // Watcher interface definition.
@@ -42,7 +42,7 @@ func New(cfg *config.Config, ww ...Watcher) (*Monitor, error) {
 func generateMap(ff []*config.Field) (sourceMap, error) {
 	mp := make(sourceMap)
 	for _, f := range ff {
-		key, ok := f.Sources[config.SourceConsul]
+		key, ok := f.Sources()[config.SourceConsul]
 		if !ok {
 			continue
 		}
@@ -97,15 +97,12 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 			log.Warnf("key %s not found", c.Key())
 			continue
 		}
-		if fld.Version > c.Version() {
-			log.Warnf("version %d is older than %d", c.Version(), fld.Version)
-			continue
-		}
-		err := m.cfg.Set(fld.Name, c.Value(), fld.Kind)
+
+		err := fld.Set(c.Value(), c.Version())
 		if err != nil {
-			log.Errorf("failed to set value %s of kind %d on field %s from source %s", c.Value, fld.Kind, fld.Name, c.Source())
+			log.Errorf("failed to set value %s of type %d on field %s from source %s",
+				c.Value, fld.Type(), fld.Name(), c.Source())
 			continue
 		}
-		fld.Version = c.Version()
 	}
 }

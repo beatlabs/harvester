@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/beatlabs/harvester/monitor/consul"
+	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
-	"github.com/taxibeat/harvester/monitor/consul"
 )
 
 const (
@@ -55,10 +56,10 @@ func TestCreate_NoConsul(t *testing.T) {
 	defer cnl()
 	err = got.Harvest(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, "John Doe", cfg.Name)
-	assert.Equal(t, int64(18), cfg.Age)
-	assert.Equal(t, 99.9, cfg.Balance)
-	assert.Equal(t, true, cfg.HasJob)
+	assert.Equal(t, "John Doe", cfg.Name.Get())
+	assert.Equal(t, int64(18), cfg.Age.Get())
+	assert.Equal(t, 99.9, cfg.Balance.Get())
+	assert.Equal(t, true, cfg.HasJob.Get())
 }
 
 func TestCreate_SeedError(t *testing.T) {
@@ -73,22 +74,22 @@ func TestCreate_SeedError(t *testing.T) {
 }
 
 type testConfig struct {
-	Name    string  `seed:"John Doe" consul:"harvester1/name"`
-	Age     int64   `seed:"18"  consul:"harvester/age"`
-	Balance float64 `seed:"99.9"  consul:"harvester/balance"`
-	HasJob  bool    `seed:"true"  consul:"harvester/has-job"`
+	Name    sync.String  `seed:"John Doe" consul:"harvester1/name"`
+	Age     sync.Int64   `seed:"18"  consul:"harvester/age"`
+	Balance sync.Float64 `seed:"99.9"  consul:"harvester/balance"`
+	HasJob  sync.Bool    `seed:"true"  consul:"harvester/has-job"`
 }
 
 type testConfigNoConsul struct {
-	Name    string  `seed:"John Doe"`
-	Age     int64   `seed:"18"`
-	Balance float64 `seed:"99.9"`
-	HasJob  bool    `seed:"true"`
+	Name    sync.String  `seed:"John Doe"`
+	Age     sync.Int64   `seed:"18"`
+	Balance sync.Float64 `seed:"99.9"`
+	HasJob  sync.Bool    `seed:"true"`
 }
 
 type testConfigSeedError struct {
-	Name    string  `seed:"John Doe"`
-	Age     int64   `seed:"XXX"`
-	Balance float64 `seed:"99.9"`
-	HasJob  bool    `seed:"true"`
+	Name    sync.String  `seed:"John Doe"`
+	Age     sync.Int64   `seed:"XXX"`
+	Balance sync.Float64 `seed:"99.9"`
+	HasJob  sync.Bool    `seed:"true"`
 }

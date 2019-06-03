@@ -59,13 +59,14 @@ func TestGetter_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gtr, err := New(tt.args.addr, "", "", 0)
 			require.NoError(t, err)
-			got, err := gtr.Get(tt.args.key)
+			got, version, err := gtr.Get(tt.args.key)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
+				assert.True(t, version >= uint64(0))
 			}
 		})
 	}

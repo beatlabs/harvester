@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"sync"
 )
 
 // Source definition.
@@ -22,17 +21,94 @@ const (
 
 // Field definition of a config value that can change.
 type Field struct {
-	Name    string
-	Kind    reflect.Kind
-	Version uint64
-	Sources map[Source]string
+	name    string
+	tp      string
+	version uint64
+	setter  reflect.Value
+	sources map[Source]string
+}
+
+// NewField constructor.
+func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
+	if !isTypeSupported(fld.Type) {
+		return nil, fmt.Errorf("field %s is not supported (only types from the sync package of harvester)", fld.Name)
+	}
+	f := &Field{
+		name:    fld.Name,
+		tp:      fld.Type.Name(),
+		version: 0,
+		setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
+		sources: make(map[Source]string),
+	}
+	value, ok := fld.Tag.Lookup(string(SourceSeed))
+	if ok {
+		f.sources[SourceSeed] = value
+	}
+	value, ok = fld.Tag.Lookup(string(SourceEnv))
+	if ok {
+		f.sources[SourceEnv] = value
+	}
+	value, ok = fld.Tag.Lookup(string(SourceConsul))
+	if ok {
+		f.sources[SourceConsul] = value
+	}
+	return f, nil
+}
+
+// Name getter.
+func (f *Field) Name() string {
+	return f.name
+}
+
+// Type getter.
+func (f *Field) Type() string {
+	return f.tp
+}
+
+// Sources getter.
+func (f *Field) Sources() map[Source]string {
+	return f.sources
+}
+
+// Set the value of the field.
+func (f *Field) Set(value string, version uint64) error {
+	if version != 0 && version <= f.version {
+		return fmt.Errorf("version %d is older or same as the field's %s", version, f.name)
+	}
+	var arg interface{}
+	switch f.tp {
+	case "Bool":
+		v, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		arg = v
+	case "String":
+		arg = value
+	case "Int64":
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		arg = v
+	case "Float64":
+		v, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return err
+		}
+		arg = v
+	}
+	rr := f.setter.Call([]reflect.Value{reflect.ValueOf(arg)})
+	if len(rr) > 0 {
+		return fmt.Errorf("the set call returned %d values: %v", len(rr), rr)
+	}
+	f.version = version
+	return nil
 }
 
 // Config manages configuration and handles updates on the values.
 type Config struct {
 	Fields []*Field
-	sync.Mutex
-	cfg reflect.Value
 }
 
 // New creates a new monitor.
@@ -44,83 +120,43 @@ func New(cfg interface{}) (*Config, error) {
 	if tp.Kind() != reflect.Ptr {
 		return nil, errors.New("configuration should be a pointer type")
 	}
-	ff, err := getFields(tp.Elem())
+	val := reflect.ValueOf(cfg).Elem()
+	ff, err := getFields(tp.Elem(), &val)
 	if err != nil {
 		return nil, err
 	}
-	return &Config{cfg: reflect.ValueOf(cfg).Elem(), Fields: ff}, nil
+	return &Config{Fields: ff}, nil
 }
 
-// Set the value of a property of the provided config.
-func (v *Config) Set(name, value string, kind reflect.Kind) error {
-	v.Lock()
-	defer v.Unlock()
-	f := v.cfg.FieldByName(name)
-	switch kind {
-	case reflect.Bool:
-		b, err := strconv.ParseBool(value)
-		if err != nil {
-			return err
-		}
-		f.SetBool(b)
-	case reflect.String:
-		f.SetString(value)
-	case reflect.Int64:
-		v, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			return err
-		}
-		f.SetInt(v)
-	case reflect.Float64:
-		v, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err
-		}
-		f.SetFloat(v)
-	default:
-		return fmt.Errorf("unsupported kind: %v", kind)
-	}
-	return nil
-}
-
-func getFields(tp reflect.Type) ([]*Field, error) {
+func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 	dup := make(map[Source]string)
 	var ff []*Field
 	for i := 0; i < tp.NumField(); i++ {
-		fld := tp.Field(i)
-		kind := fld.Type.Kind()
-		if !isKindSupported(kind) {
-			return nil, fmt.Errorf("field %s is not supported(only bool, int64, float64 and string)", fld.Name)
+		f := tp.Field(i)
+		fld, err := NewField(&f, val)
+		if err != nil {
+			return nil, err
 		}
-		f := &Field{
-			Name:    fld.Name,
-			Kind:    kind,
-			Version: 0,
-			Sources: make(map[Source]string),
-		}
-		value, ok := fld.Tag.Lookup(string(SourceSeed))
-		if ok {
-			f.Sources[SourceSeed] = value
-		}
-		value, ok = fld.Tag.Lookup(string(SourceEnv))
-		if ok {
-			f.Sources[SourceEnv] = value
-		}
-		value, ok = fld.Tag.Lookup(string(SourceConsul))
+		value, ok := fld.Sources()[SourceConsul]
 		if ok {
 			if isKeyValueDuplicate(dup, SourceConsul, value) {
 				return nil, fmt.Errorf("duplicate value %s for source %s", value, SourceConsul)
 			}
-			f.Sources[SourceConsul] = value
 		}
-		ff = append(ff, f)
+		ff = append(ff, fld)
 	}
 	return ff, nil
 }
 
-func isKindSupported(kind reflect.Kind) bool {
-	switch kind {
-	case reflect.Bool, reflect.Int64, reflect.Float64, reflect.String:
+func isTypeSupported(t reflect.Type) bool {
+	if t.Kind() != reflect.Struct {
+		return false
+	}
+	if t.PkgPath() != "github.com/beatlabs/harvester/sync" {
+		return false
+	}
+	switch t.Name() {
+	case "Bool", "Int64", "Float64", "String":
 		return true
 	default:
 		return false

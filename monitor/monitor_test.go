@@ -6,17 +6,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/config"
 )
 
 func TestNew(t *testing.T) {
 	cfg, err := config.New(&testConfig{})
 	require.NoError(t, err)
 	errCfg, err := config.New(&testConfig{})
-	errCfg.Fields[3].Sources[config.SourceConsul] = "/config/balance"
+	errCfg.Fields[3].Sources()[config.SourceConsul] = "/config/balance"
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}}
 	type args struct {
@@ -71,16 +72,16 @@ func TestMonitor_Monitor(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(100 * time.Millisecond)
 	cnl()
-	assert.Equal(t, int64(25), c.Age)
-	assert.Equal(t, 111.11, c.Balance)
-	assert.Equal(t, false, c.HasJob)
+	assert.Equal(t, int64(25), c.Age.Get())
+	assert.Equal(t, 111.11, c.Balance.Get())
+	assert.Equal(t, false, c.HasJob.Get())
 }
 
 type testConfig struct {
-	Name    string  `seed:"John Doe" env:"ENV_NAME"`
-	Age     int64   `env:"ENV_AGE" consul:"/config/age"`
-	Balance float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
-	HasJob  bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Name    sync.String  `seed:"John Doe" env:"ENV_NAME"`
+	Age     sync.Int64   `env:"ENV_AGE" consul:"/config/age"`
+	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }
 
 type testWatcher struct {
@@ -98,6 +99,7 @@ func (tw *testWatcher) Watch(ctx context.Context, ch chan<- []*change.Change, ch
 		change.New(config.SourceEnv, "/config/has-job", "false", 1),
 		change.New(config.SourceConsul, "/config/has-job1", "false", 1),
 		change.New(config.SourceConsul, "/config/has-job", "false", 0),
+		change.New(config.SourceConsul, "/config/has-job", "XXX", 2),
 	}
 	return nil
 }

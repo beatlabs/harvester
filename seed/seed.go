@@ -6,13 +6,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/log"
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/log"
 )
 
 // Getter interface for fetching a value for a specific key.
 type Getter interface {
-	Get(key string) (*string, error)
+	Get(key string) (*string, uint64, error)
 }
 
 // Param parameters for setting a getter for a specific source.
@@ -48,20 +48,21 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
 	for _, f := range cfg.Fields {
 		seedMap[f] = false
-		val, ok := f.Sources[config.SourceSeed]
+		ss := f.Sources()
+		val, ok := ss[config.SourceSeed]
 		if ok {
-			err := cfg.Set(f.Name, val, f.Kind)
+			err := f.Set(val, 0)
 			if err != nil {
 				return err
 			}
 			log.Infof("seed value %s applied on field %s", val, f.Name)
 			seedMap[f] = true
 		}
-		key, ok := f.Sources[config.SourceEnv]
+		key, ok := ss[config.SourceEnv]
 		if ok {
 			val, ok := os.LookupEnv(key)
 			if ok {
-				err := cfg.Set(f.Name, val, f.Kind)
+				err := f.Set(val, 0)
 				if err != nil {
 					return err
 				}
@@ -71,13 +72,13 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				log.Warnf("env var %s did not exist for field %s", key, f.Name)
 			}
 		}
-		key, ok = f.Sources[config.SourceConsul]
+		key, ok = ss[config.SourceConsul]
 		if ok {
 			gtr, ok := s.getters[config.SourceConsul]
 			if !ok {
 				return errors.New("consul getter required")
 			}
-			value, err := gtr.Get(key)
+			value, version, err := gtr.Get(key)
 			if err != nil {
 				log.Errorf("failed to get consul key %s for field %s: %v", key, f.Name, err)
 				continue
@@ -86,18 +87,21 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				log.Warnf("consul key %s did not exist for field %s", key, f.Name)
 				continue
 			}
-			err = cfg.Set(f.Name, *value, f.Kind)
+			err = f.Set(*value, version)
 			if err != nil {
 				return err
 			}
-			log.Infof("consul value %s applied on filed %s", val, f.Name)
+			log.Infof("consul value %s applied on field %s", *value, f.Name)
 			seedMap[f] = true
 		}
 	}
 	sb := strings.Builder{}
 	for f, seeded := range seedMap {
 		if !seeded {
-			sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name))
+			_, err := sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name()))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if sb.Len() > 0 {
