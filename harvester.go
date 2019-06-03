@@ -11,7 +11,7 @@ import (
 	seedConsul "github.com/beatlabs/harvester/seed/consul"
 )
 
-// Seeder interface for seeding initial values of the configuration.
+// Seeder1 interface for seeding initial values of the configuration.
 type Seeder interface {
 	Seed(cfg *config.Config) error
 }
