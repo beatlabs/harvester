@@ -23,7 +23,6 @@ jobs:
           name: Running linter
           command: |
             sudo chown circleci:circleci /go/bin
-            curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.14.0
             golangci-lint run -E golint --exclude-use-default=false
 
       - run:
