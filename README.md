@@ -96,7 +96,6 @@ Consul has support for versioning (`ModifyIndex`) which allows us to change the 
 
 Will be github issues once we move to thebeatapp organization.
 
-- The code has a data race and cannot be used with safety.
 - The config struct should check for null fields and initialize with default pointer value
 - !!! base64 decode string in value of the kv
 - support codecov for forks by adding environment variable of the project
