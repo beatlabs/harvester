@@ -80,7 +80,7 @@ The `Harvester` builder pattern is used to create a `Harvester` instance. The bu
 - Consul monitor, for setting up monitoring from Consul
 
 ```go
-    h, err := New(cfg).
+    h, err := New(&cfg).
                 WithConsulSeed("address", "dc", "token").
                 WithConsulMonitor("address", "dc", "token", items...).
                 Create()
