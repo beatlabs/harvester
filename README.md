@@ -27,7 +27,7 @@ The above defines the following fields:
 - Age, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_AGE` holds
 - IsAdmin, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_AGE` holds and then from consul if the consul seeder and/or watcher are provided.
 
-The fields have to be on of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
+The fields have to be one of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
 
 - sync.String, allows for concurrent string manipulation
 - sync.Int64, allows for concurrent int64 manipulation
