@@ -18,13 +18,7 @@ jobs:
             unzip "consul_1.4.3_linux_amd64.zip"
             ./consul agent -server -bootstrap-expect 1 -data-dir /tmp/consul -dev -bind=$(hostname -I | awk '{print $1}' | xargs) -http-port 8501 -log-level=err &
             curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.15.0
-
-      - run:
-          name: Running linter
-          command: |
-            sudo chown circleci:circleci /go/bin
-            golangci-lint run -E golint --exclude-use-default=false
-
+      
       - run:
           name: Run CI
           command: |
