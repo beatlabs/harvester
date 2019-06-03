@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/monitor"
-	"github.com/taxibeat/harvester/monitor/consul"
-	"github.com/taxibeat/harvester/seed"
-	seedConsul "github.com/taxibeat/harvester/seed/consul"
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/monitor"
+	"github.com/beatlabs/harvester/monitor/consul"
+	"github.com/beatlabs/harvester/seed"
+	seedConsul "github.com/beatlabs/harvester/seed/consul"
 )
 
 // Seeder interface for seeding initial values of the configuration.

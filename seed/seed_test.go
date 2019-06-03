@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/sync"
 )
 
 func TestNewParam(t *testing.T) {

@@ -152,7 +152,7 @@ func isTypeSupported(t reflect.Type) bool {
 	if t.Kind() != reflect.Struct {
 		return false
 	}
-	if t.PkgPath() != "github.com/taxibeat/harvester/sync" {
+	if t.PkgPath() != "github.com/beatlabs/harvester/sync" {
 		return false
 	}
 	switch t.Name() {

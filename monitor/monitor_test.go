@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/sync"
 )
 
 func TestNew(t *testing.T) {

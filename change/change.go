@@ -1,6 +1,6 @@
 package change
 
-import "github.com/taxibeat/harvester/config"
+import "github.com/beatlabs/harvester/config"
 
 // Change contains all the information of a change.
 type Change struct {

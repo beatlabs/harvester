@@ -3,8 +3,8 @@ package change
 import (
 	"testing"
 
+	"github.com/beatlabs/harvester/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/taxibeat/harvester/config"
 )
 
 func TestChange(t *testing.T) {

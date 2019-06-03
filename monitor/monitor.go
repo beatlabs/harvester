@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/taxibeat/harvester/change"
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/log"
+	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/log"
 )
 
 // Watcher interface definition.

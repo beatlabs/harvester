@@ -3,9 +3,9 @@ package config
 import (
 	"testing"
 
+	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taxibeat/harvester/sync"
 )
 
 func TestField_Set(t *testing.T) {

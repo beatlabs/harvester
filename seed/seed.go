@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/taxibeat/harvester/config"
-	"github.com/taxibeat/harvester/log"
+	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/log"
 )
 
 // Getter interface for fetching a value for a specific key.

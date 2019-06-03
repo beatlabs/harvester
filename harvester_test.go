@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/beatlabs/harvester/monitor/consul"
+	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
-	"github.com/taxibeat/harvester/monitor/consul"
-	"github.com/taxibeat/harvester/sync"
 )
 
 const (
