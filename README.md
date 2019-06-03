@@ -92,20 +92,6 @@ The above snippet set's up a `Harvester` instance with consul seed and monitor.
 
 Consul has support for versioning (`ModifyIndex`) which allows us to change the value only if the version is higher than the one currently.
 
-## Todo
-
-Will be github issues once we move to thebeatapp organization.
-
-- create logo for harvester
-- !!! base64 decode string in value of the kv
-- create examples folder with a service implementation (@d.baltas)
-- Error handling
-  - Logging
-  - return chan error and let the client handle it
-- First beta version
-- Support change events which can be fired (chan with change...)
-- Support nesting (structs...)
-
 ## How to Contribute
 
 See [Contribution Guidelines](CONTRIBUTE.md).
