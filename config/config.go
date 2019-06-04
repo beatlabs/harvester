@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/beatlabs/harvester/log"
 )
 
 // Source definition.
@@ -73,7 +75,8 @@ func (f *Field) Sources() map[Source]string {
 // Set the value of the field.
 func (f *Field) Set(value string, version uint64) error {
 	if version != 0 && version <= f.version {
-		return fmt.Errorf("version %d is older or same as the field's %s", version, f.name)
+		log.Warnf("version %d is older or same as the field's %s", version, f.name)
+		return nil
 	}
 	var arg interface{}
 	switch f.tp {

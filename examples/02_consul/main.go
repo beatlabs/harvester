@@ -3,21 +3,27 @@ package main
 import (
 	"context"
 	"log"
-
-	"github.com/hashicorp/consul/api"
+	"os"
 
 	"github.com/beatlabs/harvester"
+	"github.com/beatlabs/harvester/sync"
+	"github.com/hashicorp/consul/api"
 )
 
 type config struct {
-	Name    string  `seed:"John Doe"`
-	Age     int64   `seed:"18" env:"ENV_AGE"`
-	Balance float64 `seed:"99.9" env:"ENV_CONSUL_VAR" consul:"harvester/example_02/balance"`
+	Name    sync.String  `seed:"John Doe"`
+	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
+	Balance sync.Float64 `seed:"99.9" env:"ENV_CONSUL_VAR" consul:"harvester/example_02/balance"`
 }
 
 func main() {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
+
+	err := os.Setenv("ENV_AGE", "25")
+	if err != nil {
+		log.Fatalf("failed to set env var: %v", err)
+	}
 
 	seedConsulVars()
 
@@ -35,7 +41,7 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config: Name: %s, Age: %d, Balance: %f\n", cfg.Name, cfg.Age, cfg.Balance)
+	log.Printf("Config: Name: %s, Age: %d, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.Balance.Get())
 }
 
 func seedConsulVars() {

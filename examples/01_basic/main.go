@@ -6,11 +6,12 @@ import (
 	"os"
 
 	"github.com/beatlabs/harvester"
+	"github.com/beatlabs/harvester/sync"
 )
 
 type config struct {
-	Name string `seed:"John Doe"`
-	Age  int64  `seed:"18" env:"ENV_AGE"`
+	Name sync.String `seed:"John Doe"`
+	Age  sync.Int64  `seed:"18" env:"ENV_AGE"`
 }
 
 func main() {
@@ -34,5 +35,5 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config : Name: %s, Age: %d\n", cfg.Name, cfg.Age)
+	log.Printf("Config : Name: %s, Age: %d\n", cfg.Name.Get(), cfg.Age.Get())
 }
