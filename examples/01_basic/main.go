@@ -29,9 +29,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create harvester: %v", err)
 	}
-	ctx, cnl := context.WithCancel(context.Background())
-	defer cnl()
-	h.Harvest(ctx)
 
 	err = h.Harvest(ctx)
 	if err != nil {
