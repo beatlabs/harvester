@@ -1,4 +1,4 @@
-## Sign your work
+# Sign your work
 
 The sign-off is a simple line at the end of the explanation for the
 patch, which certifies that you wrote it or otherwise have the right to
@@ -55,6 +55,7 @@ You can add the sign off when creating the git commit via `git commit -s`.
 
 If you want this to be automatic you can set up some aliases:
 
-```
+```bash
 git config --add alias.amend "commit -s --amend"
 git config --add alias.c "commit -s"
+```

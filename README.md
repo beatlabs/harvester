@@ -1,4 +1,4 @@
-# Harvester [![CircleCI](https://circleci.com/gh/thebeatapp/harvester.svg?style=svg)](https://circleci.com/gh/thebeatapp/harvester) [![codecov](https://codecov.io/gh/thebeatapp/harvester/branch/master/graph/badge.svg)](https://codecov.io/gh/thebeatapp/harvester) [![Go Report Card](https://goreportcard.com/badge/github.com/thebeatapp/harvester)](https://goreportcard.com/report/github.com/thebeatapp/harvester) [![GoDoc](https://godoc.org/github.com/thebeatapp/harvester?status.svg)](https://godoc.org/github.com/thebeatapp/harvester) ![GitHub release](https://img.shields.io/github/release/thebeatapp/harvester.svg)
+# Harvester [![CircleCI](https://circleci.com/gh/beatlabs/harvester.svg?style=svg)](https://circleci.com/gh/beatlabs/harvester) [![codecov](https://codecov.io/gh/beatlabs/harvester/branch/master/graph/badge.svg)](https://codecov.io/gh/beatlabs/harvester) [![Go Report Card](https://goreportcard.com/badge/github.com/beatlabs/harvester)](https://goreportcard.com/report/github.com/beatlabs/harvester) [![GoDoc](https://godoc.org/github.com/beatlabs/harvester?status.svg)](https://godoc.org/github.com/beatlabs/harvester) ![GitHub release](https://img.shields.io/github/release/beatlabs/harvester.svg)
 
 `Harvester` is a configuration library which helps setting up and monitoring configuration values in order to dynamically
 reconfigure your application.
@@ -80,7 +80,7 @@ The `Harvester` builder pattern is used to create a `Harvester` instance. The bu
 - Consul monitor, for setting up monitoring from Consul
 
 ```go
-    h, err := New(cfg).
+    h, err := New(&cfg).
                 WithConsulSeed("address", "dc", "token").
                 WithConsulMonitor("address", "dc", "token", items...).
                 Create()
@@ -90,21 +90,7 @@ The above snippet set's up a `Harvester` instance with consul seed and monitor.
 
 ## Consul
 
-Consul has support for versioning (`ModifyIndex`) which allows us to change the value only if the version is higher than the one currently applied.
-
-## Todo
-
-Will be github issues once we move to thebeatapp organization.
-
-- The code has a data race and cannot be used with safety.
-- The config struct should check for null fields and initialize with default pointer value
-- create examples folder with a service implementation (@d.baltas)
-- move to circle-ci
-- Error handling
-  - Logging
-  - return chan error and let the client handle it
-- Support change events which can be fired (chan with change...)
-- Support nesting (structs...)
+Consul has support for versioning (`ModifyIndex`) which allows us to change the value only if the version is higher than the one currently.
 
 ## How to Contribute
 

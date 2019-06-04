@@ -9,7 +9,7 @@ testint: fmtcheck
 	go test ./... -cover -race -tags=integration -count=1
 
 cover: fmtcheck
-	go test ./... -coverprofile cover.out -tags=integration && \
+	go test ./... -race -coverprofile cover.out -tags=integration && \
 	go tool cover -func cover.out && \
 	rm cover.out
 
@@ -27,6 +27,8 @@ deeplint: fmtcheck
 
 ci: fmtcheck lint	
 	go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
+	export CODECOV_TOKEN="34285c03-89af-4ff3-af0b-c846a6f43244"
+	curl -s https://codecov.io/bash | bash -s
 
 local-k8s-portfwd:
 	@sh -c "'$(CURDIR)/scripts/k8s_port_forward_local.sh'"
