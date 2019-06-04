@@ -102,7 +102,6 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			if err != nil {
 				return err
 			}
-			log.Infof("consul value %s applied on %s", value, f.Name)
 		}
 	}
 	if sb.Len() > 0 {
