@@ -13,10 +13,10 @@ A fast way to get consul is the following:
 
     go run examples/01_basic/main.go
 
-    2019/06/04 21:53:56 INFO: seed value John Doe applied on Name
-    2019/06/04 21:53:56 INFO: seed value 18 applied on Age
-    2019/06/04 21:53:56 WARN: env var ENV_AGE did not exist for Age
-    2019/06/04 21:53:56 Config : Name: John Doe, Age: 18
+    2019/06/04 22:07:59 INFO: seed value John Doe applied on Name
+    2019/06/04 22:07:59 INFO: seed value 18 applied on Age
+    2019/06/04 22:07:59 INFO: env var value 25 applied on Age
+    2019/06/04 22:07:59 Config : Name: John Doe, Age: 25
 
 ## 02 Seed values from Consul
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/taxibeat/harvester"
 )
@@ -15,6 +16,12 @@ type config struct {
 func main() {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
+
+	err := os.Setenv("ENV_AGE", "25")
+	if err != nil {
+		log.Fatalf("failed to set env var: %v", err)
+	}
+
 	cfg := config{}
 
 	h, err := harvester.New(&cfg).Create()
