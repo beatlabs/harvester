@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 
-	"github.com/taxibeat/harvester"
+	"github.com/beatlabs/harvester"
 )
 
 type config struct {

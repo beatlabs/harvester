@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/taxibeat/harvester"
+	"github.com/beatlabs/harvester"
 )
 
 type config struct {
