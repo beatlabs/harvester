@@ -55,7 +55,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			if err != nil {
 				return err
 			}
-			log.Infof("seed value %s applied on field %s", val, f.Name)
+			log.Infof("seed value %s applied on field %s", val, f.Name())
 			seedMap[f] = true
 		}
 		key, ok := ss[config.SourceEnv]
@@ -66,10 +66,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				if err != nil {
 					return err
 				}
-				log.Infof("env var value %s applied on field %s", val, f.Name)
+				log.Infof("env var value %s applied on field %s", val, f.Name())
 				seedMap[f] = true
 			} else {
-				log.Warnf("env var %s did not exist for field %s", key, f.Name)
+				log.Warnf("env var %s did not exist for field %s", key, f.Name())
 			}
 		}
 		key, ok = ss[config.SourceConsul]
@@ -80,18 +80,18 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			}
 			value, version, err := gtr.Get(key)
 			if err != nil {
-				log.Errorf("failed to get consul key %s for field %s: %v", key, f.Name, err)
+				log.Errorf("failed to get consul key %s for field %s: %v", key, f.Name(), err)
 				continue
 			}
 			if value == nil {
-				log.Warnf("consul key %s did not exist for field %s", key, f.Name)
+				log.Warnf("consul key %s did not exist for field %s", key, f.Name())
 				continue
 			}
 			err = f.Set(*value, version)
 			if err != nil {
 				return err
 			}
-			log.Infof("consul value %s applied on field %s", *value, f.Name)
+			log.Infof("consul value %s applied on field %s", *value, f.Name())
 			seedMap[f] = true
 		}
 	}
