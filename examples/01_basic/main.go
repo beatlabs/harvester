@@ -2,33 +2,30 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/taxibeat/harvester"
 )
 
-type configAttrs struct {
+type config struct {
 	Name string `seed:"John Doe"`
 	Age  int64  `seed:"18" env:"ENV_AGE"`
 }
 
 func main() {
-	attrs := configAttrs{
-		Name: "Jim",
-	}
-
-	h, err := harvester.New(&attrs).Create()
-	if err != nil {
-		fmt.Printf("Oops, something went wrong creating harvester instance: %v", err)
-	}
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
-	h.Harvest(ctx)
+	cfg := config{}
 
-	printAttrs(attrs)
-}
+	h, err := harvester.New(&cfg).Create()
+	if err != nil {
+		log.Fatalf("failed to create harvester: %v", err)
+	}
 
-func printAttrs(attrs configAttrs) {
-	log.Printf("Attribute State: name: %s, age: %d\n", attrs.Name, attrs.Age)
+	err = h.Harvest(ctx)
+	if err != nil {
+		log.Fatalf("failed to harvest configuration: %v", err)
+	}
+
+	log.Printf("Config : Name: %s, Age: %d\n", cfg.Name, cfg.Age)
 }

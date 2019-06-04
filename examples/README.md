@@ -1,21 +1,44 @@
 # Examples
 
+## Prerequisites
+
+For examples `02_consul` and `03_consul_monitor` we need Consul obviously.
+A fast way to get consul is the following:
+
+    wget https://releases.hashicorp.com/consul/1.4.3/consul_1.4.3_linux_amd64.zip  
+    unzip "consul_1.4.3_linux_amd64.zip"
+    ./consul agent -server -bootstrap-expect 1 -data-dir /tmp/consul -dev -bind=$(hostname -I | awk '{print $1}' | xargs) -http-port 8500
+
 ## 01 Basic usage with env vars
-```
-12:41:20 ➜  harvester git:(examples) ✗  go run examples/01_basic/main.go
-2019/05/26 12:42:40 Attribute State: name: John Doe, age: 18
-12:42:40 ➜  harvester git:(examples) ✗  ENV_AGE=33 go run examples/01_basic/main.go
-2019/05/26 12:42:53 Attribute State: name: John Doe, age: 33
-```
+
+    go run examples/01_basic/main.go
+
+    2019/06/04 21:53:56 INFO: seed value John Doe applied on Name
+    2019/06/04 21:53:56 INFO: seed value 18 applied on Age
+    2019/06/04 21:53:56 WARN: env var ENV_AGE did not exist for Age
+    2019/06/04 21:53:56 Config : Name: John Doe, Age: 18
+
 ## 02 Seed values from Consul
-```
-12:42:53 ➜  harvester git:(examples) ✗  go run examples/02_consul/main.go
-2019/05/26 12:43:45 Attribute State: name: John Doe, age: 18, consulVar: boo
-```
+
+    go run examples/02_consul/main.go
+
+    2019/06/04 22:05:04 INFO: seed value John Doe applied on Name
+    2019/06/04 22:05:04 INFO: seed value 18 applied on Age
+    2019/06/04 22:05:04 WARN: env var ENV_AGE did not exist for Age
+    2019/06/04 22:05:04 INFO: seed value 99.9 applied on Balance
+    2019/06/04 22:05:04 WARN: env var ENV_CONSUL_VAR did not exist for Balance
+    2019/06/04 22:05:04 INFO: consul value 123.45 applied on Balance
+    2019/06/04 22:05:04 Config: Name: John Doe, Age: 18, Balance: 123.450000
+
 ## 03 Monitor Consul for live changes
-```
-12:43:45 ➜  harvester git:(examples) ✗  go run examples/03_consul_monitor/main.go
-2019/05/26 12:44:14 Attribute State: name: John Doe, age: 18, consulVar: bar
-# after changing the consul value
-2019/05/26 12:44:34 Attribute State: name: John Doe, age: 18, consulVar: baz
-```
+
+    go run examples/03_consul_monitor/main.go
+
+    2019/06/04 22:05:32 INFO: seed value John Doe applied on Name
+    2019/06/04 22:05:32 INFO: seed value 18 applied on Age
+    2019/06/04 22:05:32 WARN: env var ENV_AGE did not exist for Age
+    2019/06/04 22:05:32 INFO: seed value 99.9 applied on Balance
+    2019/06/04 22:05:32 WARN: env var ENV_CONSUL_VAR did not exist for Balance
+    2019/06/04 22:05:32 INFO: consul value 123.45 applied on Balance
+    2019/06/04 22:05:32 Config: Name: John Doe, Age: 18, Balance: 123.450000
+    2019/06/04 22:05:34 Config: Name: John Doe, Age: 18, Balance: 999.990000

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -12,59 +11,52 @@ import (
 	"github.com/taxibeat/harvester/monitor/consul"
 )
 
-type configAttrs struct {
-	Name      string `seed:"John Doe"`
-	Age       int64  `seed:"18" env:"ENV_AGE"`
-	ConsulVar string `seed:"b" env:"ENV_CONSUL_VAR" consul:"/harvester/example_03/consul_var"`
+type config struct {
+	Name    string  `seed:"John Doe"`
+	Age     int64   `seed:"18" env:"ENV_AGE"`
+	Balance float64 `seed:"99.9" env:"ENV_CONSUL_VAR" consul:"harvester/example_03/balance"`
 }
 
 func main() {
-	consulConfig := api.DefaultConfig()
-	consulConfig.Token = "token"
-
-	seedConsulVars(consulConfig, "bar")
-
-	attrs := configAttrs{}
-
-	ii := []consul.Item{consul.NewKeyItem("/harvester/example_03/consul_var"), consul.NewPrefixItem("")}
-
-	h, err := harvester.New(&attrs).
-		WithConsulSeed(consulConfig.Address, consulConfig.Datacenter, consulConfig.Token, 0).
-		WithConsulMonitor(consulConfig.Address, consulConfig.Datacenter, consulConfig.Token, 0, ii...).
-		Create()
-	if err != nil {
-		fmt.Printf("Oops, something went wrong creating harvester instance: %v", err)
-	}
-
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
-	h.Harvest(ctx)
 
-	printAttrs(attrs)
+	seedConsulBalance("123.45")
 
-	time.Sleep(5 * time.Second)
-	seedConsulVars(consulConfig, "baz")
+	cfg := config{}
 
-	time.Sleep(5 * time.Second)
-	printAttrs(attrs)
+	ii := []consul.Item{consul.NewKeyItem("harvester/example_03/balance")}
+
+	h, err := harvester.New(&cfg).
+		WithConsulSeed("127.0.0.1:8500", "", "", 0).
+		WithConsulMonitor("127.0.0.1:8500", "", "", 0, ii...).
+		Create()
+	if err != nil {
+		log.Fatalf("failed to create harvester: %v", err)
+	}
+
+	err = h.Harvest(ctx)
+	if err != nil {
+		log.Fatalf("failed to harvest configuration: %v", err)
+	}
+
+	log.Printf("Config: Name: %s, Age: %d, Balance: %f\n", cfg.Name, cfg.Age, cfg.Balance)
+
+	time.Sleep(time.Second)
+	seedConsulBalance("999.99")
+
+	time.Sleep(time.Second)
+	log.Printf("Config: Name: %s, Age: %d, Balance: %f\n", cfg.Name, cfg.Age, cfg.Balance)
 }
 
-func seedConsulVars(consulConfig *api.Config, consulVarValue string) {
-	consulClient, err := api.NewClient(consulConfig)
+func seedConsulBalance(balance string) {
+	cl, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create consul client: %v", err)
 	}
-	// Get a handle to the KV API
-	kv := consulClient.KV()
-
-	// PUT a new KV pair
-	p := &api.KVPair{Key: "harvester/example_03/consul_var", Value: []byte(consulVarValue)}
-	_, err = kv.Put(p, nil)
+	p := &api.KVPair{Key: "harvester/example_03/balance", Value: []byte(balance)}
+	_, err = cl.KV().Put(p, nil)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to put key value pair to consul: %v", err)
 	}
-}
-
-func printAttrs(attrs configAttrs) {
-	log.Printf("Attribute State: name: %s, age: %d, consulVar: %s\n", attrs.Name, attrs.Age, attrs.ConsulVar)
 }
