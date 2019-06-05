@@ -43,13 +43,12 @@ func TestMain(m *testing.M) {
 
 func TestWatch(t *testing.T) {
 	ch := make(chan []*change.Change)
-	chErr := make(chan error)
 	w, err := New(addr, "", "", 0, NewKeyItem("key1"), NewPrefixItem("prefix1"))
 	require.NoError(t, err)
 	require.NotNil(t, w)
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
-	err = w.Watch(ctx, ch, chErr)
+	err = w.Watch(ctx, ch)
 	require.NoError(t, err)
 
 	for i := 0; i < 2; i++ {

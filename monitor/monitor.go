@@ -12,7 +12,7 @@ import (
 
 // Watcher interface definition.
 type Watcher interface {
-	Watch(ctx context.Context, ch chan<- []*change.Change, chErr chan<- error) error
+	Watch(ctx context.Context, ch chan<- []*change.Change) error
 }
 
 type sourceMap map[config.Source]map[string]*config.Field
@@ -61,12 +61,12 @@ func generateMap(ff []*config.Field) (sourceMap, error) {
 }
 
 // Monitor configuration changes by starting watchers per source.
-func (m *Monitor) Monitor(ctx context.Context, chErr chan<- error) error {
+func (m *Monitor) Monitor(ctx context.Context) error {
 	ch := make(chan []*change.Change)
 	go m.monitor(ctx, ch)
 
 	for _, w := range m.ww {
-		err := w.Watch(ctx, ch, chErr)
+		err := w.Watch(ctx, ch)
 		if err != nil {
 			return err
 		}

@@ -54,8 +54,7 @@ func TestMonitor_Monitor_Error(t *testing.T) {
 	watchers := []Watcher{&testWatcher{}, &testWatcher{err: true}}
 	mon, err := New(cfg, watchers...)
 	require.NoError(t, err)
-	chErr := make(chan error)
-	err = mon.Monitor(context.Background(), chErr)
+	err = mon.Monitor(context.Background())
 	assert.Error(t, err)
 }
 
@@ -66,9 +65,8 @@ func TestMonitor_Monitor(t *testing.T) {
 	watchers := []Watcher{&testWatcher{}}
 	mon, err := New(cfg, watchers...)
 	require.NoError(t, err)
-	chErr := make(chan error)
 	ctx, cnl := context.WithCancel(context.Background())
-	err = mon.Monitor(ctx, chErr)
+	err = mon.Monitor(ctx)
 	assert.NoError(t, err)
 	time.Sleep(100 * time.Millisecond)
 	cnl()
@@ -88,7 +86,7 @@ type testWatcher struct {
 	err bool
 }
 
-func (tw *testWatcher) Watch(ctx context.Context, ch chan<- []*change.Change, chErr chan<- error) error {
+func (tw *testWatcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 	if tw.err {
 		return errors.New("TEST")
 	}

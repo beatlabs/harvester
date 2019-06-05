@@ -44,7 +44,6 @@ func TestNew(t *testing.T) {
 func TestWatcher_Watch(t *testing.T) {
 	w, err := New("xxx", "", "", 0, Item{})
 	require.NoError(t, err)
-	chErr := make(chan error)
 	type args struct {
 		ctx context.Context
 		ch  chan<- []*change.Change
@@ -59,7 +58,7 @@ func TestWatcher_Watch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err = w.Watch(tt.args.ctx, tt.args.ch, chErr)
+			err = w.Watch(tt.args.ctx, tt.args.ch)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
