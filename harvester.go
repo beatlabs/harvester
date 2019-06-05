@@ -30,7 +30,6 @@ type harvester struct {
 	cfg     *config.Config
 	seeder  Seeder
 	monitor Monitor
-	chErr   chan<- error
 }
 
 // Harvest take the configuration object, initializes it and monitors for changes.
@@ -104,16 +103,15 @@ func (b *Builder) Create() (Harvester, error) {
 	if b.err != nil {
 		return nil, b.err
 	}
-	chErr := make(chan<- error)
 	seed := seed.New(b.seedParams...)
 
 	var mon Monitor
 	if len(b.watchers) == 0 {
-		return &harvester{seeder: seed, chErr: chErr, cfg: b.cfg}, nil
+		return &harvester{seeder: seed, cfg: b.cfg}, nil
 	}
 	mon, err := monitor.New(b.cfg, b.watchers...)
 	if err != nil {
 		return nil, err
 	}
-	return &harvester{seeder: seed, monitor: mon, chErr: chErr, cfg: b.cfg}, nil
+	return &harvester{seeder: seed, monitor: mon, cfg: b.cfg}, nil
 }
