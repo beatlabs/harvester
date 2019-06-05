@@ -18,7 +18,7 @@ type Seeder interface {
 
 // Monitor defines a interface for monitoring configuration changes from various sources.
 type Monitor interface {
-	Monitor(ctx context.Context, chErr chan<- error) error
+	Monitor(ctx context.Context) error
 }
 
 // Harvester interface.
@@ -42,7 +42,7 @@ func (h *harvester) Harvest(ctx context.Context) error {
 	if h.monitor == nil {
 		return nil
 	}
-	return h.monitor.Monitor(ctx, h.chErr)
+	return h.monitor.Monitor(ctx)
 }
 
 // Builder of a harvester instance.
