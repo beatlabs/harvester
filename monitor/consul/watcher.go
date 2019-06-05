@@ -120,13 +120,9 @@ func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change, chErr ch
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
 		pair, ok := data.(*api.KVPair)
-		if !ok {
-			if chErr != nil {
-				chErr <- err
-			}
-			harvesterlog.Errorf("data is not kv pair: %v", data)
+		if ok {
+			ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
 		}
-		ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
 	}
 	return pl, nil
 }
@@ -138,17 +134,13 @@ func (w *Watcher) runPrefixWatcher(key string, ch chan<- []*change.Change, chErr
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
 		pp, ok := data.(api.KVPairs)
-		if !ok {
-			if chErr != nil {
-				chErr <- err
+		if ok {
+			cc := make([]*change.Change, len(pp))
+			for i := 0; i < len(pp); i++ {
+				cc[i] = change.New(config.SourceConsul, pp[i].Key, string(pp[i].Value), pp[i].ModifyIndex)
 			}
-			harvesterlog.Errorf("data is not kv pairs: %v", data)
+			ch <- cc
 		}
-		cc := make([]*change.Change, len(pp))
-		for i := 0; i < len(pp); i++ {
-			cc[i] = change.New(config.SourceConsul, pp[i].Key, string(pp[i].Value), pp[i].ModifyIndex)
-		}
-		ch <- cc
 	}
 	return pl, nil
 }
