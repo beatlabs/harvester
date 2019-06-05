@@ -100,8 +100,8 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 
 		err := fld.Set(c.Value(), c.Version())
 		if err != nil {
-			log.Errorf("failed to set value %s of type %d on field %s from source %s",
-				c.Value, fld.Type(), fld.Name(), c.Source())
+			log.Errorf("failed to set value %s of type %s on field %s from source %s",
+				c.Value(), fld.Type(), fld.Name(), c.Source())
 			continue
 		}
 	}
