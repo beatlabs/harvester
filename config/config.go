@@ -106,6 +106,7 @@ func (f *Field) Set(value string, version uint64) error {
 		return fmt.Errorf("the set call returned %d values: %v", len(rr), rr)
 	}
 	f.version = version
+	log.Infof("field %s updated with value %s, version: %d", f.name, value, version)
 	return nil
 }
 

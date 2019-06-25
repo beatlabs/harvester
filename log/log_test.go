@@ -2,7 +2,9 @@ package log
 
 import (
 	"bytes"
+	"io"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,11 +21,13 @@ func TestLog(t *testing.T) {
 	buf.Reset()
 	Errorf("Test %s", "logging")
 	assert.Contains(t, buf.String(), "ERROR: Test logging")
+	assert.Equal(t, os.Stdout, Writer())
 }
 
 func TestSetupLogging(t *testing.T) {
 	stubLogf := func(string, ...interface{}) {}
 	type args struct {
+		writer io.Writer
 		infof  Func
 		warnf  Func
 		errorf Func
@@ -33,14 +37,15 @@ func TestSetupLogging(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", args: args{infof: stubLogf, warnf: stubLogf, errorf: stubLogf}, wantErr: false},
-		{name: "missing info", args: args{infof: nil, warnf: stubLogf, errorf: stubLogf}, wantErr: true},
-		{name: "missing warn", args: args{infof: stubLogf, warnf: nil, errorf: stubLogf}, wantErr: true},
-		{name: "missing error", args: args{infof: stubLogf, warnf: stubLogf, errorf: nil}, wantErr: true},
+		{name: "success", args: args{writer: os.Stdin, infof: stubLogf, warnf: stubLogf, errorf: stubLogf}, wantErr: false},
+		{name: "missing writer", args: args{writer: nil, infof: stubLogf, warnf: stubLogf, errorf: stubLogf}, wantErr: true},
+		{name: "missing info", args: args{writer: os.Stdin, infof: nil, warnf: stubLogf, errorf: stubLogf}, wantErr: true},
+		{name: "missing warn", args: args{writer: os.Stdin, infof: stubLogf, warnf: nil, errorf: stubLogf}, wantErr: true},
+		{name: "missing error", args: args{writer: os.Stdin, infof: stubLogf, warnf: stubLogf, errorf: nil}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Setup(tt.args.infof, tt.args.warnf, tt.args.errorf)
+			err := Setup(tt.args.writer, tt.args.infof, tt.args.warnf, tt.args.errorf)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

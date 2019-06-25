@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"os"
 	"time"
 
 	"github.com/beatlabs/harvester/change"
@@ -88,12 +87,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		}
 		w.pp = append(w.pp, pl)
 		go func(tp, key string) {
-			//TODO: Logger...
-			output := pl.LogOutput
-			if output == nil {
-				output = os.Stderr
-			}
-			logger := log.New(output, "", log.LstdFlags)
+			logger := log.New(harvesterlog.Writer(), "", 0)
 			err := pl.RunWithClientAndLogger(w.cl, logger)
 			if err != nil {
 				harvesterlog.Errorf("plan %s of type %s failed: %v", tp, key, err)
