@@ -78,9 +78,9 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		var err error
 		switch i.tp {
 		case "key":
-			pl, err = w.runKeyWatcher(i.key, ch)
+			pl, err = w.createKeyPlan(i.key, ch)
 		case "keyprefix":
-			pl, err = w.runPrefixWatcher(i.key, ch)
+			pl, err = w.createKeyPrefixPlan(i.key, ch)
 		}
 		if err != nil {
 			return err
@@ -91,6 +91,8 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 			err := pl.RunWithClientAndLogger(w.cl, logger)
 			if err != nil {
 				harvesterlog.Errorf("plan %s of type %s failed: %v", tp, key, err)
+			} else {
+				harvesterlog.Infof("plan %s of type %s is running", tp, key)
 			}
 		}(i.tp, i.key)
 	}
@@ -99,12 +101,13 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		for _, pl := range w.pp {
 			pl.Stop()
 		}
+		harvesterlog.Infof("all watch plans have been stopped")
 	}()
 
 	return nil
 }
 
-func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change) (*watch.Plan, error) {
+func (w *Watcher) createKeyPlan(key string, ch chan<- []*change.Change) (*watch.Plan, error) {
 	pl, err := w.getPlan("key", key)
 	if err != nil {
 		return nil, err
@@ -117,11 +120,12 @@ func (w *Watcher) runKeyWatcher(key string, ch chan<- []*change.Change) (*watch.
 			ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
 		}
 	}
+	harvesterlog.Infof("plan for key %s created", key)
 	return pl, nil
 }
 
-func (w *Watcher) runPrefixWatcher(key string, ch chan<- []*change.Change) (*watch.Plan, error) {
-	pl, err := w.getPlan("keyprefix", key)
+func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
+	pl, err := w.getPlan("keyprefix", keyPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +141,7 @@ func (w *Watcher) runPrefixWatcher(key string, ch chan<- []*change.Change) (*wat
 			ch <- cc
 		}
 	}
+	harvesterlog.Infof("plan for keyprefix %s created", keyPrefix)
 	return pl, nil
 }
 
