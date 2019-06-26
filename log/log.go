@@ -2,7 +2,9 @@ package log
 
 import (
 	"errors"
+	"io"
 	"log"
+	"os"
 )
 
 // Func function definition.
@@ -18,10 +20,11 @@ var (
 	errorf = func(format string, v ...interface{}) {
 		log.Printf("ERROR: "+format, v...)
 	}
+	writer io.Writer = os.Stdout
 )
 
 // Setup allows for setting up custom loggers.
-func Setup(inf, waf, erf Func) error {
+func Setup(wr io.Writer, inf, waf, erf Func) error {
 	if inf == nil {
 		return errors.New("info log function is nil")
 	}
@@ -31,10 +34,19 @@ func Setup(inf, waf, erf Func) error {
 	if erf == nil {
 		return errors.New("error log function is nil")
 	}
+	if wr == nil {
+		return errors.New("writer is nil")
+	}
 	infof = inf
 	warnf = waf
 	errorf = erf
+	writer = wr
 	return nil
+}
+
+// Writer returns the loggers writer interface.
+func Writer() io.Writer {
+	return writer
 }
 
 // Infof provides log info capabilities.

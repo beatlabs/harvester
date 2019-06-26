@@ -66,11 +66,11 @@ func New(cfg interface{}) *Builder {
 }
 
 // WithConsulSeed enables support for seeding values with consul.
-func (b *Builder) WithConsulSeed(addr, datacenter, token string, timeout time.Duration) *Builder {
+func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
-	getter, err := seedConsul.New(addr, datacenter, token, timeout)
+	getter, err := seedConsul.New(addr, dataCenter, token, timeout)
 	if err != nil {
 		b.err = err
 		return b
@@ -103,15 +103,15 @@ func (b *Builder) Create() (Harvester, error) {
 	if b.err != nil {
 		return nil, b.err
 	}
-	seed := seed.New(b.seedParams...)
+	sd := seed.New(b.seedParams...)
 
 	var mon Monitor
 	if len(b.watchers) == 0 {
-		return &harvester{seeder: seed, cfg: b.cfg}, nil
+		return &harvester{seeder: sd, cfg: b.cfg}, nil
 	}
 	mon, err := monitor.New(b.cfg, b.watchers...)
 	if err != nil {
 		return nil, err
 	}
-	return &harvester{seeder: seed, monitor: mon, cfg: b.cfg}, nil
+	return &harvester{seeder: sd, monitor: mon, cfg: b.cfg}, nil
 }
