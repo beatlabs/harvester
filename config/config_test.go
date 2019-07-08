@@ -70,9 +70,9 @@ func TestNew(t *testing.T) {
 				assert.NotNil(t, got)
 				assert.Len(t, got.Fields, 4)
 				assertField(t, got.Fields[0], "Name", "String",
-					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME"})
+					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME", SourceFlag: "name"})
 				assertField(t, got.Fields[1], "Age", "Int64",
-					map[Source]string{SourceEnv: "ENV_AGE", SourceConsul: "/config/age"})
+					map[Source]string{SourceEnv: "ENV_AGE", SourceConsul: "/config/age", SourceFlag: "age"})
 				assertField(t, got.Fields[2], "Balance", "Float64",
 					map[Source]string{SourceSeed: "99.9", SourceEnv: "ENV_BALANCE", SourceConsul: "/config/balance"})
 				assertField(t, got.Fields[3], "HasJob", "Bool",
@@ -108,8 +108,8 @@ func TestConfig_Set(t *testing.T) {
 }
 
 type testConfig struct {
-	Name    sync.String  `seed:"John Doe" env:"ENV_NAME"`
-	Age     sync.Int64   `env:"ENV_AGE" consul:"/config/age"`
+	Name    sync.String  `seed:"John Doe" env:"ENV_NAME" flag:"name"`
+	Age     sync.Int64   `env:"ENV_AGE" flag:"age" consul:"/config/age"`
 	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
 	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }

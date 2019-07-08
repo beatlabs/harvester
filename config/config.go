@@ -17,6 +17,8 @@ const (
 	SourceSeed Source = "seed"
 	// SourceEnv defines a value from environment variables.
 	SourceEnv Source = "env"
+	// SourceFlag defines a value from a flag.
+	SourceFlag Source = "flag"
 	// SourceConsul defines a value from consul.
 	SourceConsul Source = "consul"
 )
@@ -49,6 +51,10 @@ func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 	value, ok = fld.Tag.Lookup(string(SourceEnv))
 	if ok {
 		f.sources[SourceEnv] = value
+	}
+	value, ok = fld.Tag.Lookup(string(SourceFlag))
+	if ok {
+		f.sources[SourceFlag] = value
 	}
 	value, ok = fld.Tag.Lookup(string(SourceConsul))
 	if ok {
