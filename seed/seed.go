@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"flag"
 	"errors"
 	"fmt"
 	"os"
@@ -46,6 +47,13 @@ func New(pp ...Param) *Seeder {
 // Seed the provided config with values for their sources.
 func (s *Seeder) Seed(cfg *config.Config) error {
 	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
+	flagset := flag.NewFlagSet("Harvester flags", flag.ContinueOnError)
+	type flagInfo struct {
+		key   string
+		field *config.Field
+		value *string
+	}
+	var flagInfos []*flagInfo
 	for _, f := range cfg.Fields {
 		seedMap[f] = false
 		ss := f.Sources()
@@ -94,7 +102,42 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			log.Infof("consul value %s applied on field %s", *value, f.Name())
 			seedMap[f] = true
 		}
+		key, ok = ss[config.SourceFlag]
+		if ok {
+			var val string
+			flagset.StringVar(&val, key, "", "")
+			flagInfos = append(flagInfos, &flagInfo{key, f, &val})
+		}
 	}
+	
+	if len(flagInfos) > 0 {
+		if !flagset.Parsed() {
+			if err := flagset.Parse(os.Args[1:]); err != nil {
+				log.Errorf("could not parse flagset: %v", err)
+				return err
+			}
+		}
+		for _, flagInfo := range flagInfos {
+			hasFlag := false
+			flagset.Visit(func(f *flag.Flag) {
+				if f.Name == flagInfo.key {
+					hasFlag = true
+					return
+				}
+			})
+			if hasFlag && flagInfo.value != nil {
+				err := flagInfo.field.Set(*flagInfo.value, 0)
+				if err != nil {
+					return err
+				}
+				log.Infof("flag value %s applied on field %s", *flagInfo.value, flagInfo.field.Name())
+				seedMap[flagInfo.field] = true
+			} else {
+				log.Warnf("flag var %s did not exist for field %s", flagInfo.key, flagInfo.field.Name())
+			}
+		}
+	}
+
 	sb := strings.Builder{}
 	for f, seeded := range seedMap {
 		if !seeded {
