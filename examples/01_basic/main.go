@@ -12,7 +12,7 @@ import (
 type config struct {
 	Name sync.String `seed:"John Doe"`
 	Age  sync.Int64  `seed:"18" env:"ENV_AGE"`
-	City sync.String  `seed:"London" flag:"city"`
+	City sync.String `seed:"London" flag:"city"`
 }
 
 func main() {
