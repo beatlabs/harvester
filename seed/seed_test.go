@@ -39,32 +39,25 @@ func TestNewParam(t *testing.T) {
 }
 
 type flagConfig interface {
-	GetAge() sync.Int64
+	GetAge() *sync.Int64
 }
 
 type configWithSeedStruct struct {
 	Age sync.Int64 `seed:"42" flag:"age"`
 }
 
-func (c configWithSeedStruct) GetAge() sync.Int64 { return c.Age }
+func (c *configWithSeedStruct) GetAge() *sync.Int64 { return &c.Age }
 
 type configWithoutSeedStruct struct {
 	Age sync.Int64 `flag:"age"`
 }
 
-func (c configWithoutSeedStruct) GetAge() sync.Int64 { return c.Age }
+func (c *configWithoutSeedStruct) GetAge() *sync.Int64 { return &c.Age }
 
 func TestSeeder_Seed_Flags(t *testing.T) {
-	// configWithSeed, err := config.New(&configWithSeedStruct{})
-	// require.NoError(t, err)
-	// configWithoutSeed, err := config.New(&configWithoutSeedStruct{})
-	// require.NoError(t, err)
-
 	// Each test can alter os.Args, so we need to reset it manually with their original value.
 	originalArgs := []string{}
-	for _, arg := range os.Args {
-		originalArgs = append(originalArgs, arg)
-	}
+	originalArgs = append(originalArgs, os.Args...)
 
 	testCases := []struct {
 		desc         string
@@ -126,9 +119,7 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			os.Args = originalArgs
-			for _, extraCliArg := range tC.extraCliArgs {
-				os.Args = append(os.Args, extraCliArg)
-			}
+			os.Args = append(os.Args, tC.extraCliArgs...)
 
 			seeder := New()
 			cfg, err := config.New(tC.inputConfig)
