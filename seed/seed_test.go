@@ -38,9 +38,118 @@ func TestNewParam(t *testing.T) {
 	}
 }
 
+type flagConfig interface {
+	GetAge() sync.Int64
+}
+
+type configWithSeedStruct struct {
+	Age sync.Int64 `seed:"42" flag:"age"`
+}
+
+func (c configWithSeedStruct) GetAge() sync.Int64 { return c.Age }
+
+type configWithoutSeedStruct struct {
+	Age sync.Int64 `flag:"age"`
+}
+
+func (c configWithoutSeedStruct) GetAge() sync.Int64 { return c.Age }
+
+func TestSeeder_Seed_Flags(t *testing.T) {
+	// configWithSeed, err := config.New(&configWithSeedStruct{})
+	// require.NoError(t, err)
+	// configWithoutSeed, err := config.New(&configWithoutSeedStruct{})
+	// require.NoError(t, err)
+
+	// Each test can alter os.Args, so we need to reset it manually with their original value.
+	originalArgs := []string{}
+	for _, arg := range os.Args {
+		originalArgs = append(originalArgs, arg)
+	}
+
+	testCases := []struct {
+		desc         string
+		inputConfig  flagConfig
+		extraCliArgs []string
+		expectedAge  int64
+		expectedErr  error
+	}{
+		{
+			desc:         "seed with an unexpected flag",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{"-foo=bar"},
+			expectedAge:  42,
+			expectedErr:  nil,
+		},
+		{
+			desc:         "seed with a default value",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{},
+			expectedAge:  42,
+			expectedErr:  nil,
+		},
+		{
+			desc:         "override seed default value",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{"-age=1337"},
+			expectedAge:  1337,
+			expectedErr:  nil,
+		},
+		{
+			desc:         "override seed default value with a non-compatible value",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{"-age=something"},
+			expectedAge:  0,
+			expectedErr:  errors.New(`strconv.ParseInt: parsing "something": invalid syntax`),
+		},
+		{
+			desc:         "missing CLI flag without a default seed",
+			inputConfig:  &configWithoutSeedStruct{},
+			extraCliArgs: []string{},
+			expectedAge:  0,
+			expectedErr:  errors.New("field Age not seeded"),
+		},
+		{
+			desc:         "set flag value without default seed",
+			inputConfig:  &configWithoutSeedStruct{},
+			extraCliArgs: []string{"-age=42"},
+			expectedAge:  42,
+			expectedErr:  nil,
+		},
+		{
+			desc:         "additional flags passed to the CLI",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{"-foo=bar"},
+			expectedAge:  42,
+			expectedErr:  nil,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			os.Args = originalArgs
+			for _, extraCliArg := range tC.extraCliArgs {
+				os.Args = append(os.Args, extraCliArg)
+			}
+
+			seeder := New()
+			cfg, err := config.New(tC.inputConfig)
+			require.NoError(t, err)
+			err = seeder.Seed(cfg)
+
+			if tC.expectedErr != nil {
+				assert.EqualError(t, err, tC.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+				actualAge := tC.inputConfig.GetAge()
+				assert.Equal(t, tC.expectedAge, actualAge.Get())
+			}
+		})
+	}
+}
+
 func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_XXX", "XXX"))
 	require.NoError(t, os.Setenv("ENV_AGE", "25"))
+
 	c := testConfig{}
 	goodCfg, err := config.New(&c)
 	require.NoError(t, err)
@@ -85,6 +194,7 @@ func TestSeeder_Seed(t *testing.T) {
 			} else {
 				s = New(*tt.fields.consulParam)
 			}
+
 			err := s.Seed(tt.args.cfg)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -102,6 +212,7 @@ func TestSeeder_Seed(t *testing.T) {
 type testConfig struct {
 	Name    sync.String  `seed:"John Doe"`
 	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
+	City    sync.String  `seed:"London" flag:"city"`
 	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE"`
 	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 }

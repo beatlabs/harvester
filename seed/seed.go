@@ -1,9 +1,10 @@
 package seed
 
 import (
-	"flag"
 	"errors"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -109,12 +110,21 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			flagInfos = append(flagInfos, &flagInfo{key, f, &val})
 		}
 	}
-	
+
 	if len(flagInfos) > 0 {
 		if !flagset.Parsed() {
-			if err := flagset.Parse(os.Args[1:]); err != nil {
-				log.Errorf("could not parse flagset: %v", err)
-				return err
+			// Set the flagset output to something that will not be displayed, otherwise in case of an error
+			// it will display the usage, which we don't want.
+			flagset.SetOutput(ioutil.Discard)
+
+			// Try to parse each flag independently so that if we encounter any unexpected flag (maybe used elsewhere),
+			// the parsing won't stop, and we make sure we try to parse every flag passed when running the command.
+			for _, arg := range os.Args[1:] {
+				if err := flagset.Parse([]string{arg}); err != nil {
+					// Simply log errors that can happen, such as parsing unexpected flags. We want this to be silent
+					// and we won't want to stop the execution.
+					log.Errorf("could not parse flagset: %v", err)
+				}
 			}
 		}
 		for _, flagInfo := range flagInfos {
