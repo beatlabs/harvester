@@ -18,7 +18,7 @@ The order is applied as it is listed above. Consul seeder and monitor are option
 type Config struct {
     Name    sync.String  `seed:"John Doe"`
     Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
-	City    sync.String  `seed:"London" flag:"city"`
+    City    sync.String  `seed:"London" flag:"city"`
     IsAdmin sync.Bool    `seed:"true" env:"ENV_IS_ADMIN" consul:"/config/is-admin"`
 }
 ```
