@@ -81,6 +81,12 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				log.Warnf("env var %s did not exist for field %s", key, f.Name())
 			}
 		}
+		key, ok = ss[config.SourceFlag]
+		if ok {
+			var val string
+			flagset.StringVar(&val, key, "", "")
+			flagInfos = append(flagInfos, &flagInfo{key, f, &val})
+		}
 		key, ok = ss[config.SourceConsul]
 		if ok {
 			gtr, ok := s.getters[config.SourceConsul]
@@ -102,12 +108,6 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			}
 			log.Infof("consul value %s applied on field %s", *value, f.Name())
 			seedMap[f] = true
-		}
-		key, ok = ss[config.SourceFlag]
-		if ok {
-			var val string
-			flagset.StringVar(&val, key, "", "")
-			flagInfos = append(flagInfos, &flagInfo{key, f, &val})
 		}
 	}
 
