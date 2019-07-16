@@ -13,7 +13,6 @@ cover: fmtcheck
 	go tool cover -func=cover.out &&\
 	rm cover.out
 
-
 fmt:
 	go fmt ./...
 
