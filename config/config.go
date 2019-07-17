@@ -19,6 +19,8 @@ const (
 	SourceEnv Source = "env"
 	// SourceConsul defines a value from consul.
 	SourceConsul Source = "consul"
+	// SourceFlag defines a value from CLI flag.
+	SourceFlag Source = "flag"
 )
 
 // Field definition of a config value that can change.
@@ -53,6 +55,10 @@ func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 	value, ok = fld.Tag.Lookup(string(SourceConsul))
 	if ok {
 		f.sources[SourceConsul] = value
+	}
+	value, ok = fld.Tag.Lookup(string(SourceFlag))
+	if ok {
+		f.sources[SourceFlag] = value
 	}
 	return f, nil
 }

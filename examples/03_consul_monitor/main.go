@@ -15,6 +15,7 @@ import (
 type config struct {
 	Name    sync.String  `seed:"John Doe"`
 	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
+	City    sync.String  `seed:"London" flag:"city"`
 	Balance sync.Float64 `seed:"99.9" consul:"harvester/example_03/balance"`
 }
 
@@ -46,13 +47,13 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config: Name: %s, Age: %d, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.Balance.Get())
+	log.Printf("Config: Name: %s, Age: %d, City: %s, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.City.Get(), cfg.Balance.Get())
 
 	time.Sleep(time.Second)
 	seedConsulBalance("999.99")
 
 	time.Sleep(time.Second)
-	log.Printf("Config: Name: %s, Age: %d, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.Balance.Get())
+	log.Printf("Config: Name: %s, Age: %d, City: %s, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.City.Get(), cfg.Balance.Get())
 }
 
 func seedConsulBalance(balance string) {
