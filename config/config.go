@@ -58,15 +58,13 @@ func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 	if ok {
 		f.sources[SourceConsul] = value
 	}
-<<<<<<< HEAD
-	value, ok = fld.Tag.Lookup(string(SourceVault))
-	if ok {
-		f.sources[SourceVault] = value
-=======
 	value, ok = fld.Tag.Lookup(string(SourceFlag))
 	if ok {
 		f.sources[SourceFlag] = value
->>>>>>> master
+	}
+	value, ok = fld.Tag.Lookup(string(SourceVault))
+	if ok {
+		f.sources[SourceVault] = value
 	}
 	return f, nil
 }
