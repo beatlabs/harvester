@@ -2,6 +2,7 @@ package harvester
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/beatlabs/harvester/monitor/consul"
@@ -47,6 +48,46 @@ func TestCreateWithConsul(t *testing.T) {
 	}
 }
 
+func TestCreateWithVault(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		cfg         interface{}
+		address     string
+		expectedErr error
+	}{
+		{
+			desc:        "Invalid cfg",
+			cfg:         nil,
+			expectedErr: errors.New("configuration is nil"),
+		},
+		{
+			desc:        "Error when creating the getter",
+			cfg:         &testConfig{},
+			expectedErr: errors.New("address is empty"),
+		},
+		{
+			desc:        "Successful creation",
+			cfg:         &testConfig{},
+			address:     "something",
+			expectedErr: nil,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			h, err := New(tC.cfg).
+				WithVaultSeed(tC.address, "", 0).
+				Create()
+			if tC.expectedErr != nil {
+				assert.EqualError(t, err, tC.expectedErr.Error())
+				assert.Nil(t, h)
+			} else {
+				assert.NoError(t, err)
+				assert.IsType(t, &harvester{}, h)
+			}
+		})
+	}
+}
+
 func TestCreate_NoConsul(t *testing.T) {
 	cfg := &testConfigNoConsul{}
 	got, err := New(cfg).Create()
@@ -75,9 +116,9 @@ func TestCreate_SeedError(t *testing.T) {
 
 type testConfig struct {
 	Name    sync.String  `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64   `seed:"18"  consul:"harvester/age"`
-	Balance sync.Float64 `seed:"99.9"  consul:"harvester/balance"`
-	HasJob  sync.Bool    `seed:"true"  consul:"harvester/has-job"`
+	Age     sync.Int64   `seed:"18" consul:"harvester/age"`
+	Balance sync.Float64 `seed:"99.9" consul:"harvester/balance"`
+	HasJob  sync.Bool    `seed:"true" consul:"harvester/has-job"`
 }
 
 type testConfigNoConsul struct {
