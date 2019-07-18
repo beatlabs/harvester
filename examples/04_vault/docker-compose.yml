@@ -2,7 +2,7 @@ version: '3'
 
 services:
   vault:
-    image: vault:latest
+    image: vault:1.1.3
     ports:
       - 8200:8200
     environment:
