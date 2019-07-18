@@ -42,17 +42,17 @@ type flagConfig interface {
 	GetAge() *sync.Int64
 }
 
-type configWithSeedStruct struct {
+type flagConfigWithSeedStruct struct {
 	Age sync.Int64 `seed:"42" flag:"age"`
 }
 
-func (c *configWithSeedStruct) GetAge() *sync.Int64 { return &c.Age }
+func (c *flagConfigWithSeedStruct) GetAge() *sync.Int64 { return &c.Age }
 
-type configWithoutSeedStruct struct {
+type flagConfigWithoutSeedStruct struct {
 	Age sync.Int64 `flag:"age"`
 }
 
-func (c *configWithoutSeedStruct) GetAge() *sync.Int64 { return &c.Age }
+func (c *flagConfigWithoutSeedStruct) GetAge() *sync.Int64 { return &c.Age }
 
 func TestSeeder_Seed_Flags(t *testing.T) {
 	// Each test can alter os.Args, so we need to reset it manually with their original value.
@@ -68,49 +68,49 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 	}{
 		{
 			desc:         "seed with an unexpected flag",
-			inputConfig:  &configWithSeedStruct{},
+			inputConfig:  &flagConfigWithSeedStruct{},
 			extraCliArgs: []string{"-foo=bar"},
 			expectedAge:  42,
 			expectedErr:  nil,
 		},
 		{
 			desc:         "seed with a default value",
-			inputConfig:  &configWithSeedStruct{},
+			inputConfig:  &flagConfigWithSeedStruct{},
 			extraCliArgs: []string{},
 			expectedAge:  42,
 			expectedErr:  nil,
 		},
 		{
 			desc:         "override seed default value",
-			inputConfig:  &configWithSeedStruct{},
+			inputConfig:  &flagConfigWithSeedStruct{},
 			extraCliArgs: []string{"-age=1337"},
 			expectedAge:  1337,
 			expectedErr:  nil,
 		},
 		{
 			desc:         "override seed default value with a non-compatible value",
-			inputConfig:  &configWithSeedStruct{},
+			inputConfig:  &flagConfigWithSeedStruct{},
 			extraCliArgs: []string{"-age=something"},
 			expectedAge:  0,
 			expectedErr:  errors.New(`strconv.ParseInt: parsing "something": invalid syntax`),
 		},
 		{
 			desc:         "missing CLI flag without a default seed",
-			inputConfig:  &configWithoutSeedStruct{},
+			inputConfig:  &flagConfigWithoutSeedStruct{},
 			extraCliArgs: []string{},
 			expectedAge:  0,
 			expectedErr:  errors.New("field Age not seeded"),
 		},
 		{
 			desc:         "set flag value without default seed",
-			inputConfig:  &configWithoutSeedStruct{},
+			inputConfig:  &flagConfigWithoutSeedStruct{},
 			extraCliArgs: []string{"-age=42"},
 			expectedAge:  42,
 			expectedErr:  nil,
 		},
 		{
 			desc:         "additional flags passed to the CLI",
-			inputConfig:  &configWithSeedStruct{},
+			inputConfig:  &flagConfigWithSeedStruct{},
 			extraCliArgs: []string{"-foo=bar"},
 			expectedAge:  42,
 			expectedErr:  nil,
@@ -135,6 +135,101 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 			}
 		})
 	}
+}
+
+type vaultConfig interface {
+	GetSecret() *sync.String
+}
+
+type vaultConfigWithSeedStruct struct {
+	Secret sync.String `seed:"default-secret" vault:"my/secret"`
+}
+
+func (c *vaultConfigWithSeedStruct) GetSecret() *sync.String { return &c.Secret }
+
+type vaultConfigWithoutSeedStruct struct {
+	Secret sync.String `vault:"my/secret"`
+}
+
+func (c *vaultConfigWithoutSeedStruct) GetSecret() *sync.String { return &c.Secret }
+
+func TestSeeder_Seed_Vault(t *testing.T) {
+	testCases := []struct {
+		desc           string
+		vaultGetter    Getter
+		inputConfig    vaultConfig
+		expectedSecret string
+		expectedErr    error
+	}{
+		{
+			desc:           "secret does not exist in Vault",
+			vaultGetter:    &stubVaultGetter{nil, 0, nil},
+			inputConfig:    &vaultConfigWithSeedStruct{},
+			expectedSecret: "default-secret",
+			expectedErr:    nil,
+		},
+		{
+			desc:           "secret exists in Vault and overrides the default value",
+			vaultGetter:    &stubVaultGetter{pointerToString("new-secret"), 0, nil},
+			inputConfig:    &vaultConfigWithSeedStruct{},
+			expectedSecret: "new-secret",
+			expectedErr:    nil,
+		},
+		{
+			desc:           "secret exists in Vault and sets the value on a config without a default value",
+			vaultGetter:    &stubVaultGetter{pointerToString("new-secret"), 0, nil},
+			inputConfig:    &vaultConfigWithoutSeedStruct{},
+			expectedSecret: "new-secret",
+			expectedErr:    nil,
+		},
+		{
+			desc:           "error from Vault with a config that has a default value",
+			vaultGetter:    &stubVaultGetter{nil, 0, errors.New("oops")},
+			inputConfig:    &vaultConfigWithSeedStruct{},
+			expectedSecret: "default-secret",
+			expectedErr:    nil,
+		},
+		{
+			desc:           "error from Vault with a config that does not have a default value",
+			vaultGetter:    &stubVaultGetter{nil, 0, errors.New("oops")},
+			inputConfig:    &vaultConfigWithoutSeedStruct{},
+			expectedSecret: "",
+			expectedErr:    errors.New("field Secret not seeded"),
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			param, err := NewParam(config.SourceVault, tC.vaultGetter)
+			require.NoError(t, err)
+
+			seeder := New(*param)
+			cfg, err := config.New(tC.inputConfig)
+			require.NoError(t, err)
+			err = seeder.Seed(cfg)
+
+			if tC.expectedErr != nil {
+				assert.EqualError(t, err, tC.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+				actualSecret := tC.inputConfig.GetSecret()
+				assert.Equal(t, tC.expectedSecret, actualSecret.Get())
+			}
+		})
+	}
+}
+
+type stubVaultGetter struct {
+	value   *string
+	version uint64
+	err     error
+}
+
+func (s stubVaultGetter) Get(key string) (*string, uint64, error) {
+	return s.value, s.version, s.err
+}
+
+func pointerToString(str string) *string {
+	return &str
 }
 
 func TestSeeder_Seed(t *testing.T) {
