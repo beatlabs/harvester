@@ -9,6 +9,7 @@ import (
 	"github.com/beatlabs/harvester/monitor/consul"
 	"github.com/beatlabs/harvester/seed"
 	seedConsul "github.com/beatlabs/harvester/seed/consul"
+	seedVault "github.com/beatlabs/harvester/seed/vault"
 )
 
 // Seeder interface for seeding initial values of the configuration.
@@ -95,6 +96,25 @@ func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duratio
 		return b
 	}
 	b.watchers = append(b.watchers, wtc)
+	return b
+}
+
+// WithVaultSeed enables support for seeding values with Vault.
+func (b *Builder) WithVaultSeed(addr, token string, timeout time.Duration) *Builder {
+	if b.err != nil {
+		return b
+	}
+	getter, err := seedVault.New(addr, token, timeout)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	p, err := seed.NewParam(config.SourceVault, getter)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	b.seedParams = append(b.seedParams, *p)
 	return b
 }
 

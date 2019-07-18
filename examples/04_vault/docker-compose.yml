@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  vault:
+    image: vault:latest
+    ports:
+      - 8200:8200
+    environment:
+      - VAULT_API_ADDR=http://127.0.0.1:8200
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_DEV_ROOT_TOKEN_ID=root
+    cap_add:
+      - IPC_LOCK
+    command: vault server -dev

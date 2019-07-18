@@ -94,6 +94,28 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			log.Infof("consul value %s applied on field %s", *value, f.Name())
 			seedMap[f] = true
 		}
+		key, ok = ss[config.SourceVault]
+		if ok {
+			gtr, ok := s.getters[config.SourceVault]
+			if !ok {
+				return errors.New("vault getter required")
+			}
+			value, version, err := gtr.Get(key)
+			if err != nil {
+				log.Errorf("failed to get vault key %s for field %s: %v", key, f.Name(), err)
+				continue
+			}
+			if value == nil {
+				log.Warnf("vault key %s did not exist for field %s", key, f.Name())
+				continue
+			}
+			err = f.Set(*value, version)
+			if err != nil {
+				return err
+			}
+			log.Infof("vault value %s applied on field %s", *value, f.Name())
+			seedMap[f] = true
+		}
 	}
 	sb := strings.Builder{}
 	for f, seeded := range seedMap {
