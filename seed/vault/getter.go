@@ -15,23 +15,24 @@ type Getter struct {
 	client *api.Client
 }
 
-// New constructor. Timeout is set to 60s when 0 is provided
+// New creates a new Getter. Timeout defaults to 60s.
 func New(addr, token string, timeout time.Duration) (*Getter, error) {
+	if addr == "" {
+		return nil, errors.New("address is empty")
+	}
+	if timeout <= 0 {
+		timeout = 60 * time.Second
+	}
+
 	client, err := newClient(addr, token, timeout)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Getter{client: client}, nil
 }
 
 func newClient(addr, token string, timeout time.Duration) (*api.Client, error) {
-	if addr == "" {
-		return nil, errors.New("address is empty")
-	}
-	if timeout == 0 {
-		timeout = 60 * time.Second
-	}
-
 	config := api.DefaultConfig()
 	config.Address = addr
 
