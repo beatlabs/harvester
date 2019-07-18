@@ -7,6 +7,7 @@ Configuration can be obtained from the following sources:
 
 - Seed values, are hard-coded values into your configuration struct
 - Environment values, are obtained from the environment
+- Flag values, are obtained from CLI flags with the form `-flag=value`
 - Consul, which is used to get initial values and to monitor them for changes
 
 The order is applied as it is listed above. Consul seeder and monitor are optional and will be used only if `Harvester` is created with the above components.
@@ -17,6 +18,7 @@ The order is applied as it is listed above. Consul seeder and monitor are option
 type Config struct {
     Name    sync.String  `seed:"John Doe"`
     Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
+    City    sync.String  `seed:"London" flag:"city"`
     IsAdmin sync.Bool    `seed:"true" env:"ENV_IS_ADMIN" consul:"/config/is-admin"`
 }
 ```
@@ -25,6 +27,7 @@ The above defines the following fields:
 
 - Name, which will be seeded with the value `John Doe`
 - Age, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_AGE` holds
+- City, which will be seeded with the value `London`, and if exists, overridden with whatever value the flag `city` holds
 - IsAdmin, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_AGE` holds and then from consul if the consul seeder and/or watcher are provided.
 
 The fields have to be one of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
@@ -41,6 +44,7 @@ The fields have to be one of the types that the sync package supports in order t
 - Apply the seed tag value, if present
 - Apply the value contained in the env var, if present
 - Apply the value returned from Consul, if present and harvester is setup to seed from consul
+- Apply the value contained in the CLI flags, if present
 
 Conditions where seeding fails:
 

@@ -19,6 +19,8 @@ const (
 	SourceEnv Source = "env"
 	// SourceConsul defines a value from consul.
 	SourceConsul Source = "consul"
+	// SourceFlag defines a value from CLI flag.
+	SourceFlag Source = "flag"
 	// SourceVault defines a value from Vault.
 	SourceVault Source = "vault"
 )
@@ -56,9 +58,15 @@ func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 	if ok {
 		f.sources[SourceConsul] = value
 	}
+<<<<<<< HEAD
 	value, ok = fld.Tag.Lookup(string(SourceVault))
 	if ok {
 		f.sources[SourceVault] = value
+=======
+	value, ok = fld.Tag.Lookup(string(SourceFlag))
+	if ok {
+		f.sources[SourceFlag] = value
+>>>>>>> master
 	}
 	return f, nil
 }
