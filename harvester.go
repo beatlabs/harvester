@@ -99,7 +99,7 @@ func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duratio
 	return b
 }
 
-// WithVaultSeed enables support for seeding values with Vault.
+// WithVaultSeed enables support for seeding values with Vault. It currently only supports token authentication.
 func (b *Builder) WithVaultSeed(addr, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
