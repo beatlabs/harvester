@@ -22,23 +22,41 @@ A fast way to get consul is the following:
 
     go run examples/02_consul/main.go
 
-    2019/06/04 22:05:04 INFO: seed value John Doe applied on Name
-    2019/06/04 22:05:04 INFO: seed value 18 applied on Age
-    2019/06/04 22:05:04 WARN: env var ENV_AGE did not exist for Age
-    2019/06/04 22:05:04 INFO: seed value 99.9 applied on Balance
-    2019/06/04 22:05:04 WARN: env var ENV_CONSUL_VAR did not exist for Balance
-    2019/06/04 22:05:04 INFO: consul value 123.45 applied on Balance
-    2019/06/04 22:05:04 Config: Name: John Doe, Age: 18, Balance: 123.450000
+    2019/07/12 14:40:04 INFO: field Name updated with value John Doe, version: 0
+    2019/07/12 14:40:04 INFO: seed value John Doe applied on field Name
+    2019/07/12 14:40:04 INFO: field Age updated with value 18, version: 0
+    2019/07/12 14:40:04 INFO: seed value 18 applied on field Age
+    2019/07/12 14:40:04 INFO: field Age updated with value 25, version: 0
+    2019/07/12 14:40:04 INFO: env var value 25 applied on field Age
+    2019/07/12 14:40:04 INFO: field City updated with value London, version: 0
+    2019/07/12 14:40:04 INFO: seed value London applied on field City
+    2019/07/12 14:40:04 INFO: field Balance updated with value 99.9, version: 0
+    2019/07/12 14:40:04 INFO: seed value 99.9 applied on field Balance
+    2019/07/12 14:40:04 WARN: env var ENV_CONSUL_VAR did not exist for field Balance
+    2019/07/12 14:40:04 INFO: field Balance updated with value 123.45, version: 7642
+    2019/07/12 14:40:04 INFO: consul value 123.45 applied on field Balance
+    2019/07/12 14:40:04 WARN: flag var city did not exist for field City
+    2019/07/12 14:40:04 Config: Name: John Doe, Age: 25, City: London, Balance: 123.450000
 
 ## 03 Monitor Consul for live changes
 
     go run examples/03_consul_monitor/main.go
 
-    2019/06/04 22:05:32 INFO: seed value John Doe applied on Name
-    2019/06/04 22:05:32 INFO: seed value 18 applied on Age
-    2019/06/04 22:05:32 WARN: env var ENV_AGE did not exist for Age
-    2019/06/04 22:05:32 INFO: seed value 99.9 applied on Balance
-    2019/06/04 22:05:32 WARN: env var ENV_CONSUL_VAR did not exist for Balance
-    2019/06/04 22:05:32 INFO: consul value 123.45 applied on Balance
-    2019/06/04 22:05:32 Config: Name: John Doe, Age: 18, Balance: 123.450000
-    2019/06/04 22:05:34 Config: Name: John Doe, Age: 18, Balance: 999.990000
+    2019/07/12 14:41:30 INFO: field Name updated with value John Doe, version: 0
+    2019/07/12 14:41:30 INFO: seed value John Doe applied on field Name
+    2019/07/12 14:41:30 INFO: field Age updated with value 18, version: 0
+    2019/07/12 14:41:30 INFO: seed value 18 applied on field Age
+    2019/07/12 14:41:30 INFO: field Age updated with value 25, version: 0
+    2019/07/12 14:41:30 INFO: env var value 25 applied on field Age
+    2019/07/12 14:41:30 INFO: field City updated with value London, version: 0
+    2019/07/12 14:41:30 INFO: seed value London applied on field City
+    2019/07/12 14:41:30 INFO: field Balance updated with value 99.9, version: 0
+    2019/07/12 14:41:30 INFO: seed value 99.9 applied on field Balance
+    2019/07/12 14:41:30 INFO: field Balance updated with value 123.45, version: 7647
+    2019/07/12 14:41:30 INFO: consul value 123.45 applied on field Balance
+    2019/07/12 14:41:30 WARN: flag var city did not exist for field City
+    2019/07/12 14:41:30 INFO: plan for key harvester/example_03/balance created
+    2019/07/12 14:41:30 Config: Name: John Doe, Age: 25, City: London, Balance: 123.450000
+    2019/07/12 14:41:30 WARN: version 7647 is older or same as the field's Balance
+    2019/07/12 14:41:31 INFO: field Balance updated with value 999.99, version: 7649
+    2019/07/12 14:41:32 Config: Name: John Doe, Age: 25, City: London, Balance: 999.990000

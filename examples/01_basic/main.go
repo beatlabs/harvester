@@ -12,6 +12,7 @@ import (
 type config struct {
 	Name sync.String `seed:"John Doe"`
 	Age  sync.Int64  `seed:"18" env:"ENV_AGE"`
+	City sync.String `seed:"London" flag:"city"`
 }
 
 func main() {
@@ -35,5 +36,5 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config : Name: %s, Age: %d\n", cfg.Name.Get(), cfg.Age.Get())
+	log.Printf("Config : Name: %s, Age: %d, City: %s\n", cfg.Name.Get(), cfg.Age.Get(), cfg.City.Get())
 }
