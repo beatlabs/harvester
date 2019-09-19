@@ -13,26 +13,26 @@ import (
 )
 
 type config struct {
-	Name    sync.String  `seed:"John Doe"`
-	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
-	City    sync.String  `seed:"London" flag:"city"`
-	Balance sync.Float64 `seed:"99.9" consul:"harvester/example_03/balance"`
+	IndexName      sync.String  `seed:"customers-v1"`
+	CacheRetention sync.Int64   `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
+	LogLevel       sync.String  `seed:"DEBUG" flag:"loglevel"`
+	OpeningBalance sync.Float64 `seed:"0.0" env:"ENV_CONSUL_VAR" consul:"harvester/example_03/openingbalance"`
 }
 
 func main() {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 
-	err := os.Setenv("ENV_AGE", "25")
+	err := os.Setenv("ENV_CACHE_RETENTION_SECONDS", "86400")
 	if err != nil {
 		log.Fatalf("failed to set env var: %v", err)
 	}
 
-	seedConsulBalance("123.45")
+	seedConsulOpeningBalance("100.0")
 
 	cfg := config{}
 
-	ii := []consul.Item{consul.NewKeyItem("harvester/example_03/balance")}
+	ii := []consul.Item{consul.NewKeyItem("harvester/example_03/openingbalance")}
 
 	h, err := harvester.New(&cfg).
 		WithConsulSeed("127.0.0.1:8500", "", "", 0).
@@ -47,21 +47,21 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config: Name: %s, Age: %d, City: %s, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.City.Get(), cfg.Balance.Get())
+	log.Printf("Config: IndexName: %s, CacheRetention: %d, LogLevel: %s, OpeningBalance: %f\n", cfg.IndexName.Get(), cfg.CacheRetention.Get(), cfg.LogLevel.Get(), cfg.OpeningBalance.Get())
 
 	time.Sleep(time.Second)
-	seedConsulBalance("999.99")
+	seedConsulOpeningBalance("999.99")
 
 	time.Sleep(time.Second)
-	log.Printf("Config: Name: %s, Age: %d, City: %s, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.City.Get(), cfg.Balance.Get())
+	log.Printf("Config: IndexName: %s, CacheRetention: %d, LogLevel: %s, OpeningBalance: %f\n", cfg.IndexName.Get(), cfg.CacheRetention.Get(), cfg.LogLevel.Get(), cfg.OpeningBalance.Get())
 }
 
-func seedConsulBalance(balance string) {
+func seedConsulOpeningBalance(openingBalance string) {
 	cl, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
 		log.Fatalf("failed to create consul client: %v", err)
 	}
-	p := &api.KVPair{Key: "harvester/example_03/balance", Value: []byte(balance)}
+	p := &api.KVPair{Key: "harvester/example_03/openingbalance", Value: []byte(openingBalance)}
 	_, err = cl.KV().Put(p, nil)
 	if err != nil {
 		log.Fatalf("failed to put key value pair to consul: %v", err)

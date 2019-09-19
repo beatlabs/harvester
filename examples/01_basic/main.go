@@ -10,16 +10,16 @@ import (
 )
 
 type config struct {
-	Name sync.String `seed:"John Doe"`
-	Age  sync.Int64  `seed:"18" env:"ENV_AGE"`
-	City sync.String `seed:"London" flag:"city"`
+	IndexName      sync.String `seed:"customers-v1"`
+	CacheRetention sync.Int64  `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
+	LogLevel       sync.String `seed:"DEBUG" flag:"loglevel"`
 }
 
 func main() {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 
-	err := os.Setenv("ENV_AGE", "25")
+	err := os.Setenv("ENV_CACHE_RETENTION_SECONDS", "86400")
 	if err != nil {
 		log.Fatalf("failed to set env var: %v", err)
 	}
@@ -36,5 +36,5 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config : Name: %s, Age: %d, City: %s\n", cfg.Name.Get(), cfg.Age.Get(), cfg.City.Get())
+	log.Printf("Config : IndexName: %s, CacheRetention: %d, LogLevel: %s\n", cfg.IndexName.Get(), cfg.CacheRetention.Get(), cfg.LogLevel.Get())
 }

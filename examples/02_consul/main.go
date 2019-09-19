@@ -11,17 +11,17 @@ import (
 )
 
 type config struct {
-	Name    sync.String  `seed:"John Doe"`
-	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
-	City    sync.String  `seed:"London" flag:"city"`
-	Balance sync.Float64 `seed:"99.9" env:"ENV_CONSUL_VAR" consul:"harvester/example_02/balance"`
+	IndexName      sync.String  `seed:"customers-v1"`
+	CacheRetention sync.Int64   `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
+	LogLevel       sync.String  `seed:"DEBUG" flag:"loglevel"`
+	OpeningBalance sync.Float64 `seed:"0.0" env:"ENV_CONSUL_VAR" consul:"harvester/example_02/openingbalance"`
 }
 
 func main() {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 
-	err := os.Setenv("ENV_AGE", "25")
+	err := os.Setenv("ENV_CACHE_RETENTION_SECONDS", "86400")
 	if err != nil {
 		log.Fatalf("failed to set env var: %v", err)
 	}
@@ -42,7 +42,7 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config: Name: %s, Age: %d, City: %s, Balance: %f\n", cfg.Name.Get(), cfg.Age.Get(), cfg.City.Get(), cfg.Balance.Get())
+	log.Printf("Config: IndexName: %s, CacheRetention: %d, LogLevel: %s, OpeningBalance: %f\n", cfg.IndexName.Get(), cfg.CacheRetention.Get(), cfg.LogLevel.Get(), cfg.OpeningBalance.Get())
 }
 
 func seedConsulVars() {
@@ -50,7 +50,7 @@ func seedConsulVars() {
 	if err != nil {
 		log.Fatalf("failed to create consul client: %v", err)
 	}
-	p := &api.KVPair{Key: "harvester/example_02/balance", Value: []byte("123.45")}
+	p := &api.KVPair{Key: "harvester/example_02/openingbalance", Value: []byte("100.0")}
 	_, err = cl.KV().Put(p, nil)
 	if err != nil {
 		log.Fatalf("failed to put key value pair to consul: %v", err)
