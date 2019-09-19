@@ -16,19 +16,19 @@ The order is applied as it is listed above. Consul seeder and monitor are option
 
 ```go
 type Config struct {
-    Name    sync.String  `seed:"John Doe"`
-    Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
-    City    sync.String  `seed:"London" flag:"city"`
-    IsAdmin sync.Bool    `seed:"true" env:"ENV_IS_ADMIN" consul:"/config/is-admin"`
+    IndexName      sync.String  `seed:"customers-v1"`
+    CacheRetention sync.Int64   `seed:"86400" env:"ENV_CACHE_RETENTION_SECONDS"`
+    LogLevel       sync.String  `seed:"DEBUG" flag:"loglevel"`
+    Sandbox        sync.Bool    `seed:"true" env:"ENV_SANDBOX" consul:"/config/sandbox-mode"`
 }
 ```
 
 The above defines the following fields:
 
-- Name, which will be seeded with the value `John Doe`
-- Age, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_AGE` holds
-- City, which will be seeded with the value `London`, and if exists, overridden with whatever value the flag `city` holds
-- IsAdmin, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_AGE` holds and then from consul if the consul seeder and/or watcher are provided.
+- IndexName, which will be seeded with the value `customers-v1`
+- CacheRetention, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_CACHE_RETENTION_SECONDS` holds
+- LogLevel, which will be seeded with the value `DEBUG`, and if exists, overridden with whatever value the flag `loglevel` holds
+- Sandbox, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_SANDBOX` holds and then from consul if the consul seeder and/or watcher are provided.
 
 The fields have to be one of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
 

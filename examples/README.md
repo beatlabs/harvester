@@ -13,50 +13,57 @@ A fast way to get consul is the following:
 
     go run examples/01_basic/main.go
 
-    2019/06/04 22:07:59 INFO: seed value John Doe applied on Name
-    2019/06/04 22:07:59 INFO: seed value 18 applied on Age
-    2019/06/04 22:07:59 INFO: env var value 25 applied on Age
-    2019/06/04 22:07:59 Config : Name: John Doe, Age: 25
+    2019/09/19 11:18:36 INFO: field IndexName updated with value customers-v1, version: 0
+    2019/09/19 11:18:36 INFO: seed value customers-v1 applied on field IndexName
+    2019/09/19 11:18:36 INFO: field CacheRetention updated with value 43200, version: 0
+    2019/09/19 11:18:36 INFO: seed value 43200 applied on field CacheRetention
+    2019/09/19 11:18:36 INFO: field CacheRetention updated with value 86400, version: 0
+    2019/09/19 11:18:36 INFO: env var value 86400 applied on field CacheRetention
+    2019/09/19 11:18:36 INFO: field LogLevel updated with value DEBUG, version: 0
+    2019/09/19 11:18:36 INFO: seed value DEBUG applied on field LogLevel
+    2019/09/19 11:18:36 WARN: flag var loglevel did not exist for field LogLevel
+    2019/09/19 11:18:36 Config : IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG
 
 ## 02 Seed values from Consul
 
     go run examples/02_consul/main.go
 
-    2019/07/12 14:40:04 INFO: field Name updated with value John Doe, version: 0
-    2019/07/12 14:40:04 INFO: seed value John Doe applied on field Name
-    2019/07/12 14:40:04 INFO: field Age updated with value 18, version: 0
-    2019/07/12 14:40:04 INFO: seed value 18 applied on field Age
-    2019/07/12 14:40:04 INFO: field Age updated with value 25, version: 0
-    2019/07/12 14:40:04 INFO: env var value 25 applied on field Age
-    2019/07/12 14:40:04 INFO: field City updated with value London, version: 0
-    2019/07/12 14:40:04 INFO: seed value London applied on field City
-    2019/07/12 14:40:04 INFO: field Balance updated with value 99.9, version: 0
-    2019/07/12 14:40:04 INFO: seed value 99.9 applied on field Balance
-    2019/07/12 14:40:04 WARN: env var ENV_CONSUL_VAR did not exist for field Balance
-    2019/07/12 14:40:04 INFO: field Balance updated with value 123.45, version: 7642
-    2019/07/12 14:40:04 INFO: consul value 123.45 applied on field Balance
-    2019/07/12 14:40:04 WARN: flag var city did not exist for field City
-    2019/07/12 14:40:04 Config: Name: John Doe, Age: 25, City: London, Balance: 123.450000
+    2019/09/19 11:27:29 INFO: field IndexName updated with value customers-v1, version: 0
+    2019/09/19 11:27:29 INFO: seed value customers-v1 applied on field IndexName
+    2019/09/19 11:27:29 INFO: field CacheRetention updated with value 43200, version: 0
+    2019/09/19 11:27:29 INFO: seed value 43200 applied on field CacheRetention
+    2019/09/19 11:27:29 INFO: field CacheRetention updated with value 86400, version: 0
+    2019/09/19 11:27:29 INFO: env var value 86400 applied on field CacheRetention
+    2019/09/19 11:27:29 INFO: field LogLevel updated with value DEBUG, version: 0
+    2019/09/19 11:27:29 INFO: seed value DEBUG applied on field LogLevel
+    2019/09/19 11:27:29 INFO: field OpeningBalance updated with value 0.0, version: 0
+    2019/09/19 11:27:29 INFO: seed value 0.0 applied on field OpeningBalance
+    2019/09/19 11:27:29 WARN: env var ENV_CONSUL_VAR did not exist for field OpeningBalance
+    2019/09/19 11:27:29 INFO: field OpeningBalance updated with value 100.0, version: 12
+    2019/09/19 11:27:29 INFO: consul value 100.0 applied on field OpeningBalance
+    2019/09/19 11:27:29 WARN: flag var loglevel did not exist for field LogLevel
+    2019/09/19 11:27:29 Config: IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG, OpeningBalance: 100.000000
 
 ## 03 Monitor Consul for live changes
 
     go run examples/03_consul_monitor/main.go
 
-    2019/07/12 14:41:30 INFO: field Name updated with value John Doe, version: 0
-    2019/07/12 14:41:30 INFO: seed value John Doe applied on field Name
-    2019/07/12 14:41:30 INFO: field Age updated with value 18, version: 0
-    2019/07/12 14:41:30 INFO: seed value 18 applied on field Age
-    2019/07/12 14:41:30 INFO: field Age updated with value 25, version: 0
-    2019/07/12 14:41:30 INFO: env var value 25 applied on field Age
-    2019/07/12 14:41:30 INFO: field City updated with value London, version: 0
-    2019/07/12 14:41:30 INFO: seed value London applied on field City
-    2019/07/12 14:41:30 INFO: field Balance updated with value 99.9, version: 0
-    2019/07/12 14:41:30 INFO: seed value 99.9 applied on field Balance
-    2019/07/12 14:41:30 INFO: field Balance updated with value 123.45, version: 7647
-    2019/07/12 14:41:30 INFO: consul value 123.45 applied on field Balance
-    2019/07/12 14:41:30 WARN: flag var city did not exist for field City
-    2019/07/12 14:41:30 INFO: plan for key harvester/example_03/balance created
-    2019/07/12 14:41:30 Config: Name: John Doe, Age: 25, City: London, Balance: 123.450000
-    2019/07/12 14:41:30 WARN: version 7647 is older or same as the field's Balance
-    2019/07/12 14:41:31 INFO: field Balance updated with value 999.99, version: 7649
-    2019/07/12 14:41:32 Config: Name: John Doe, Age: 25, City: London, Balance: 999.990000
+    2019/09/19 11:31:13 INFO: field IndexName updated with value customers-v1, version: 0
+    2019/09/19 11:31:13 INFO: seed value customers-v1 applied on field IndexName
+    2019/09/19 11:31:13 INFO: field CacheRetention updated with value 43200, version: 0
+    2019/09/19 11:31:13 INFO: seed value 43200 applied on field CacheRetention
+    2019/09/19 11:31:13 INFO: field CacheRetention updated with value 86400, version: 0
+    2019/09/19 11:31:13 INFO: env var value 86400 applied on field CacheRetention
+    2019/09/19 11:31:13 INFO: field LogLevel updated with value DEBUG, version: 0
+    2019/09/19 11:31:13 INFO: seed value DEBUG applied on field LogLevel
+    2019/09/19 11:31:13 INFO: field OpeningBalance updated with value 0.0, version: 0
+    2019/09/19 11:31:13 INFO: seed value 0.0 applied on field OpeningBalance
+    2019/09/19 11:31:13 WARN: env var ENV_CONSUL_VAR did not exist for field OpeningBalance
+    2019/09/19 11:31:13 INFO: field OpeningBalance updated with value 100.0, version: 31
+    2019/09/19 11:31:13 INFO: consul value 100.0 applied on field OpeningBalance
+    2019/09/19 11:31:13 WARN: flag var loglevel did not exist for field LogLevel
+    2019/09/19 11:31:13 INFO: plan for key harvester/example_03/openingbalance created
+    2019/09/19 11:31:13 Config: IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG, OpeningBalance: 100.000000
+    2019/09/19 11:31:13 WARN: version 31 is older or same as the field's OpeningBalance
+    2019/09/19 11:31:14 INFO: field OpeningBalance updated with value 999.99, version: 33
+    2019/09/19 11:31:15 Config: IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG, OpeningBalance: 999.990000
