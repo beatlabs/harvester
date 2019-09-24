@@ -83,3 +83,15 @@ func (s *String) Set(value string) {
 	defer s.rw.Unlock()
 	s.value = value
 }
+
+// SecretBool bool type for secrets with concurrent access support.
+type SecretBool struct{ Bool }
+
+// SecretInt64 int64 type for secrets with concurrent access support.
+type SecretInt64 struct{ Int64 }
+
+// SecretFloat64 float64 type for secrets with concurrent access support.
+type SecretFloat64 struct{ Float64 }
+
+// SecretString string type for secrets with concurrent access support.
+type SecretString struct{ String }
