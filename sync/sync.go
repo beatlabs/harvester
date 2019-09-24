@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -24,6 +25,14 @@ func (b *Bool) Set(value bool) {
 	b.value = value
 }
 
+// Print returns string representation of value.
+func (b *Bool) Print() string {
+	if b.value {
+		return "true"
+	}
+	return "false"
+}
+
 // Int64 type with concurrent access support.
 type Int64 struct {
 	rw    sync.RWMutex
@@ -42,6 +51,11 @@ func (i *Int64) Set(value int64) {
 	i.rw.Lock()
 	defer i.rw.Unlock()
 	i.value = value
+}
+
+// Print returns string representation of value.
+func (i *Int64) Print() string {
+	return fmt.Sprintf("%d", i.value)
 }
 
 // Float64 type with concurrent access support.
@@ -64,6 +78,11 @@ func (f *Float64) Set(value float64) {
 	f.value = value
 }
 
+// Print returns string representation of value.
+func (f *Float64) Print() string {
+	return fmt.Sprintf("%f", f.value)
+}
+
 // String type with concurrent access support.
 type String struct {
 	rw    sync.RWMutex
@@ -84,14 +103,39 @@ func (s *String) Set(value string) {
 	s.value = value
 }
 
+// Print returns string representation of value.
+func (s *String) Print() string {
+	return s.value
+}
+
 // SecretBool bool type for secrets with concurrent access support.
 type SecretBool struct{ Bool }
+
+// Print returns obfuscated string representation of value.
+func (s *SecretBool) Print() string {
+	return "***"
+}
 
 // SecretInt64 int64 type for secrets with concurrent access support.
 type SecretInt64 struct{ Int64 }
 
+// Print returns obfuscated string representation of value.
+func (s *SecretInt64) Print() string {
+	return "***"
+}
+
 // SecretFloat64 float64 type for secrets with concurrent access support.
 type SecretFloat64 struct{ Float64 }
 
+// Print returns obfuscated string representation of value.
+func (s *SecretFloat64) Print() string {
+	return "***"
+}
+
 // SecretString string type for secrets with concurrent access support.
 type SecretString struct{ String }
+
+// Print returns obfuscated string representation of value.
+func (s *SecretString) Print() string {
+	return "***"
+}
