@@ -67,3 +67,24 @@ A fast way to get consul is the following:
     2019/09/19 11:31:13 WARN: version 31 is older or same as the field's OpeningBalance
     2019/09/19 11:31:14 INFO: field OpeningBalance updated with value 999.99, version: 33
     2019/09/19 11:31:15 Config: IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG, OpeningBalance: 999.990000
+
+## 04 Monitor Consul for live changes with secrets
+
+    2019/09/24 16:40:14 INFO: field IndexName updated with value customers-v1, version: 0
+    2019/09/24 16:40:14 INFO: seed value customers-v1 applied on field IndexName
+    2019/09/24 16:40:14 INFO: field CacheRetention updated with value 43200, version: 0
+    2019/09/24 16:40:14 INFO: seed value 43200 applied on field CacheRetention
+    2019/09/24 16:40:14 INFO: field CacheRetention updated with value 86400, version: 0
+    2019/09/24 16:40:14 INFO: env var value 86400 applied on field CacheRetention
+    2019/09/24 16:40:14 INFO: field LogLevel updated with value DEBUG, version: 0
+    2019/09/24 16:40:14 INFO: seed value DEBUG applied on field LogLevel
+    2019/09/24 16:40:14 INFO: field AccessToken updated with value ***, version: 0
+    2019/09/24 16:40:14 INFO: seed value *** applied on field AccessToken
+    2019/09/24 16:40:14 INFO: field AccessToken updated with value ***, version: 135
+    2019/09/24 16:40:14 INFO: consul value *** applied on field AccessToken
+    2019/09/24 16:40:14 WARN: flag var loglevel did not exist for field LogLevel
+    2019/09/24 16:40:14 INFO: plan for key harvester/example_04/accesstoken created
+    2019/09/24 16:40:14 Config: IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG, AccessToken: currentaccesstoken
+    2019/09/24 16:40:14 WARN: version 135 is older or same as the field's AccessToken
+    2019/09/24 16:40:15 INFO: field AccessToken updated with value ***, version: 136
+    2019/09/24 16:40:16 Config: IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG, AccessToken: newaccesstoken
