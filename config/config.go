@@ -83,8 +83,8 @@ func (f *Field) Sources() map[Source]string {
 // String returns string representation of field's value.
 func (f *Field) String() string {
 	vv := f.printer.Call([]reflect.Value{})
-	for _, v := range vv {
-		return v.String()
+	if len(vv) > 0 {
+		return vv[0].String()
 	}
 	return ""
 }
