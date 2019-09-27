@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	addr = "127.0.0.1:8501"
+	addr = "127.0.0.1:8500"
 )
 
 func TestMain(m *testing.M) {
