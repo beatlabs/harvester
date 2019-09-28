@@ -10,7 +10,7 @@ import (
 	"github.com/beatlabs/harvester/config"
 	harvesterlog "github.com/beatlabs/harvester/log"
 	"github.com/hashicorp/consul/api"
-	"github.com/hashicorp/consul/watch"
+	"github.com/hashicorp/consul/api/watch"
 )
 
 // Item definition.

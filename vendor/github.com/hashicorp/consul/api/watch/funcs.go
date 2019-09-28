@@ -16,17 +16,16 @@ var watchFuncFactory map[string]watchFactory
 
 func init() {
 	watchFuncFactory = map[string]watchFactory{
-		"key":                  keyWatch,
-		"keyprefix":            keyPrefixWatch,
-		"services":             servicesWatch,
-		"nodes":                nodesWatch,
-		"service":              serviceWatch,
-		"checks":               checksWatch,
-		"event":                eventWatch,
-		"connect_roots":        connectRootsWatch,
-		"connect_leaf":         connectLeafWatch,
-		"connect_proxy_config": connectProxyConfigWatch,
-		"agent_service":        agentServiceWatch,
+		"key":           keyWatch,
+		"keyprefix":     keyPrefixWatch,
+		"services":      servicesWatch,
+		"nodes":         nodesWatch,
+		"service":       serviceWatch,
+		"checks":        checksWatch,
+		"event":         eventWatch,
+		"connect_roots": connectRootsWatch,
+		"connect_leaf":  connectLeafWatch,
+		"agent_service": agentServiceWatch,
 	}
 }
 
@@ -134,15 +133,17 @@ func serviceWatch(params map[string]interface{}) (WatcherFunc, error) {
 		return nil, err
 	}
 
-	var service, tag string
+	var (
+		service string
+		tags    []string
+	)
 	if err := assignValue(params, "service", &service); err != nil {
 		return nil, err
 	}
 	if service == "" {
 		return nil, fmt.Errorf("Must specify a single service to watch")
 	}
-
-	if err := assignValue(params, "tag", &tag); err != nil {
+	if err := assignValueStringSlice(params, "tag", &tags); err != nil {
 		return nil, err
 	}
 
@@ -155,7 +156,7 @@ func serviceWatch(params map[string]interface{}) (WatcherFunc, error) {
 		health := p.client.Health()
 		opts := makeQueryOptionsWithContext(p, stale)
 		defer p.cancelFunc()
-		nodes, meta, err := health.Service(service, tag, passingOnly, &opts)
+		nodes, meta, err := health.ServiceMultipleTags(service, tags, passingOnly, &opts)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -275,33 +276,6 @@ func connectLeafWatch(params map[string]interface{}) (WatcherFunc, error) {
 		}
 
 		return WaitIndexVal(meta.LastIndex), leaf, err
-	}
-	return fn, nil
-}
-
-// connectProxyConfigWatch is used to watch for changes to Connect managed proxy
-// configuration. Note that this state is agent-local so the watch mechanism
-// uses `hash` rather than `index` for deciding whether to block.
-func connectProxyConfigWatch(params map[string]interface{}) (WatcherFunc, error) {
-	// We don't support consistency modes since it's agent local data
-
-	var proxyServiceID string
-	if err := assignValue(params, "proxy_service_id", &proxyServiceID); err != nil {
-		return nil, err
-	}
-
-	fn := func(p *Plan) (BlockingParamVal, interface{}, error) {
-		agent := p.client.Agent()
-		opts := makeQueryOptionsWithContext(p, false)
-		defer p.cancelFunc()
-
-		config, _, err := agent.ConnectProxyConfig(proxyServiceID, &opts)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// Return string ContentHash since we don't have Raft indexes to block on.
-		return WaitHashVal(config.ContentHash), config, err
 	}
 	return fn, nil
 }

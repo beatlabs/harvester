@@ -30,12 +30,9 @@ ci: fmtcheck lint
 	export CODECOV_TOKEN="34285c03-89af-4ff3-af0b-c846a6f43244"
 	curl -s https://codecov.io/bash | bash -s
 
-local-k8s-portfwd:
-	@sh -c "'$(CURDIR)/scripts/k8s_port_forward_local.sh'"
-
 # disallow any parallelism (-j) for Make. This is necessary since some
 # commands during the build process create temporary files that collide
 # under parallel conditions.
 .NOTPARALLEL:
 
-.PHONY: default test testint cover fmt fmtcheck lint deeplint ci local-k8s-portfwd
+.PHONY: default test testint cover fmt fmtcheck lint deeplint ci
