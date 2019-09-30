@@ -80,8 +80,8 @@ func (f *Field) Sources() map[Source]string {
 	return f.sources
 }
 
-// String returns string representation of field's value.
-func (f *Field) String() string {
+// GoString returns string representation of field's value.
+func (f *Field) GoString() string {
 	vv := f.printer.Call([]reflect.Value{})
 	if len(vv) > 0 {
 		return vv[0].String()
@@ -123,7 +123,7 @@ func (f *Field) Set(value string, version uint64) error {
 		return fmt.Errorf("the set call returned %d values: %v", len(rr), rr)
 	}
 	f.version = version
-	log.Infof("field %s updated with value %s, version: %d", f.name, f.String(), version)
+	log.Infof("field %s updated with value %#v, version: %d", f.name, f, version)
 	return nil
 }
 
@@ -161,7 +161,7 @@ func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 		value, ok := fld.Sources()[SourceConsul]
 		if ok {
 			if isKeyValueDuplicate(dup, SourceConsul, value) {
-				return nil, fmt.Errorf("duplicate value %s for source %s", fld.String(), SourceConsul)
+				return nil, fmt.Errorf("duplicate value %#v for source %s", fld, SourceConsul)
 			}
 		}
 		ff = append(ff, fld)
