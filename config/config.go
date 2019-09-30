@@ -43,7 +43,7 @@ func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 		tp:      fld.Type.Name(),
 		version: 0,
 		setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
-		printer: val.FieldByName(fld.Name).Addr().MethodByName("GoString"),
+		printer: val.FieldByName(fld.Name).Addr().MethodByName("String"),
 		sources: make(map[Source]string),
 	}
 	value, ok := fld.Tag.Lookup(string(SourceSeed))
@@ -80,8 +80,8 @@ func (f *Field) Sources() map[Source]string {
 	return f.sources
 }
 
-// GoString returns string representation of field's value.
-func (f *Field) GoString() string {
+// String returns string representation of field's value.
+func (f *Field) String() string {
 	vv := f.printer.Call([]reflect.Value{})
 	if len(vv) > 0 {
 		return vv[0].String()
@@ -123,7 +123,7 @@ func (f *Field) Set(value string, version uint64) error {
 		return fmt.Errorf("the set call returned %d values: %v", len(rr), rr)
 	}
 	f.version = version
-	log.Infof("field %s updated with value %#v, version: %d", f.name, f, version)
+	log.Infof("field %s updated with value %v, version: %d", f.name, f, version)
 	return nil
 }
 
@@ -161,7 +161,7 @@ func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 		value, ok := fld.Sources()[SourceConsul]
 		if ok {
 			if isKeyValueDuplicate(dup, SourceConsul, value) {
-				return nil, fmt.Errorf("duplicate value %#v for source %s", fld, SourceConsul)
+				return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceConsul)
 			}
 		}
 		ff = append(ff, fld)

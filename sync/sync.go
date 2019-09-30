@@ -25,8 +25,8 @@ func (b *Bool) Set(value bool) {
 	b.value = value
 }
 
-// GoString returns string representation of value.
-func (b *Bool) GoString() string {
+// String returns string representation of value.
+func (b *Bool) String() string {
 	b.rw.Lock()
 	defer b.rw.Unlock()
 	if b.value {
@@ -55,8 +55,8 @@ func (i *Int64) Set(value int64) {
 	i.value = value
 }
 
-// GoString returns string representation of value.
-func (i *Int64) GoString() string {
+// String returns string representation of value.
+func (i *Int64) String() string {
 	i.rw.RLock()
 	defer i.rw.RUnlock()
 	return fmt.Sprintf("%d", i.value)
@@ -82,8 +82,8 @@ func (f *Float64) Set(value float64) {
 	f.value = value
 }
 
-// GoString returns string representation of value.
-func (f *Float64) GoString() string {
+// String returns string representation of value.
+func (f *Float64) String() string {
 	f.rw.RLock()
 	defer f.rw.RUnlock()
 	return fmt.Sprintf("%f", f.value)
@@ -109,17 +109,34 @@ func (s *String) Set(value string) {
 	s.value = value
 }
 
-// GoString returns string representation of value.
-func (s *String) GoString() string {
+// String returns string representation of value.
+func (s *String) String() string {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
 	return s.value
 }
 
 // Secret string type for secrets with concurrent access support.
-type Secret struct{ String }
+type Secret struct {
+	rw    sync.RWMutex
+	value string
+}
 
-// GoString returns obfuscated string representation of value.
-func (s *Secret) GoString() string {
+// Get returns the internal value.
+func (s *Secret) Get() string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.value
+}
+
+// Set a value.
+func (s *Secret) Set(value string) {
+	s.rw.Lock()
+	defer s.rw.Unlock()
+	s.value = value
+}
+
+// String returns obfuscated string representation of value.
+func (s *Secret) String() string {
 	return "***"
 }
