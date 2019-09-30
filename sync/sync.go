@@ -25,8 +25,10 @@ func (b *Bool) Set(value bool) {
 	b.value = value
 }
 
-// Print returns string representation of value.
-func (b *Bool) Print() string {
+// GoString returns string representation of value.
+func (b *Bool) GoString() string {
+	b.rw.Lock()
+	defer b.rw.Unlock()
 	if b.value {
 		return "true"
 	}
@@ -53,8 +55,10 @@ func (i *Int64) Set(value int64) {
 	i.value = value
 }
 
-// Print returns string representation of value.
-func (i *Int64) Print() string {
+// GoString returns string representation of value.
+func (i *Int64) GoString() string {
+	i.rw.RLock()
+	defer i.rw.RUnlock()
 	return fmt.Sprintf("%d", i.value)
 }
 
@@ -78,8 +82,10 @@ func (f *Float64) Set(value float64) {
 	f.value = value
 }
 
-// Print returns string representation of value.
-func (f *Float64) Print() string {
+// GoString returns string representation of value.
+func (f *Float64) GoString() string {
+	f.rw.RLock()
+	defer f.rw.RUnlock()
 	return fmt.Sprintf("%f", f.value)
 }
 
@@ -103,15 +109,17 @@ func (s *String) Set(value string) {
 	s.value = value
 }
 
-// Print returns string representation of value.
-func (s *String) Print() string {
+// GoString returns string representation of value.
+func (s *String) GoString() string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
 	return s.value
 }
 
 // Secret string type for secrets with concurrent access support.
 type Secret struct{ String }
 
-// Print returns obfuscated string representation of value.
-func (s *Secret) Print() string {
+// GoString returns obfuscated string representation of value.
+func (s *Secret) GoString() string {
 	return "***"
 }

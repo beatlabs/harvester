@@ -15,7 +15,7 @@ func TestBool(t *testing.T) {
 	}()
 	<-ch
 	assert.True(t, b.Get())
-	assert.Equal(t, "true", b.Print())
+	assert.Equal(t, "true", b.GoString())
 }
 
 func TestInt64(t *testing.T) {
@@ -27,7 +27,7 @@ func TestInt64(t *testing.T) {
 	}()
 	<-ch
 	assert.Equal(t, int64(10), i.Get())
-	assert.Equal(t, "10", i.Print())
+	assert.Equal(t, "10", i.GoString())
 }
 
 func TestFloat64(t *testing.T) {
@@ -39,7 +39,7 @@ func TestFloat64(t *testing.T) {
 	}()
 	<-ch
 	assert.Equal(t, float64(1.23), f.Get())
-	assert.Equal(t, "1.230000", f.Print())
+	assert.Equal(t, "1.230000", f.GoString())
 }
 
 func TestString(t *testing.T) {
@@ -51,7 +51,7 @@ func TestString(t *testing.T) {
 	}()
 	<-ch
 	assert.Equal(t, "Hello", s.Get())
-	assert.Equal(t, "Hello", s.Print())
+	assert.Equal(t, "Hello", s.GoString())
 }
 
 func TestSecret(t *testing.T) {
@@ -63,5 +63,5 @@ func TestSecret(t *testing.T) {
 	}()
 	<-ch
 	assert.Equal(t, "Hello", s.Get())
-	assert.Equal(t, "***", s.Print())
+	assert.Equal(t, "***", s.GoString())
 }

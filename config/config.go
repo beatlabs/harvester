@@ -43,7 +43,7 @@ func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 		tp:      fld.Type.Name(),
 		version: 0,
 		setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
-		printer: val.FieldByName(fld.Name).Addr().MethodByName("Print"),
+		printer: val.FieldByName(fld.Name).Addr().MethodByName("GoString"),
 		sources: make(map[Source]string),
 	}
 	value, ok := fld.Tag.Lookup(string(SourceSeed))
