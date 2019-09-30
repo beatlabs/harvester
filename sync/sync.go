@@ -108,34 +108,10 @@ func (s *String) Print() string {
 	return s.value
 }
 
-// SecretBool bool type for secrets with concurrent access support.
-type SecretBool struct{ Bool }
+// Secret string type for secrets with concurrent access support.
+type Secret struct{ String }
 
 // Print returns obfuscated string representation of value.
-func (s *SecretBool) Print() string {
-	return "***"
-}
-
-// SecretInt64 int64 type for secrets with concurrent access support.
-type SecretInt64 struct{ Int64 }
-
-// Print returns obfuscated string representation of value.
-func (s *SecretInt64) Print() string {
-	return "***"
-}
-
-// SecretFloat64 float64 type for secrets with concurrent access support.
-type SecretFloat64 struct{ Float64 }
-
-// Print returns obfuscated string representation of value.
-func (s *SecretFloat64) Print() string {
-	return "***"
-}
-
-// SecretString string type for secrets with concurrent access support.
-type SecretString struct{ String }
-
-// Print returns obfuscated string representation of value.
-func (s *SecretString) Print() string {
+func (s *Secret) Print() string {
 	return "***"
 }

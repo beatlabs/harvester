@@ -20,7 +20,7 @@ type Config struct {
     CacheRetention sync.Int64           `seed:"86400" env:"ENV_CACHE_RETENTION_SECONDS"`
     LogLevel       sync.String          `seed:"DEBUG" flag:"loglevel"`
     Sandbox        sync.Bool            `seed:"true" env:"ENV_SANDBOX" consul:"/config/sandbox-mode"`
-    AccessToken    sync.SecretString    `seed:"defaultaccesstoken" env:"ENV_ACCESS_TOKEN" consul:"/config/access-token"`
+    AccessToken    sync.Secret          `seed:"defaultaccesstoken" env:"ENV_ACCESS_TOKEN" consul:"/config/access-token"`
 }
 ```
 
@@ -37,10 +37,7 @@ The fields have to be one of the types that the sync package supports in order t
 - sync.Int64, allows for concurrent int64 manipulation
 - sync.Float64, allows for concurrent float64 manipulation
 - sync.Bool, allows for concurrent bool manipulation
-- sync.SecretString, same as `sync.String` but for secrets
-- sync.SecretInt64, same as `sync.Int64` but for secrets
-- sync.SecretFloat64, same as `sync.Float64` but for secrets
-- sync.SecretBool, same as `sync.Bool` but for secrets
+- sync.Secret, allows for concurrent secret manipulation. Secrets can only be strings
 
 For sensitive configuration (passwords, tokens etc.) that shouldn't be printed in log, you can use the `Secret` flavor of `sync` types. If one of these is selected, then at harvester log instead of the real value the text `***` will be displayed.
 

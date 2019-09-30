@@ -29,10 +29,10 @@ var (
 		"INFO: seed value 18 applied on field Age",
 		"INFO: field Age updated with value 99, version: ",
 		"INFO: consul value 99 applied on field Age",
-		"INFO: field Balance updated with value ***, version: ",
-		"INFO: seed value *** applied on field Balance",
-		"INFO: field Balance updated with value ***, version: ",
-		"INFO: consul value *** applied on field Balance",
+		"INFO: field Balance updated with value 99.900000, version: ",
+		"INFO: seed value 99.900000 applied on field Balance",
+		"INFO: field Balance updated with value 111.100000, version: ",
+		"INFO: consul value 111.100000 applied on field Balance",
 		"INFO: field HasJob updated with value true, version: ",
 		"INFO: seed value true applied on field HasJob",
 		"INFO: field HasJob updated with value false, version: ",
@@ -43,10 +43,10 @@ var (
 )
 
 type testConfigWithSecret struct {
-	Name    sync.SecretString  `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64         `seed:"18"  consul:"harvester/age"`
-	Balance sync.SecretFloat64 `seed:"99.9"  consul:"harvester/balance"`
-	HasJob  sync.Bool          `seed:"true"  consul:"harvester/has-job"`
+	Name    sync.Secret  `seed:"John Doe" consul:"harvester1/name"`
+	Age     sync.Int64   `seed:"18"  consul:"harvester/age"`
+	Balance sync.Float64 `seed:"99.9"  consul:"harvester/balance"`
+	HasJob  sync.Bool    `seed:"true"  consul:"harvester/has-job"`
 }
 
 func TestMain(m *testing.M) {

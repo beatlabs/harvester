@@ -97,21 +97,21 @@ func (f *Field) Set(value string, version uint64) error {
 	}
 	var arg interface{}
 	switch f.tp {
-	case "Bool", "SecretBool":
+	case "Bool":
 		v, err := strconv.ParseBool(value)
 		if err != nil {
 			return err
 		}
 		arg = v
-	case "String", "SecretString":
+	case "String", "Secret":
 		arg = value
-	case "Int64", "SecretInt64":
+	case "Int64":
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return err
 		}
 		arg = v
-	case "Float64", "SecretFloat64":
+	case "Float64":
 		v, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return err
@@ -177,7 +177,7 @@ func isTypeSupported(t reflect.Type) bool {
 		return false
 	}
 	switch t.Name() {
-	case "Bool", "Int64", "Float64", "String", "SecretBool", "SecretInt64", "SecretFloat64", "SecretString":
+	case "Bool", "Int64", "Float64", "String", "Secret":
 		return true
 	default:
 		return false

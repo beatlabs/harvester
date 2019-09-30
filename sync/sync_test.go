@@ -54,50 +54,14 @@ func TestString(t *testing.T) {
 	assert.Equal(t, "Hello", s.Print())
 }
 
-func TestSecretBool(t *testing.T) {
-	var sb SecretBool
+func TestSecret(t *testing.T) {
+	var s Secret
 	ch := make(chan struct{})
 	go func() {
-		sb.Set(true)
+		s.Set("Hello")
 		ch <- struct{}{}
 	}()
 	<-ch
-	assert.True(t, sb.Get())
-	assert.Equal(t, "***", sb.Print())
-}
-
-func TestSecretInt64(t *testing.T) {
-	var si SecretInt64
-	ch := make(chan struct{})
-	go func() {
-		si.Set(10)
-		ch <- struct{}{}
-	}()
-	<-ch
-	assert.Equal(t, int64(10), si.Get())
-	assert.Equal(t, "***", si.Print())
-}
-
-func TestSecretFloat64(t *testing.T) {
-	var sf SecretFloat64
-	ch := make(chan struct{})
-	go func() {
-		sf.Set(1.23)
-		ch <- struct{}{}
-	}()
-	<-ch
-	assert.Equal(t, float64(1.23), sf.Get())
-	assert.Equal(t, "***", sf.Print())
-}
-
-func TestSecretString(t *testing.T) {
-	var ss SecretString
-	ch := make(chan struct{})
-	go func() {
-		ss.Set("Hello")
-		ch <- struct{}{}
-	}()
-	<-ch
-	assert.Equal(t, "Hello", ss.Get())
-	assert.Equal(t, "***", ss.Print())
+	assert.Equal(t, "Hello", s.Get())
+	assert.Equal(t, "***", s.Print())
 }

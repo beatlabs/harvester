@@ -13,10 +13,10 @@ import (
 )
 
 type config struct {
-	IndexName      sync.String       `seed:"customers-v1"`
-	CacheRetention sync.Int64        `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
-	LogLevel       sync.String       `seed:"DEBUG" flag:"loglevel"`
-	AccessToken    sync.SecretString `seed:"defaultaccesstoken" consul:"harvester/example_04/accesstoken"`
+	IndexName      sync.String `seed:"customers-v1"`
+	CacheRetention sync.Int64  `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
+	LogLevel       sync.String `seed:"DEBUG" flag:"loglevel"`
+	AccessToken    sync.Secret `seed:"defaultaccesstoken" consul:"harvester/example_04/accesstoken"`
 }
 
 func main() {
