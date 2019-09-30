@@ -3,11 +3,14 @@
 package harvester
 
 import (
+	"bytes"
 	"context"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/beatlabs/harvester/sync"
 
 	"github.com/beatlabs/harvester/monitor/consul"
 	"github.com/hashicorp/consul/api"
@@ -16,8 +19,35 @@ import (
 )
 
 var (
-	csl *api.KV
+	csl       *api.KV
+	secretLog = []string{
+		"INFO: field Name updated with value ***, version: ",
+		"INFO: seed value *** applied on field Name",
+		"INFO: field Name updated with value ***, version: ",
+		"INFO: consul value *** applied on field Name",
+		"INFO: field Age updated with value 18, version: ",
+		"INFO: seed value 18 applied on field Age",
+		"INFO: field Age updated with value 99, version: ",
+		"INFO: consul value 99 applied on field Age",
+		"INFO: field Balance updated with value ***, version: ",
+		"INFO: seed value *** applied on field Balance",
+		"INFO: field Balance updated with value ***, version: ",
+		"INFO: consul value *** applied on field Balance",
+		"INFO: field HasJob updated with value true, version: ",
+		"INFO: seed value true applied on field HasJob",
+		"INFO: field HasJob updated with value false, version: ",
+		"INFO: consul value false applied on field HasJob",
+		"INFO: plan for key harvester1/name created",
+		"INFO: plan for keyprefix harvester created",
+	}
 )
+
+type testConfigWithSecret struct {
+	Name    sync.SecretString  `seed:"John Doe" consul:"harvester1/name"`
+	Age     sync.Int64         `seed:"18"  consul:"harvester/age"`
+	Balance sync.SecretFloat64 `seed:"99.9"  consul:"harvester/balance"`
+	HasJob  sync.Bool          `seed:"true"  consul:"harvester/has-job"`
+}
 
 func TestMain(m *testing.M) {
 	config := api.DefaultConfig()
@@ -44,7 +74,9 @@ func TestMain(m *testing.M) {
 }
 
 func Test_harvester_Harvest(t *testing.T) {
-	cfg := testConfig{}
+	buf := bytes.NewBuffer(make([]byte, 0))
+	log.SetOutput(buf)
+	cfg := testConfigWithSecret{}
 	ii := []consul.Item{consul.NewKeyItem("harvester1/name"), consul.NewPrefixItem("harvester")}
 	h, err := New(&cfg).
 		WithConsulSeed(addr, "", "", 0).
@@ -55,6 +87,7 @@ func Test_harvester_Harvest(t *testing.T) {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 	err = h.Harvest(ctx)
+	testLogOutput(buf, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "Mr. Smith", cfg.Name.Get())
 	assert.Equal(t, int64(99), cfg.Age.Get())
@@ -64,6 +97,13 @@ func Test_harvester_Harvest(t *testing.T) {
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
+}
+
+func testLogOutput(buf *bytes.Buffer, t *testing.T) {
+	log := buf.String()
+	for _, logLine := range secretLog {
+		assert.Contains(t, log, logLine)
+	}
 }
 
 func cleanup() error {
