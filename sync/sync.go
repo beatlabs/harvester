@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -24,6 +25,16 @@ func (b *Bool) Set(value bool) {
 	b.value = value
 }
 
+// String returns string representation of value.
+func (b *Bool) String() string {
+	b.rw.Lock()
+	defer b.rw.Unlock()
+	if b.value {
+		return "true"
+	}
+	return "false"
+}
+
 // Int64 type with concurrent access support.
 type Int64 struct {
 	rw    sync.RWMutex
@@ -42,6 +53,13 @@ func (i *Int64) Set(value int64) {
 	i.rw.Lock()
 	defer i.rw.Unlock()
 	i.value = value
+}
+
+// String returns string representation of value.
+func (i *Int64) String() string {
+	i.rw.RLock()
+	defer i.rw.RUnlock()
+	return fmt.Sprintf("%d", i.value)
 }
 
 // Float64 type with concurrent access support.
@@ -64,6 +82,13 @@ func (f *Float64) Set(value float64) {
 	f.value = value
 }
 
+// String returns string representation of value.
+func (f *Float64) String() string {
+	f.rw.RLock()
+	defer f.rw.RUnlock()
+	return fmt.Sprintf("%f", f.value)
+}
+
 // String type with concurrent access support.
 type String struct {
 	rw    sync.RWMutex
@@ -82,4 +107,36 @@ func (s *String) Set(value string) {
 	s.rw.Lock()
 	defer s.rw.Unlock()
 	s.value = value
+}
+
+// String returns string representation of value.
+func (s *String) String() string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.value
+}
+
+// Secret string type for secrets with concurrent access support.
+type Secret struct {
+	rw    sync.RWMutex
+	value string
+}
+
+// Get returns the internal value.
+func (s *Secret) Get() string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.value
+}
+
+// Set a value.
+func (s *Secret) Set(value string) {
+	s.rw.Lock()
+	defer s.rw.Unlock()
+	s.value = value
+}
+
+// String returns obfuscated string representation of value.
+func (s *Secret) String() string {
+	return "***"
 }

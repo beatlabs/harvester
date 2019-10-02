@@ -29,6 +29,7 @@ type Field struct {
 	tp      string
 	version uint64
 	setter  reflect.Value
+	printer reflect.Value
 	sources map[Source]string
 }
 
@@ -42,6 +43,7 @@ func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 		tp:      fld.Type.Name(),
 		version: 0,
 		setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
+		printer: val.FieldByName(fld.Name).Addr().MethodByName("String"),
 		sources: make(map[Source]string),
 	}
 	value, ok := fld.Tag.Lookup(string(SourceSeed))
@@ -78,6 +80,15 @@ func (f *Field) Sources() map[Source]string {
 	return f.sources
 }
 
+// String returns string representation of field's value.
+func (f *Field) String() string {
+	vv := f.printer.Call([]reflect.Value{})
+	if len(vv) > 0 {
+		return vv[0].String()
+	}
+	return ""
+}
+
 // Set the value of the field.
 func (f *Field) Set(value string, version uint64) error {
 	if version != 0 && version <= f.version {
@@ -92,7 +103,7 @@ func (f *Field) Set(value string, version uint64) error {
 			return err
 		}
 		arg = v
-	case "String":
+	case "String", "Secret":
 		arg = value
 	case "Int64":
 		v, err := strconv.ParseInt(value, 10, 64)
@@ -112,7 +123,7 @@ func (f *Field) Set(value string, version uint64) error {
 		return fmt.Errorf("the set call returned %d values: %v", len(rr), rr)
 	}
 	f.version = version
-	log.Infof("field %s updated with value %s, version: %d", f.name, value, version)
+	log.Infof("field %s updated with value %v, version: %d", f.name, f, version)
 	return nil
 }
 
@@ -150,7 +161,7 @@ func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
 		value, ok := fld.Sources()[SourceConsul]
 		if ok {
 			if isKeyValueDuplicate(dup, SourceConsul, value) {
-				return nil, fmt.Errorf("duplicate value %s for source %s", value, SourceConsul)
+				return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceConsul)
 			}
 		}
 		ff = append(ff, fld)
@@ -166,7 +177,7 @@ func isTypeSupported(t reflect.Type) bool {
 		return false
 	}
 	switch t.Name() {
-	case "Bool", "Int64", "Float64", "String":
+	case "Bool", "Int64", "Float64", "String", "Secret":
 		return true
 	default:
 		return false
