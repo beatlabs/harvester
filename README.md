@@ -39,7 +39,7 @@ The fields have to be one of the types that the sync package supports in order t
 - sync.Bool, allows for concurrent bool manipulation
 - sync.Secret, allows for concurrent secret manipulation. Secrets can only be strings
 
-For sensitive configuration (passwords, tokens etc.) that shouldn't be printed in log, you can use the `Secret` flavor of `sync` types. If one of these is selected, then at harvester log instead of the real value the text `***` will be displayed.
+For sensitive configuration (passwords, tokens, etc.) that shouldn't be printed in log, you can use the `Secret` flavor of `sync` types. If one of these is selected, then at harvester log instead of the real value the text `***` will be displayed.
 
 `Harvester` has a seeding phase and an optional monitoring phase.
 
