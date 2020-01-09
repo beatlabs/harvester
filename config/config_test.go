@@ -58,6 +58,7 @@ func TestNew(t *testing.T) {
 		{name: "cfg is not pointer", args: args{cfg: testConfig{}}, wantErr: true},
 		{name: "cfg field not supported", args: args{cfg: &testInvalidTypeConfig{}}, wantErr: true},
 		{name: "cfg duplicate consul key", args: args{cfg: &testDuplicateConfig{}}, wantErr: true},
+		{name: "cfg nested duplicate consul key", args: args{cfg: &testDuplicateNestedConsulConfig{}}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,7 +69,7 @@ func TestNew(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, got)
-				assert.Len(t, got.Fields, 4)
+				assert.Len(t, got.Fields, 5)
 				assertField(t, got.Fields[0], "Name", "String",
 					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME"})
 				assertField(t, got.Fields[1], "Age", "Int64",
@@ -77,6 +78,8 @@ func TestNew(t *testing.T) {
 					map[Source]string{SourceSeed: "99.9", SourceEnv: "ENV_BALANCE", SourceConsul: "/config/balance"})
 				assertField(t, got.Fields[3], "HasJob", "Bool",
 					map[Source]string{SourceSeed: "true", SourceEnv: "ENV_HAS_JOB", SourceConsul: "/config/has-job"})
+				assertField(t, got.Fields[4], "PositionSalary", "Int64",
+					map[Source]string{SourceSeed: "2000", SourceEnv: "ENV_SALARY"})
 			}
 		})
 	}
@@ -90,7 +93,7 @@ func assertField(t *testing.T, fld *Field, name, typ string, sources map[Source]
 }
 
 func TestConfig_Set(t *testing.T) {
-	c := testConfig{}
+	c := testConfig{Position2: &testNestedConfig{}}
 	cfg, err := New(&c)
 	require.NoError(t, err)
 	err = cfg.Fields[0].Set("John Doe", 1)
@@ -101,17 +104,36 @@ func TestConfig_Set(t *testing.T) {
 	assert.NoError(t, err)
 	err = cfg.Fields[3].Set("true", 1)
 	assert.NoError(t, err)
+	err = cfg.Fields[4].Set("6000", 1)
+	assert.NoError(t, err)
+	err = cfg.Fields[5].Set("7000", 1)
+	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
 	assert.Equal(t, 99.9, c.Balance.Get())
 	assert.Equal(t, true, c.HasJob.Get())
+	assert.Equal(t, int64(6000), c.Position.Salary.Get())
+	assert.Equal(t, int64(7000), c.Position2.Salary.Get())
+}
+
+type testNestedConfig struct {
+	Salary sync.Int64 `seed:"2000" env:"ENV_SALARY"`
 }
 
 type testConfig struct {
-	Name    sync.String  `seed:"John Doe" env:"ENV_NAME"`
-	Age     sync.Int64   `env:"ENV_AGE" consul:"/config/age"`
-	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
-	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Name      sync.String  `seed:"John Doe" env:"ENV_NAME"`
+	Age       sync.Int64   `env:"ENV_AGE" consul:"/config/age"`
+	Balance   sync.Float64 `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	HasJob    sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Position  testNestedConfig
+	Position2 *testNestedConfig
+}
+
+type testDuplicateNestedConsulConfig struct {
+	Age1   sync.Int64 `env:"ENV_AGE" consul:"/config/age"`
+	Nested struct {
+		Age2 sync.Int64 `env:"ENV_AGE" consul:"/config/age"`
+	}
 }
 
 type testInvalidTypeConfig struct {

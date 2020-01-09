@@ -34,12 +34,12 @@ type Field struct {
 }
 
 // NewField constructor.
-func NewField(fld *reflect.StructField, val *reflect.Value) (*Field, error) {
+func NewField(prefix string, fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 	if !isTypeSupported(fld.Type) {
 		return nil, fmt.Errorf("field %s is not supported (only types from the sync package of harvester)", fld.Name)
 	}
 	f := &Field{
-		name:    fld.Name,
+		name:    prefix + fld.Name,
 		tp:      fld.Type.Name(),
 		version: 0,
 		setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
@@ -137,36 +137,13 @@ func New(cfg interface{}) (*Config, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
-	tp := reflect.TypeOf(cfg)
-	if tp.Kind() != reflect.Ptr {
-		return nil, errors.New("configuration should be a pointer type")
-	}
-	val := reflect.ValueOf(cfg).Elem()
-	ff, err := getFields(tp.Elem(), &val)
+
+	ff, err := newParser().GetFields(cfg)
 	if err != nil {
 		return nil, err
 	}
-	return &Config{Fields: ff}, nil
-}
 
-func getFields(tp reflect.Type, val *reflect.Value) ([]*Field, error) {
-	dup := make(map[Source]string)
-	var ff []*Field
-	for i := 0; i < tp.NumField(); i++ {
-		f := tp.Field(i)
-		fld, err := NewField(&f, val)
-		if err != nil {
-			return nil, err
-		}
-		value, ok := fld.Sources()[SourceConsul]
-		if ok {
-			if isKeyValueDuplicate(dup, SourceConsul, value) {
-				return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceConsul)
-			}
-		}
-		ff = append(ff, fld)
-	}
-	return ff, nil
+	return &Config{Fields: ff}, nil
 }
 
 func isTypeSupported(t reflect.Type) bool {
@@ -182,15 +159,4 @@ func isTypeSupported(t reflect.Type) bool {
 	default:
 		return false
 	}
-}
-
-func isKeyValueDuplicate(dup map[Source]string, src Source, value string) bool {
-	v, ok := dup[src]
-	if ok {
-		if value == v {
-			return true
-		}
-	}
-	dup[src] = value
-	return false
 }
