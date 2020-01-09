@@ -55,7 +55,7 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val *reflect.Value) (
 
 func (p *parser) getNestedFields(prefix string, sf reflect.StructField, val reflect.Value) ([]*Field, error) {
 	if val.Type().Kind() == reflect.Ptr && val.IsNil() {
-		return make([]*Field, 0), nil
+		return nil, fmt.Errorf("value can not be nil for %s", sf.Name)
 	}
 
 	typ := val.Type()

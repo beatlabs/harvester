@@ -61,6 +61,7 @@ func TestCreate_NoConsul(t *testing.T) {
 	assert.Equal(t, 99.9, cfg.Balance.Get())
 	assert.Equal(t, true, cfg.HasJob.Get())
 	assert.Equal(t, int64(8000), cfg.Position.Salary.Get())
+	assert.Equal(t, int64(24), cfg.Position.Place.RoomNumber.Get())
 }
 
 func TestCreate_SeedError(t *testing.T) {
@@ -88,6 +89,9 @@ type testConfigNoConsul struct {
 	HasJob   sync.Bool    `seed:"true"`
 	Position struct {
 		Salary sync.Int64 `seed:"8000"`
+		Place  struct {
+			RoomNumber sync.Int64 `seed:"24"`
+		}
 	}
 }
 

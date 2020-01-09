@@ -9,7 +9,7 @@ import (
 )
 
 func TestField_Set(t *testing.T) {
-	c := testConfig{}
+	c := testConfig{Position2: &testNestedConfig{}}
 	cfg, err := New(&c)
 	require.NoError(t, err)
 	cfg.Fields[0].version = 2
@@ -53,12 +53,13 @@ func TestNew(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", args: args{cfg: &testConfig{}}, wantErr: false},
+		{name: "success", args: args{cfg: &testConfig{Position2: &testNestedConfig{}}}, wantErr: false},
 		{name: "cfg is nil", args: args{cfg: nil}, wantErr: true},
-		{name: "cfg is not pointer", args: args{cfg: testConfig{}}, wantErr: true},
+		{name: "cfg is not pointer", args: args{cfg: testConfig{Position2: &testNestedConfig{}}}, wantErr: true},
 		{name: "cfg field not supported", args: args{cfg: &testInvalidTypeConfig{}}, wantErr: true},
 		{name: "cfg duplicate consul key", args: args{cfg: &testDuplicateConfig{}}, wantErr: true},
 		{name: "cfg nested duplicate consul key", args: args{cfg: &testDuplicateNestedConsulConfig{}}, wantErr: true},
+		{name: "cfg nested struct is nil", args: args{cfg: &testConfig{}}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -69,7 +70,7 @@ func TestNew(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, got)
-				assert.Len(t, got.Fields, 5)
+				assert.Len(t, got.Fields, 7)
 				assertField(t, got.Fields[0], "Name", "String",
 					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME"})
 				assertField(t, got.Fields[1], "Age", "Int64",
@@ -80,6 +81,10 @@ func TestNew(t *testing.T) {
 					map[Source]string{SourceSeed: "true", SourceEnv: "ENV_HAS_JOB", SourceConsul: "/config/has-job"})
 				assertField(t, got.Fields[4], "PositionSalary", "Int64",
 					map[Source]string{SourceSeed: "2000", SourceEnv: "ENV_SALARY"})
+				assertField(t, got.Fields[5], "Position2Salary", "Int64",
+					map[Source]string{SourceSeed: "2000", SourceEnv: "ENV_SALARY"})
+				assertField(t, got.Fields[6], "LevelOneLevelTwoDeepField", "String",
+					map[Source]string{SourceSeed: "foobar"})
 			}
 		})
 	}
@@ -108,12 +113,15 @@ func TestConfig_Set(t *testing.T) {
 	assert.NoError(t, err)
 	err = cfg.Fields[5].Set("7000", 1)
 	assert.NoError(t, err)
+	err = cfg.Fields[6].Set("baz", 1)
+	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
 	assert.Equal(t, 99.9, c.Balance.Get())
 	assert.Equal(t, true, c.HasJob.Get())
 	assert.Equal(t, int64(6000), c.Position.Salary.Get())
 	assert.Equal(t, int64(7000), c.Position2.Salary.Get())
+	assert.Equal(t, "baz", c.LevelOne.LevelTwo.DeepField.Get())
 }
 
 type testNestedConfig struct {
@@ -127,6 +135,11 @@ type testConfig struct {
 	HasJob    sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 	Position  testNestedConfig
 	Position2 *testNestedConfig
+	LevelOne  struct {
+		LevelTwo struct {
+			DeepField sync.String `seed:"foobar"`
+		}
+	}
 }
 
 type testDuplicateNestedConsulConfig struct {
