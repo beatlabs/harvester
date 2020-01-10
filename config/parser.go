@@ -14,7 +14,7 @@ func newParser() *parser {
 	return &parser{}
 }
 
-func (p *parser) GetFields(cfg interface{}) ([]*Field, error) {
+func (p *parser) ParseCfg(cfg interface{}) ([]*Field, error) {
 	p.dups = make(map[Source]string)
 
 	tp := reflect.TypeOf(cfg)

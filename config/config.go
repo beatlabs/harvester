@@ -138,7 +138,7 @@ func New(cfg interface{}) (*Config, error) {
 		return nil, errors.New("configuration is nil")
 	}
 
-	ff, err := newParser().GetFields(cfg)
+	ff, err := newParser().ParseCfg(cfg)
 	if err != nil {
 		return nil, err
 	}
