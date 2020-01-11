@@ -30,7 +30,7 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val *reflect.Value) (
 	var ff []*Field
 	for i := 0; i < tp.NumField(); i++ {
 		f := tp.Field(i)
-		fld, err := NewField(prefix, &f, val)
+		fld, err := newField(prefix, &f, val)
 		if err != nil {
 			if !p.isNestedTypeSupported(f.Type) {
 				return nil, err

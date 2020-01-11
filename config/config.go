@@ -33,8 +33,8 @@ type Field struct {
 	sources map[Source]string
 }
 
-// NewField constructor.
-func NewField(prefix string, fld *reflect.StructField, val *reflect.Value) (*Field, error) {
+// newField constructor.
+func newField(prefix string, fld *reflect.StructField, val *reflect.Value) (*Field, error) {
 	if !isTypeSupported(fld.Type) {
 		return nil, fmt.Errorf("field %s is not supported (only types from the sync package of harvester)", fld.Name)
 	}
