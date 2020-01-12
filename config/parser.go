@@ -6,6 +6,14 @@ import (
 	"reflect"
 )
 
+type structFieldType uint
+
+const (
+	typeInvalid structFieldType = iota
+	typeField
+	typeStruct
+)
+
 type parser struct {
 	dups map[Source]string
 }
@@ -21,60 +29,50 @@ func (p *parser) ParseCfg(cfg interface{}) ([]*Field, error) {
 	if tp.Kind() != reflect.Ptr {
 		return nil, errors.New("configuration should be a pointer type")
 	}
-	val := reflect.ValueOf(cfg).Elem()
 
-	return p.getFields("", tp.Elem(), &val)
+	return p.getFields("", tp.Elem(), reflect.ValueOf(cfg).Elem())
 }
 
-func (p *parser) getFields(prefix string, tp reflect.Type, val *reflect.Value) ([]*Field, error) {
+func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value) ([]*Field, error) {
 	var ff []*Field
+
 	for i := 0; i < tp.NumField(); i++ {
 		f := tp.Field(i)
-		fld, err := newField(prefix, &f, val)
+
+		typ, err := p.getStructFieldType(f)
 		if err != nil {
-			if !p.isNestedTypeSupported(f.Type) {
+			return nil, err
+		}
+
+		switch typ {
+		case typeField:
+			fld, err := p.createField(prefix, f, val.Field(i))
+			if err != nil {
 				return nil, err
 			}
-			nested, err := p.getNestedFields(prefix, f, val.Field(i))
+			ff = append(ff, fld)
+		case typeStruct:
+			nested, err := p.getFields(prefix+f.Name, f.Type, val.Field(i))
 			if err != nil {
 				return nil, err
 			}
 			ff = append(ff, nested...)
-			continue
 		}
-		value, ok := fld.Sources()[SourceConsul]
-		if ok {
-			if p.isKeyValueDuplicate(SourceConsul, value) {
-				return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceConsul)
-			}
-		}
-		ff = append(ff, fld)
 	}
 	return ff, nil
 }
 
-func (p *parser) getNestedFields(prefix string, sf reflect.StructField, val reflect.Value) ([]*Field, error) {
-	if val.Type().Kind() == reflect.Ptr && val.IsNil() {
-		return nil, fmt.Errorf("value can not be nil for %s", sf.Name)
+func (p *parser) createField(prefix string, f reflect.StructField, val reflect.Value) (*Field, error) {
+	fld := newField(prefix, f, val)
+
+	value, ok := fld.Sources()[SourceConsul]
+	if ok {
+		if p.isKeyValueDuplicate(SourceConsul, value) {
+			return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceConsul)
+		}
 	}
 
-	typ := val.Type()
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-		val = val.Elem()
-	}
-
-	return p.getFields(prefix+sf.Name, typ, &val)
-}
-
-func (p *parser) isNestedTypeSupported(t reflect.Type) bool {
-	if t.Kind() == reflect.Struct {
-		return true
-	}
-	if t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct {
-		return true
-	}
-	return false
+	return fld, nil
 }
 
 func (p *parser) isKeyValueDuplicate(src Source, value string) bool {
@@ -86,4 +84,22 @@ func (p *parser) isKeyValueDuplicate(src Source, value string) bool {
 	}
 	p.dups[src] = value
 	return false
+}
+
+func (p *parser) getStructFieldType(f reflect.StructField) (structFieldType, error) {
+	t := f.Type
+	if t.Kind() != reflect.Struct {
+		return typeInvalid, fmt.Errorf("only struct type supported for %s", f.Name)
+	}
+
+	for _, tag := range sourceTags {
+		if _, ok := f.Tag.Lookup(string(tag)); ok {
+			if t.PkgPath() != "github.com/beatlabs/harvester/sync" {
+				return typeInvalid, fmt.Errorf("field %s is not supported (only types from the sync package of harvester)", f.Name)
+			}
+			return typeField, nil
+		}
+	}
+
+	return typeStruct, nil
 }

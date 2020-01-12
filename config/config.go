@@ -23,6 +23,8 @@ const (
 	SourceFlag Source = "flag"
 )
 
+var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceFlag}
+
 // Field definition of a config value that can change.
 type Field struct {
 	name    string
@@ -34,35 +36,24 @@ type Field struct {
 }
 
 // newField constructor.
-func newField(prefix string, fld *reflect.StructField, val *reflect.Value) (*Field, error) {
-	if !isTypeSupported(fld.Type) {
-		return nil, fmt.Errorf("field %s is not supported (only types from the sync package of harvester)", fld.Name)
-	}
+func newField(prefix string, fld reflect.StructField, val reflect.Value) *Field {
 	f := &Field{
 		name:    prefix + fld.Name,
 		tp:      fld.Type.Name(),
 		version: 0,
-		setter:  val.FieldByName(fld.Name).Addr().MethodByName("Set"),
-		printer: val.FieldByName(fld.Name).Addr().MethodByName("String"),
+		setter:  val.Addr().MethodByName("Set"),
+		printer: val.Addr().MethodByName("String"),
 		sources: make(map[Source]string),
 	}
-	value, ok := fld.Tag.Lookup(string(SourceSeed))
-	if ok {
-		f.sources[SourceSeed] = value
+
+	for _, tag := range sourceTags {
+		value, ok := fld.Tag.Lookup(string(tag))
+		if ok {
+			f.sources[tag] = value
+		}
 	}
-	value, ok = fld.Tag.Lookup(string(SourceEnv))
-	if ok {
-		f.sources[SourceEnv] = value
-	}
-	value, ok = fld.Tag.Lookup(string(SourceConsul))
-	if ok {
-		f.sources[SourceConsul] = value
-	}
-	value, ok = fld.Tag.Lookup(string(SourceFlag))
-	if ok {
-		f.sources[SourceFlag] = value
-	}
-	return f, nil
+
+	return f
 }
 
 // Name getter.
@@ -144,19 +135,4 @@ func New(cfg interface{}) (*Config, error) {
 	}
 
 	return &Config{Fields: ff}, nil
-}
-
-func isTypeSupported(t reflect.Type) bool {
-	if t.Kind() != reflect.Struct {
-		return false
-	}
-	if t.PkgPath() != "github.com/beatlabs/harvester/sync" {
-		return false
-	}
-	switch t.Name() {
-	case "Bool", "Int64", "Float64", "String", "Secret":
-		return true
-	default:
-		return false
-	}
 }
