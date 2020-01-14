@@ -97,7 +97,7 @@ func (p *parser) getStructFieldType(f reflect.StructField, val reflect.Value) (s
 	for _, tag := range sourceTags {
 		if _, ok := f.Tag.Lookup(string(tag)); ok {
 			if !val.Addr().Type().Implements(cfgType) {
-				return typeInvalid, fmt.Errorf("field %s should implement CfgType interface", f.Name)
+				return typeInvalid, fmt.Errorf("field %s must implement CfgType interface", f.Name)
 			}
 			return typeField, nil
 		}
