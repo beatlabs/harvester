@@ -36,6 +36,7 @@ func (b *Bool) String() string {
 	return "false"
 }
 
+// SetString parses and sets a value from string type.
 func (b *Bool) SetString(val string) error {
 	v, err := strconv.ParseBool(val)
 	if err != nil {
@@ -72,6 +73,7 @@ func (i *Int64) String() string {
 	return fmt.Sprintf("%d", i.value)
 }
 
+// SetString parses and sets a value from string type.
 func (i *Int64) SetString(val string) error {
 	v, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
@@ -108,6 +110,7 @@ func (f *Float64) String() string {
 	return fmt.Sprintf("%f", f.value)
 }
 
+// SetString parses and sets a value from string type.
 func (f *Float64) SetString(val string) error {
 	v, err := strconv.ParseFloat(val, 64)
 	if err != nil {
@@ -144,6 +147,7 @@ func (s *String) String() string {
 	return s.value
 }
 
+// SetString parses and sets a value from string type.
 func (s *String) SetString(val string) error {
 	s.Set(val)
 	return nil
@@ -174,6 +178,7 @@ func (s *Secret) String() string {
 	return "***"
 }
 
+// SetString parses and sets a value from string type.
 func (s *Secret) SetString(val string) error {
 	s.Set(val)
 	return nil

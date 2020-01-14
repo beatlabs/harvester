@@ -24,6 +24,7 @@ const (
 
 var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceFlag}
 
+// CfgType represents an interface which any config field type must implement.
 type CfgType interface {
 	fmt.Stringer
 	SetString(string) error
