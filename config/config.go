@@ -24,9 +24,9 @@ const (
 
 var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceFlag}
 
-type StructField interface {
+type CfgType interface {
+	fmt.Stringer
 	SetString(string) error
-	String() string
 }
 
 // Field definition of a config value that can change.
@@ -34,22 +34,17 @@ type Field struct {
 	name        string
 	tp          string
 	version     uint64
-	structField StructField
+	structField CfgType
 	sources     map[Source]string
 }
 
 // newField constructor.
 func newField(prefix string, fld reflect.StructField, val reflect.Value) *Field {
-	sf, ok := val.Addr().Interface().(StructField)
-	if !ok {
-		return nil, fmt.Errorf("field %s should implement StructField interface", fld.Name)
-	}
-
 	f := &Field{
-		name:        fld.Name,
+		name:        prefix + fld.Name,
 		tp:          fld.Type.Name(),
 		version:     0,
-		structField: sf,
+		structField: val.Addr().Interface().(CfgType),
 		sources:     make(map[Source]string),
 	}
 
