@@ -88,3 +88,13 @@ A fast way to get consul is the following:
     2019/09/24 16:40:14 WARN: version 135 is older or same as the field's AccessToken
     2019/09/24 16:40:15 INFO: field AccessToken updated with value ***, version: 136
     2019/09/24 16:40:16 Config: IndexName: customers-v1, CacheRetention: 86400, LogLevel: DEBUG, AccessToken: newaccesstoken
+
+## 05 Usage of custom config types with complex structure and validation
+
+    2020/01/21 13:39:34 INFO: field IndexName updated with value customers-v1, version: 0
+    2020/01/21 13:39:34 INFO: seed value customers-v1 applied on field IndexName
+    2020/01/21 13:39:34 INFO: field EMail updated with value foo@example.com, version: 0
+    2020/01/21 13:39:34 INFO: seed value foo@example.com applied on field EMail
+    2020/01/21 13:39:34 INFO: field EMail updated with value bar@example.com, version: 0
+    2020/01/21 13:39:34 INFO: env var value bar@example.com applied on field EMail
+    2020/01/21 13:39:34 Config : IndexName: customers-v1, EMail: bar@example.com, EMail.Name: bar, EMail.Domain: example.com
