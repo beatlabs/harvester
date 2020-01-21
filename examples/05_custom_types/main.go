@@ -43,10 +43,10 @@ func main() {
 	log.Printf("Config : IndexName: %s, Email: %s, Email.Name: %s, Email.Domain: %s\n", cfg.IndexName.Get(), cfg.Email.Get(), cfg.Email.GetName(), cfg.Email.GetDomain())
 }
 
-//regex to validate an email value
+// regex to validate an email value.
 const emailPattern = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 
-// Email represents a custom config structure
+// Email represents a custom config structure.
 type Email struct {
 	m      gosync.RWMutex
 	v      string
