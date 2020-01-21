@@ -16,7 +16,7 @@ import (
 
 type config struct {
 	IndexName sync.String `seed:"customers-v1"`
-	EMail     EMail       `seed:"foo@example.com" env:"ENV_EMAIL"`
+	Email     Email       `seed:"foo@example.com" env:"ENV_EMAIL"`
 }
 
 func main() {
@@ -40,14 +40,14 @@ func main() {
 		log.Fatalf("failed to harvest configuration: %v", err)
 	}
 
-	log.Printf("Config : IndexName: %s, EMail: %s, EMail.Name: %s, EMail.Domain: %s\n", cfg.IndexName.Get(), cfg.EMail.Get(), cfg.EMail.GetName(), cfg.EMail.GetDomain())
+	log.Printf("Config : IndexName: %s, Email: %s, Email.Name: %s, Email.Domain: %s\n", cfg.IndexName.Get(), cfg.Email.Get(), cfg.Email.GetName(), cfg.Email.GetDomain())
 }
 
 //regex to validate an email value
 const emailPattern = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 
-// EMail represents a custom config structure
-type EMail struct {
+// Email represents a custom config structure
+type Email struct {
 	m      gosync.RWMutex
 	v      string
 	name   string
@@ -55,7 +55,7 @@ type EMail struct {
 }
 
 // SetString performs basic validation and sets a config value from string typed value.
-func (t *EMail) SetString(v string) error {
+func (t *Email) SetString(v string) error {
 	re := regexp.MustCompile(emailPattern)
 	if !re.MatchString(v) {
 		return fmt.Errorf("%s is not a valid email address", v)
@@ -73,7 +73,7 @@ func (t *EMail) SetString(v string) error {
 }
 
 // Get returns the stored value.
-func (t *EMail) Get() string {
+func (t *Email) Get() string {
 	t.m.RLock()
 	defer t.m.RUnlock()
 
@@ -81,7 +81,7 @@ func (t *EMail) Get() string {
 }
 
 // GetName returns name part of the stored email.
-func (t *EMail) GetName() string {
+func (t *Email) GetName() string {
 	t.m.RLock()
 	defer t.m.RUnlock()
 
@@ -89,7 +89,7 @@ func (t *EMail) GetName() string {
 }
 
 // GetDomain returns domain part of the stored email.
-func (t *EMail) GetDomain() string {
+func (t *Email) GetDomain() string {
 	t.m.RLock()
 	defer t.m.RUnlock()
 
@@ -97,6 +97,6 @@ func (t *EMail) GetDomain() string {
 }
 
 // String represents golang Stringer interface.
-func (t *EMail) String() string {
+func (t *Email) String() string {
 	return t.Get()
 }
