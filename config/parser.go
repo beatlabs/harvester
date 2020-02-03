@@ -39,7 +39,7 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value) ([
 	for i := 0; i < tp.NumField(); i++ {
 		f := tp.Field(i)
 
-		typ, err := p.getStructFieldType(f)
+		typ, err := p.getStructFieldType(f, val.Field(i))
 		if err != nil {
 			return nil, err
 		}
@@ -86,16 +86,18 @@ func (p *parser) isKeyValueDuplicate(src Source, value string) bool {
 	return false
 }
 
-func (p *parser) getStructFieldType(f reflect.StructField) (structFieldType, error) {
+func (p *parser) getStructFieldType(f reflect.StructField, val reflect.Value) (structFieldType, error) {
 	t := f.Type
 	if t.Kind() != reflect.Struct {
 		return typeInvalid, fmt.Errorf("only struct type supported for %s", f.Name)
 	}
 
+	cfgType := reflect.TypeOf((*CfgType)(nil)).Elem()
+
 	for _, tag := range sourceTags {
 		if _, ok := f.Tag.Lookup(string(tag)); ok {
-			if t.PkgPath() != "github.com/beatlabs/harvester/sync" {
-				return typeInvalid, fmt.Errorf("field %s is not supported (only types from the sync package of harvester)", f.Name)
+			if !val.Addr().Type().Implements(cfgType) {
+				return typeInvalid, fmt.Errorf("field %s must implement CfgType interface", f.Name)
 			}
 			return typeField, nil
 		}
