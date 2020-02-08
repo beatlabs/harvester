@@ -20,7 +20,7 @@ fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
 lint: fmtcheck
-	golangci-lint run -E golint --exclude-use-default=false --build-tags integration
+	golangci-lint run -E golint,gofmt,unparam,goconst,prealloc --exclude-use-default=false --build-tags integration
 
 deeplint: fmtcheck
 	golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration

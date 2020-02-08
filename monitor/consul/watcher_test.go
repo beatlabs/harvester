@@ -11,7 +11,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	ii := []Item{Item{}}
+	ii := []Item{{}}
 	type args struct {
 		addr    string
 		timeout time.Duration
