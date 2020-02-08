@@ -16,6 +16,12 @@ jobs:
           curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/bin v1.18.0
           echo ::add-path::$HOME/bin
 
+      - name: Setup Consul
+        run: |
+          wget https://releases.hashicorp.com/consul/1.4.3/consul_1.4.3_linux_amd64.zip
+          unzip "consul_1.4.3_linux_amd64.zip"
+          ./consul agent -server -bootstrap-expect 1 -data-dir /tmp/consul -dev -bind=$(hostname -I | awk '{print $1}' | xargs) -http-port 8500 -log-level=err &
+
       - name: Check out source code
         uses: actions/checkout@v1
 
