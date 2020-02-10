@@ -20,15 +20,13 @@ fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
 lint: fmtcheck
-	golangci-lint run -E golint --exclude-use-default=false --build-tags integration
+	golangci-lint run -E golint,gofmt,unparam,goconst,prealloc --exclude-use-default=false --build-tags integration
 
 deeplint: fmtcheck
 	golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
 
 ci: fmtcheck lint	
 	go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
-	export CODECOV_TOKEN="34285c03-89af-4ff3-af0b-c846a6f43244"
-	curl -s https://codecov.io/bash | bash -s
 
 # disallow any parallelism (-j) for Make. This is necessary since some
 # commands during the build process create temporary files that collide
