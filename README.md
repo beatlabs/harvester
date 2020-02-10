@@ -1,7 +1,9 @@
-# Harvester [![CircleCI](https://circleci.com/gh/beatlabs/harvester.svg?style=svg)](https://circleci.com/gh/beatlabs/harvester) [![codecov](https://codecov.io/gh/beatlabs/harvester/branch/master/graph/badge.svg)](https://codecov.io/gh/beatlabs/harvester) [![Go Report Card](https://goreportcard.com/badge/github.com/beatlabs/harvester)](https://goreportcard.com/report/github.com/beatlabs/harvester) [![GoDoc](https://godoc.org/github.com/beatlabs/harvester?status.svg)](https://godoc.org/github.com/beatlabs/harvester) ![GitHub release](https://img.shields.io/github/release/beatlabs/harvester.svg)
+# Harvester ![Running CI](https://github.com/beatlabs/harvester/workflows/Running%20CI/badge.svg) [![codecov](https://codecov.io/gh/beatlabs/harvester/branch/master/graph/badge.svg)](https://codecov.io/gh/beatlabs/harvester) [![Go Report Card](https://goreportcard.com/badge/github.com/beatlabs/harvester)](https://goreportcard.com/report/github.com/beatlabs/harvester) [![GoDoc](https://godoc.org/github.com/beatlabs/harvester?status.svg)](https://godoc.org/github.com/beatlabs/harvester) ![GitHub release](https://img.shields.io/github/release/beatlabs/harvester.svg)
 
 `Harvester` is a configuration library which helps setting up and monitoring configuration values in order to dynamically
 reconfigure your application.
+
+
 
 Configuration can be obtained from the following sources:
 
