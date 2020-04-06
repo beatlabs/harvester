@@ -70,7 +70,7 @@ func TestNew(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, got)
-				assert.Len(t, got.Fields, 6)
+				assert.Len(t, got.Fields, 7)
 				assertField(t, got.Fields[0], "Name", "String",
 					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME"})
 				assertField(t, got.Fields[1], "Age", "Int64",
@@ -83,6 +83,8 @@ func TestNew(t *testing.T) {
 					map[Source]string{SourceSeed: "2000", SourceEnv: "ENV_SALARY"})
 				assertField(t, got.Fields[5], "LevelOneLevelTwoDeepField", "String",
 					map[Source]string{SourceSeed: "foobar"})
+				assertField(t, got.Fields[6], "Password", "String",
+					map[Source]string{SourceSeed: "p@ssword1", SourceEnv: "ENV_PASSWORD", SourceSecret: "true"})
 			}
 		})
 	}
@@ -119,6 +121,36 @@ func TestConfig_Set(t *testing.T) {
 	assert.Equal(t, "baz", c.LevelOne.LevelTwo.DeepField.Get())
 }
 
+func TestConfig_FieldSecret(t *testing.T) {
+	type config struct {
+		Name        sync.String `seed:"Value"`
+		Password    sync.String `seed:"PassValue" env:"ENV_PASS" secret:"true"`
+		OtherSecret sync.String `seed:"PassValue" env:"ENV_PASS" secret:""`
+	}
+	c, err := New(&config{})
+	assert.NoError(t, err)
+
+	for _, f := range c.Fields {
+		assert.NoError(t, f.Set(f.sources[SourceSeed], 0))
+	}
+
+	assert.Len(t, c.Fields, 3)
+	assert.Equal(t, "Name", c.Fields[0].name)
+	assert.Equal(t, false, c.Fields[0].secret)
+	assert.Equal(t, "Value", c.Fields[0].String())
+	assert.Equal(t, "Value", c.Fields[0].LogValue())
+
+	assert.Equal(t, "Password", c.Fields[1].name)
+	assert.Equal(t, true, c.Fields[1].secret)
+	assert.Equal(t, "PassValue", c.Fields[1].String())
+	assert.Equal(t, "Pas******", c.Fields[1].LogValue())
+
+	assert.Equal(t, "OtherSecret", c.Fields[2].name)
+	assert.Equal(t, true, c.Fields[2].secret)
+	assert.Equal(t, "PassValue", c.Fields[2].String())
+	assert.Equal(t, "Pas******", c.Fields[2].LogValue())
+}
+
 type testNestedConfig struct {
 	Salary sync.Int64 `seed:"2000" env:"ENV_SALARY"`
 }
@@ -134,6 +166,7 @@ type testConfig struct {
 			DeepField sync.String `seed:"foobar"`
 		}
 	}
+	Password sync.String `seed:"p@ssword1" env:"ENV_PASSWORD" secret:"true"`
 }
 
 type testDuplicateNestedConsulConfig struct {

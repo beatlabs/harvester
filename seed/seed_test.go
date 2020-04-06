@@ -195,17 +195,19 @@ func TestSeeder_Seed(t *testing.T) {
 				assert.Equal(t, int64(25), c.Age.Get())
 				assert.Equal(t, 99.9, c.Balance.Get())
 				assert.True(t, c.HasJob.Get())
+				assert.Equal(t, "localP@ssword!", c.Password.Get())
 			}
 		})
 	}
 }
 
 type testConfig struct {
-	Name    sync.String  `seed:"John Doe"`
-	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
-	City    sync.String  `seed:"London" flag:"city"`
-	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE"`
-	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Name     sync.String  `seed:"John Doe"`
+	Age      sync.Int64   `seed:"18" env:"ENV_AGE"`
+	City     sync.String  `seed:"London" flag:"city"`
+	Balance  sync.Float64 `seed:"99.9" env:"ENV_BALANCE"`
+	HasJob   sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	Password sync.String  `seed:"localP@ssword!" env:"ENV_PASSWORD" secret:"true"`
 }
 
 type testInvalidInt struct {

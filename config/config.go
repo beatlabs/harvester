@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/beatlabs/harvester/log"
 )
@@ -20,9 +21,11 @@ const (
 	SourceConsul Source = "consul"
 	// SourceFlag defines a value from CLI flag.
 	SourceFlag Source = "flag"
+	// SourceSecret defines that the value is a secret, can should not be logged in it's entirety.
+	SourceSecret Source = "secret"
 )
 
-var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceFlag}
+var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceFlag, SourceSecret}
 
 // CfgType represents an interface which any config field type must implement.
 type CfgType interface {
@@ -37,6 +40,7 @@ type Field struct {
 	version     uint64
 	structField CfgType
 	sources     map[Source]string
+	secret      bool
 }
 
 // newField constructor.
@@ -55,6 +59,8 @@ func newField(prefix string, fld reflect.StructField, val reflect.Value) *Field 
 			f.sources[tag] = value
 		}
 	}
+
+	_, f.secret = f.sources[SourceSecret]
 
 	return f
 }
@@ -79,6 +85,15 @@ func (f *Field) String() string {
 	return f.structField.String()
 }
 
+// LogValue returns string representation of field's value, but masks the value with asterisks when it's a secret.
+func (f *Field) LogValue() string {
+	value := f.structField.String()
+	if f.secret && len(value) > 3 {
+		return fmt.Sprintf("%s%s", value[:3], strings.Repeat("*", len(value)-3))
+	}
+	return value
+}
+
 // Set the value of the field.
 func (f *Field) Set(value string, version uint64) error {
 	if version != 0 && version <= f.version {
@@ -91,7 +106,7 @@ func (f *Field) Set(value string, version uint64) error {
 	}
 
 	f.version = version
-	log.Infof("field %s updated with value %v, version: %d", f.name, f, version)
+	log.Infof("field %s updated with value %v, version: %d", f.name, f.LogValue(), version)
 	return nil
 }
 
