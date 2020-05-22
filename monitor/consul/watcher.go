@@ -113,6 +113,9 @@ func (w *Watcher) createKeyPlan(key string, ch chan<- []*change.Change) (*watch.
 		return nil, err
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
+		if data == nil {
+			return
+		}
 		pair, ok := data.(*api.KVPair)
 		if !ok {
 			harvesterlog.Errorf("data is not kv pair: %v", data)
@@ -130,6 +133,9 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 		return nil, err
 	}
 	pl.Handler = func(idx uint64, data interface{}) {
+		if data == nil {
+			return
+		}
 		pp, ok := data.(api.KVPairs)
 		if !ok {
 			harvesterlog.Errorf("data is not kv pairs: %v", data)
