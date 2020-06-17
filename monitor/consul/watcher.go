@@ -92,7 +92,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 			if err != nil {
 				harvesterlog.Errorf("plan %s of type %s failed: %v", tp, key, err)
 			} else {
-				harvesterlog.Infof("plan %s of type %s is running", tp, key)
+				harvesterlog.Debugf("plan %s of type %s is running", tp, key)
 			}
 		}(i.tp, i.key)
 	}
