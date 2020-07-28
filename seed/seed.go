@@ -87,6 +87,20 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			flagset.StringVar(&val, key, "", "")
 			flagInfos = append(flagInfos, &flagInfo{key, f, &val})
 		}
+		key, ok = ss[config.SourceFile]
+		if ok {
+			body, err := ioutil.ReadFile(key)
+			if err != nil {
+				log.Errorf("failed to read file %s for field %s: %v", key, f.Name(), err)
+			} else {
+				err := f.Set(string(body), 0)
+				if err != nil {
+					return err
+				}
+				log.Infof("file based var value %v applied on field %s", f, f.Name())
+				seedMap[f] = true
+			}
+		}
 		key, ok = ss[config.SourceConsul]
 		if ok {
 			gtr, ok := s.getters[config.SourceConsul]

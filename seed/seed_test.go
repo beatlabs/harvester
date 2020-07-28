@@ -156,6 +156,10 @@ func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, err)
 	prmError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
 	require.NoError(t, err)
+	invalidFileIntCfg, err := config.New(&testInvalidFileInt{})
+	require.NoError(t, err)
+	fileNotExistCfg, err := config.New(&testFileDoesNotExist{})
+	require.NoError(t, err)
 
 	type fields struct {
 		consulParam *Param
@@ -176,6 +180,8 @@ func TestSeeder_Seed(t *testing.T) {
 		{name: "invalid int", args: args{cfg: invalidIntCfg}, wantErr: true},
 		{name: "invalid float", args: args{cfg: invalidFloatCfg}, wantErr: true},
 		{name: "invalid bool", fields: fields{consulParam: prmSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
+		{name: "invalid file int", args: args{cfg: invalidFileIntCfg}, wantErr: true},
+		{name: "file read error, seed successful", args: args{cfg: fileNotExistCfg}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -195,6 +201,7 @@ func TestSeeder_Seed(t *testing.T) {
 				assert.Equal(t, int64(25), c.Age.Get())
 				assert.Equal(t, 99.9, c.Balance.Get())
 				assert.True(t, c.HasJob.Get())
+				assert.Equal(t, "foobar", c.About.Get())
 			}
 		})
 	}
@@ -206,6 +213,15 @@ type testConfig struct {
 	City    sync.String  `seed:"London" flag:"city"`
 	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE"`
 	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	About   sync.String  `seed:"" file:"testdata/test.txt"`
+}
+
+type testInvalidFileInt struct {
+	Age sync.Int64 `file:"testdata/test.txt"`
+}
+
+type testFileDoesNotExist struct {
+	Age sync.Int64 `seed:"20" file:"testdata/test_not_exist.txt"`
 }
 
 type testInvalidInt struct {
