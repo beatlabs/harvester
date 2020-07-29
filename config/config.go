@@ -83,8 +83,13 @@ func (f *Field) String() string {
 
 // Set the value of the field.
 func (f *Field) Set(value string, version uint64) error {
-	if version != 0 && version <= f.version {
-		log.Warnf("version %d is older or same as the field's %s", version, f.name)
+	if version != 0 && version < f.version {
+		log.Errorf("version %d is older than the field's %q (version %d)", version, f.name, f.version)
+		return nil
+	}
+
+	if version != 0 && version == f.version {
+		log.Debugf("version %d is the same as field's %q", version, f.name)
 		return nil
 	}
 
@@ -93,7 +98,7 @@ func (f *Field) Set(value string, version uint64) error {
 	}
 
 	f.version = version
-	log.Infof("field %s updated with value %v, version: %d", f.name, f, version)
+	log.Infof("field %q updated with value %q, version: %d", f.name, f, version)
 	return nil
 }
 
