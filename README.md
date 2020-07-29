@@ -8,6 +8,7 @@ Configuration can be obtained from the following sources:
 - Seed values, are hard-coded values into your configuration struct
 - Environment values, are obtained from the environment
 - Flag values, are obtained from CLI flags with the form `-flag=value`
+- File internals in local storage. Only text files are supported, don't use it for binary.
 - Consul, which is used to get initial values and to monitor them for changes
 
 The order is applied as it is listed above. Consul seeder and monitor are optional and will be used only if `Harvester` is created with the above components.
@@ -19,6 +20,7 @@ type Config struct {
     IndexName      sync.String          `seed:"customers-v1"`
     CacheRetention sync.Int64           `seed:"86400" env:"ENV_CACHE_RETENTION_SECONDS"`
     LogLevel       sync.String          `seed:"DEBUG" flag:"loglevel"`
+    Signature      sync.String          `file:"signature.txt"`
     Sandbox        sync.Bool            `seed:"true" env:"ENV_SANDBOX" consul:"/config/sandbox-mode"`
     AccessToken    sync.Secret          `seed:"defaultaccesstoken" env:"ENV_ACCESS_TOKEN" consul:"/config/access-token"`
 }
@@ -47,6 +49,7 @@ For sensitive configuration (passwords, tokens, etc.) that shouldn't be printed 
   
 - Apply the seed tag value, if present
 - Apply the value contained in the env var, if present
+- Apply the value contained in the file, if present
 - Apply the value returned from Consul, if present and harvester is setup to seed from consul
 - Apply the value contained in the CLI flags, if present
 
