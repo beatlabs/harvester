@@ -36,7 +36,7 @@ func main() {
 
 	h, err := harvester.New(&cfg).
 		WithConsulSeed("127.0.0.1:8500", "", "", 0).
-		WithConsulMonitor("127.0.0.1:8500", "", "", 0, ii...).
+		WithConsulMonitor("127.0.0.1:8500", "", "", ii...).
 		Create()
 	if err != nil {
 		log.Fatalf("failed to create harvester: %v", err)

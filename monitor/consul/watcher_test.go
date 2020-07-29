@@ -3,7 +3,6 @@ package consul
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/stretchr/testify/assert"
@@ -13,23 +12,21 @@ import (
 func TestNew(t *testing.T) {
 	ii := []Item{{}}
 	type args struct {
-		addr    string
-		timeout time.Duration
-		ii      []Item
+		addr string
+		ii   []Item
 	}
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name: "success", args: args{addr: "xxx", timeout: 1 * time.Second, ii: ii}, wantErr: false},
-		{name: "success default timeout", args: args{addr: "xxx", timeout: 0, ii: ii}, wantErr: false},
-		{name: "empty address", args: args{addr: "", timeout: 1 * time.Second, ii: ii}, wantErr: true},
-		{name: "empty items", args: args{addr: "xxx", timeout: 1 * time.Second, ii: nil}, wantErr: true},
+		{name: "success", args: args{addr: "xxx", ii: ii}, wantErr: false},
+		{name: "empty address", args: args{addr: "", ii: ii}, wantErr: true},
+		{name: "empty items", args: args{addr: "xxx", ii: nil}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.addr, "dc", "token", tt.args.timeout, tt.args.ii...)
+			got, err := New(tt.args.addr, "dc", "token", tt.args.ii...)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, got)
@@ -42,7 +39,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestWatcher_Watch(t *testing.T) {
-	w, err := New("xxx", "", "", 0, Item{})
+	w, err := New("xxx", "", "", Item{})
 	require.NoError(t, err)
 	type args struct {
 		ctx context.Context

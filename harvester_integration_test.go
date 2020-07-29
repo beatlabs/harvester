@@ -80,7 +80,7 @@ func Test_harvester_Harvest(t *testing.T) {
 	ii := []consul.Item{consul.NewKeyItem("harvester1/name"), consul.NewPrefixItem("harvester")}
 	h, err := New(&cfg).
 		WithConsulSeed(addr, "", "", 0).
-		WithConsulMonitor(addr, "", "", 0, ii...).
+		WithConsulMonitor(addr, "", "", ii...).
 		Create()
 	require.NoError(t, err)
 

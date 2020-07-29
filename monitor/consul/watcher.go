@@ -3,7 +3,6 @@ package consul
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/beatlabs/harvester/config"
@@ -39,15 +38,12 @@ type Watcher struct {
 }
 
 // New creates a new watcher.
-func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, error) {
+func New(addr, dc, token string, ii ...Item) (*Watcher, error) {
 	if addr == "" {
 		return nil, errors.New("address is empty")
 	}
 	if len(ii) == 0 {
 		return nil, errors.New("items are empty")
-	}
-	if timeout == 0 {
-		timeout = 60 * time.Second
 	}
 	cfg := api.DefaultConfig()
 	cfg.Address = addr
@@ -56,7 +52,6 @@ func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, e
 	if err != nil {
 		return nil, err
 	}
-	cfg.HttpClient.Timeout = timeout
 
 	cl, err := api.NewClient(cfg)
 	if err != nil {
