@@ -46,9 +46,6 @@ func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, e
 	if len(ii) == 0 {
 		return nil, errors.New("items are empty")
 	}
-	if timeout == 0 {
-		timeout = 60 * time.Second
-	}
 	cfg := api.DefaultConfig()
 	cfg.Address = addr
 	var err error
@@ -56,7 +53,9 @@ func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, e
 	if err != nil {
 		return nil, err
 	}
-	cfg.HttpClient.Timeout = timeout
+	if timeout > 0 {
+		cfg.WaitTime = timeout
+	}
 
 	cl, err := api.NewClient(cfg)
 	if err != nil {
