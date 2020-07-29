@@ -7,7 +7,7 @@ networks:
 services:
   consul:
     container_name: harvester_consul_dev
-    image: bitnami/consul:1.4.3
+    image: consul:1.8.0
     networks:
       - consul-network
     ports:

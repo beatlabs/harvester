@@ -3,7 +3,6 @@ package consul
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/beatlabs/harvester/change"
@@ -11,6 +10,7 @@ import (
 	harvesterlog "github.com/beatlabs/harvester/log"
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
+	"github.com/hashicorp/go-hclog"
 )
 
 // Item definition.
@@ -87,8 +87,8 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		}
 		w.pp = append(w.pp, pl)
 		go func(tp, key string) {
-			logger := log.New(harvesterlog.Writer(), "", 0)
-			err := pl.RunWithClientAndLogger(w.cl, logger)
+			logger := hclog.New(&hclog.LoggerOptions{Output: harvesterlog.Writer()})
+			err := pl.RunWithClientAndHclog(w.cl, logger)
 			if err != nil {
 				harvesterlog.Errorf("plan %s of type %s failed: %v", tp, key, err)
 			} else {
