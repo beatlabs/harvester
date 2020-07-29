@@ -48,11 +48,6 @@ func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, e
 	}
 	cfg := api.DefaultConfig()
 	cfg.Address = addr
-	var err error
-	cfg.HttpClient, err = api.NewHttpClient(cfg.Transport, cfg.TLSConfig)
-	if err != nil {
-		return nil, err
-	}
 	if timeout > 0 {
 		cfg.WaitTime = timeout
 	}
