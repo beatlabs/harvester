@@ -1,0 +1,5 @@
+FROM golang:1.13
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.18.0
+RUN apt-get update && apt-get install -y docker
+WORKDIR /go/harvester
+COPY . ./

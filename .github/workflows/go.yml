@@ -5,31 +5,19 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.13
+      - uses: actions/checkout@v2
 
-      - name: Install tools
-        run: |
-          mkdir -p $HOME/bin 
-          curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/bin v1.18.0
-          echo ::add-path::$HOME/bin
+      - name: Build the CI Image
+        run: make ci-initialize
 
-      - name: Setup Consul
-        run: |
-          wget https://releases.hashicorp.com/consul/1.4.3/consul_1.4.3_linux_amd64.zip
-          unzip "consul_1.4.3_linux_amd64.zip"
-          ./consul agent -server -bootstrap-expect 1 -data-dir /tmp/consul -dev -bind=$(hostname -I | awk '{print $1}' | xargs) -http-port 8500 -log-level=err &
+      - name: Run lint
+        run: make ci-lint
 
-      - name: Check out source code
-        uses: actions/checkout@v1
+      - name: Run tests
+        run: make ci-test
 
-      - name: Running CI
-        run: make ci
-
-      - name: Upload code coverage
-        env:
-          CODECOV_TOKEN: ${{ secrets.CodeCovToken }}
-        run: |
-          bash <(curl -s https://codecov.io/bash)
+#      - name: Upload code coverage
+#        env:
+#          CODECOV_TOKEN: ${{ secrets.CodeCovToken }}
+#        run: |
+#          bash <(curl -s https://codecov.io/bash)

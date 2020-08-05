@@ -28,6 +28,15 @@ deeplint: fmtcheck
 ci: fmtcheck lint	
 	go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
 
+ci-initialize:
+	docker-compose -f ./docker-compose.ci.yaml build
+
+ci-lint:
+	docker-compose -f ./docker-compose.ci.yaml run harvester-ci make lint
+
+ci-test:
+	docker-compose -f ./docker-compose.ci.yaml run harvester-ci make test
+
 # disallow any parallelism (-j) for Make. This is necessary since some
 # commands during the build process create temporary files that collide
 # under parallel conditions.
