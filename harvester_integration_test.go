@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/beatlabs/harvester/monitor/consul"
 	"github.com/beatlabs/harvester/sync"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
@@ -47,15 +46,14 @@ var (
 		`INFO: plan for key harvester/balance created`,
 		`INFO: plan for key harvester/has-job created`,
 		`INFO: plan for key harvester/foo/bar created`,
-		`INFO: plan for keyprefix harvester created`,
 	}
 )
 
 type testConfigWithSecret struct {
 	Name    sync.Secret  `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64   `seed:"18"  consul:"harvester/age"`
-	Balance sync.Float64 `seed:"99.9"  consul:"harvester/balance"`
-	HasJob  sync.Bool    `seed:"true"  consul:"harvester/has-job"`
+	Age     sync.Int64   `seed:"18" consul:"harvester/age"`
+	Balance sync.Float64 `seed:"99.9" consul:"harvester/balance"`
+	HasJob  sync.Bool    `seed:"true" consul:"harvester/has-job"`
 	Foo     fooStruct
 }
 
@@ -91,11 +89,9 @@ func Test_harvester_Harvest(t *testing.T) {
 	buf := bytes.NewBuffer(make([]byte, 0))
 	log.SetOutput(buf)
 	cfg := testConfigWithSecret{}
-	ii := []consul.Item{consul.NewKeyItem("harvester1/name"), consul.NewPrefixItem("harvester")}
 	h, err := New(&cfg).
 		WithConsulSeed(addr, "", "", 0).
-		WithConsulMonitor(addr, "", "", 0, ii...).
-		WithConsulMonitorFromConfig(addr, "", "", 0).
+		WithConsulMonitor(addr, "", "", 0).
 		Create()
 	require.NoError(t, err)
 
@@ -108,20 +104,13 @@ func Test_harvester_Harvest(t *testing.T) {
 	assert.Equal(t, int64(99), cfg.Age.Get())
 	assert.Equal(t, 111.1, cfg.Balance.Get())
 	assert.Equal(t, false, cfg.HasJob.Get())
+	assert.Equal(t, int64(123), cfg.Foo.Bar.Get())
 
-	// Test the item passed to WithConsulMonitor
 	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Anderson")}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
 
-	// Test items fetched from config from WithConsulMonitorFromConfig
-	_, err = csl.Put(&api.KVPair{Key: "harvester/age", Value: []byte("42")}, nil)
-	require.NoError(t, err)
-	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, int64(42), cfg.Age.Get())
-
-	assert.Equal(t, int64(123), cfg.Foo.Bar.Get())
 	_, err = csl.Put(&api.KVPair{Key: "harvester/foo/bar", Value: []byte("42")}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)

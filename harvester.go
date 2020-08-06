@@ -85,24 +85,9 @@ func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Du
 	return b
 }
 
-// WithConsulMonitor enables support for monitoring key/prefixes on consul.
-func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duration, ii ...consul.Item) *Builder {
-	if b.err != nil {
-		return b
-	}
-	wtc, err := consul.New(addr, dc, token, timeout, ii...)
-	if err != nil {
-		b.err = err
-		return b
-	}
-	b.watchers = append(b.watchers, wtc)
-	return b
-}
-
-// WithConsulMonitorFromConfig enables support for monitoring key/prefixes on consul.
-//
-// It differs from WithConsulMonitor as it automatically parses the config and monitors every field tagged with consul.
-func (b *Builder) WithConsulMonitorFromConfig(addr, dc, token string, timeout time.Duration) *Builder {
+// WithConsulMonitor enables support for monitoring key/prefixes on Consul. It automatically parses the config
+// and monitors every field found tagged with Consul.
+func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
@@ -115,7 +100,13 @@ func (b *Builder) WithConsulMonitorFromConfig(addr, dc, token string, timeout ti
 		log.Infof(`automatically monitoring consul key "%s"`, consulKey)
 		items = append(items, consul.NewKeyItem(consulKey))
 	}
-	return b.WithConsulMonitor(addr, dc, token, timeout, items...)
+	wtc, err := consul.New(addr, dc, token, timeout, items...)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	b.watchers = append(b.watchers, wtc)
+	return b
 }
 
 // Create the harvester instance.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/beatlabs/harvester/monitor/consul"
 	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,28 +13,24 @@ const (
 )
 
 func TestCreateWithConsul(t *testing.T) {
-	ii := []consul.Item{consul.NewKeyItem("harvester1/name"), consul.NewPrefixItem("harvester")}
 	type args struct {
-		cfg   interface{}
-		addr  string
-		items []consul.Item
+		cfg  interface{}
+		addr string
 	}
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name: "invalid cfg", args: args{cfg: "test", addr: addr, items: ii}, wantErr: true},
-		{name: "invalid address", args: args{cfg: &testConfig{}, addr: "", items: ii}, wantErr: true},
-		{name: "missing items", args: args{cfg: &testConfig{}, addr: addr, items: []consul.Item{}}, wantErr: true},
-		{name: "success", args: args{cfg: &testConfig{}, addr: addr, items: ii}, wantErr: false},
+		{name: "invalid cfg", args: args{cfg: "test", addr: addr}, wantErr: true},
+		{name: "invalid address", args: args{cfg: &testConfig{}, addr: ""}, wantErr: true},
+		{name: "success", args: args{cfg: &testConfig{}, addr: addr}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.cfg).
 				WithConsulSeed(tt.args.addr, "", "", 0).
-				WithConsulMonitor(tt.args.addr, "", "", 0, tt.args.items...).
-				WithConsulMonitorFromConfig(tt.args.addr, "", "", 0).
+				WithConsulMonitor(tt.args.addr, "", "", 0).
 				Create()
 			if tt.wantErr {
 				assert.Error(t, err)
