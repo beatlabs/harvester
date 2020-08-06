@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/beatlabs/harvester/config"
-	harvesterlog "github.com/beatlabs/harvester/log"
+	"github.com/beatlabs/harvester/log"
 	"github.com/beatlabs/harvester/monitor"
 	"github.com/beatlabs/harvester/monitor/consul"
 	"github.com/beatlabs/harvester/seed"
@@ -112,7 +112,7 @@ func (b *Builder) WithConsulMonitorFromConfig(addr, dc, token string, timeout ti
 		if !ok {
 			continue
 		}
-		harvesterlog.Infof(`automatically monitoring consul key "%s"`, consulKey)
+		log.Infof(`automatically monitoring consul key "%s"`, consulKey)
 		items = append(items, consul.NewKeyItem(consulKey))
 	}
 	return b.WithConsulMonitor(addr, dc, token, timeout, items...)
