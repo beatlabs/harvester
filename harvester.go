@@ -106,7 +106,7 @@ func (b *Builder) WithConsulMonitorFromConfig(addr, dc, token string, timeout ti
 	if b.err != nil {
 		return b
 	}
-	var items []consul.Item
+	items := make([]consul.Item, 0)
 	for _, field := range b.cfg.Fields {
 		consulKey, ok := field.Sources()[config.SourceConsul]
 		if !ok {
