@@ -35,6 +35,7 @@ func TestCreateWithConsul(t *testing.T) {
 			got, err := New(tt.args.cfg).
 				WithConsulSeed(tt.args.addr, "", "", 0).
 				WithConsulMonitor(tt.args.addr, "", "", 0, tt.args.items...).
+				WithConsulMonitorFromConfig(tt.args.addr, "", "", 0).
 				Create()
 			if tt.wantErr {
 				assert.Error(t, err)
