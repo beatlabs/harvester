@@ -93,7 +93,7 @@ The `Harvester` builder pattern is used to create a `Harvester` instance. The bu
 ```go
     h, err := New(&cfg).
                 WithConsulSeed("address", "dc", "token").
-                WithConsulMonitor("address", "dc", "token", items...).
+                WithConsulMonitor("address", "dc", "token").
                 Create()
 ```
 
