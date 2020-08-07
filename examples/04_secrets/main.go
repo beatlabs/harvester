@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/beatlabs/harvester"
-	"github.com/beatlabs/harvester/monitor/consul"
 	"github.com/beatlabs/harvester/sync"
 	"github.com/hashicorp/consul/api"
 )
@@ -32,13 +31,9 @@ func main() {
 
 	cfg := config{}
 
-	ii := []consul.Item{
-		consul.NewKeyItem("harvester/example_04/accesstoken"),
-	}
-
 	h, err := harvester.New(&cfg).
 		WithConsulSeed("127.0.0.1:8500", "", "", 0).
-		WithConsulMonitor("127.0.0.1:8500", "", "", 0, ii...).
+		WithConsulMonitor("127.0.0.1:8500", "", "", 0).
 		Create()
 	if err != nil {
 		log.Fatalf("failed to create harvester: %v", err)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/log"
 	"github.com/beatlabs/harvester/monitor"
 	"github.com/beatlabs/harvester/monitor/consul"
 	"github.com/beatlabs/harvester/seed"
@@ -84,12 +85,22 @@ func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Du
 	return b
 }
 
-// WithConsulMonitor enables support for monitoring key/prefixes on consul.
-func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duration, ii ...consul.Item) *Builder {
+// WithConsulMonitor enables support for monitoring key/prefixes on Consul. It automatically parses the config
+// and monitors every field found tagged with Consul.
+func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
-	wtc, err := consul.New(addr, dc, token, timeout, ii...)
+	items := make([]consul.Item, 0)
+	for _, field := range b.cfg.Fields {
+		consulKey, ok := field.Sources()[config.SourceConsul]
+		if !ok {
+			continue
+		}
+		log.Infof(`automatically monitoring consul key "%s"`, consulKey)
+		items = append(items, consul.NewKeyItem(consulKey))
+	}
+	wtc, err := consul.New(addr, dc, token, timeout, items...)
 	if err != nil {
 		b.err = err
 		return b
