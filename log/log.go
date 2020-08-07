@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"os"
 )
 
 // Func function definition.
@@ -23,7 +22,6 @@ var (
 	errorf = func(format string, v ...interface{}) {
 		log.Printf("ERROR: "+format, v...)
 	}
-	writer io.Writer = os.Stdout
 )
 
 // Setup allows for setting up custom loggers.
@@ -47,13 +45,12 @@ func Setup(wr io.Writer, inf, waf, erf, dbf Func) error {
 	warnf = waf
 	errorf = erf
 	debugf = dbf
-	writer = wr
 	return nil
 }
 
 // Writer returns the loggers writer interface.
 func Writer() io.Writer {
-	return writer
+	return writer{}
 }
 
 // Infof provides log info capabilities.
@@ -74,4 +71,14 @@ func Errorf(format string, v ...interface{}) {
 // Debugf provides log debug capabilities.
 func Debugf(format string, v ...interface{}) {
 	debugf(format, v...)
+}
+
+// writer is a wrapper around harvester's logger that implements io.Writer.
+// It is available so we can keep using harvester's logger for external dependencies that require io.Writer (like hclog).
+type writer struct{}
+
+// Write log using log.Errorf() and will never returns an error.
+func (writer) Write(p []byte) (n int, err error) {
+	Errorf(string(p))
+	return len(p), nil
 }

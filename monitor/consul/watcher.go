@@ -59,6 +59,8 @@ func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, e
 	return &Watcher{cl: cl, dc: dc, token: token, ii: ii}, nil
 }
 
+
+
 // Watch key and prefixes for changes.
 func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 	if ctx == nil {
