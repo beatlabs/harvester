@@ -102,5 +102,5 @@ func (l consul) StandardLogger(_ *hclog.StandardLoggerOptions) *log.Logger {
 }
 
 func (l consul) StandardWriter(_ *hclog.StandardLoggerOptions) io.Writer {
-	return os.Stdout
+	return os.Stderr
 }
