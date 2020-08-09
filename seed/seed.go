@@ -1,3 +1,4 @@
+// Package seed handles seeding config values.
 package seed
 
 import (

@@ -1,3 +1,4 @@
+// Package change support change management of config values.
 package change
 
 import "github.com/beatlabs/harvester/config"

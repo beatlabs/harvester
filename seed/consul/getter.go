@@ -1,3 +1,4 @@
+// Package consul handles seeding capabilities with consul.
 package consul
 
 import (

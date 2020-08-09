@@ -1,3 +1,4 @@
+// Package sync handles synchronized read and write access to config values.
 package sync
 
 import (
