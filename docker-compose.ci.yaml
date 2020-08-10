@@ -4,6 +4,8 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile.ci
+    environment:
+      - CODECOV_TOKEN
     # Mount the host's docker socket into the container to allow this container to spin up other containers
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
