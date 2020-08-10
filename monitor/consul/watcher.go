@@ -1,4 +1,4 @@
-// Package consul handles the monitor capabilities of harvester using Consul.
+// Package consul handles the monitor capabilities of harvester using ConsulLogger.
 package consul
 
 import (
@@ -29,7 +29,7 @@ func NewPrefixItem(key string) Item {
 	return Item{tp: "keyprefix", key: key}
 }
 
-// Watcher of Consul changes.
+// Watcher of ConsulLogger changes.
 type Watcher struct {
 	cl    *api.Client
 	dc    string
@@ -81,7 +81,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		}
 		w.pp = append(w.pp, pl)
 		go func(tp, key string) {
-			err := pl.RunWithClientAndHclog(w.cl, log.Consul())
+			err := pl.RunWithClientAndHclog(w.cl, log.ConsulLogger())
 			if err != nil {
 				log.Errorf("plan %s of type %s failed: %v", tp, key, err)
 			} else {

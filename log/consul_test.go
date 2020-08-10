@@ -14,7 +14,7 @@ func TestConsul(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
-	logger := Consul()
+	logger := ConsulLogger()
 
 	t.Run("Level", func(t *testing.T) {
 		logger.Log(hclog.Warn, "TEST: %d", 123)

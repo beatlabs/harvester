@@ -10,8 +10,8 @@ import (
 
 var consulLog = &consul{}
 
-// Consul return a consul compatible logger.
-func Consul() hclog.Logger {
+// ConsulLogger return a consul compatible logger.
+func ConsulLogger() hclog.Logger {
 	return consulLog
 }
 

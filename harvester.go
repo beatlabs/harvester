@@ -85,8 +85,8 @@ func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Du
 	return b
 }
 
-// WithConsulMonitor enables support for monitoring key/prefixes on Consul. It automatically parses the config
-// and monitors every field found tagged with Consul.
+// WithConsulMonitor enables support for monitoring key/prefixes on ConsulLogger. It automatically parses the config
+// and monitors every field found tagged with ConsulLogger.
 func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
