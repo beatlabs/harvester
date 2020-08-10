@@ -39,7 +39,7 @@ ci-lint:
 	docker-compose -f ./docker-compose.ci.yaml run harvester-ci make lint
 
 ci-test:
-	docker-compose -f ./docker-compose.ci.yaml run harvester-ci make test-with-coverage
+	docker-compose -f ./docker-compose.ci.yaml run -e CODECOV_TOKEN harvester-ci make test-with-coverage
 
 ci-all:
 	make ci-initialize
