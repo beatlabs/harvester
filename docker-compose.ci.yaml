@@ -4,3 +4,8 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile.ci
+    # Mount the host's docker socket into the container to allow this container to spin up other containers
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Set network mode to host so all ports are mapped with the host, otherwise the tests will not be able to connect to the other containers
+    network_mode: host

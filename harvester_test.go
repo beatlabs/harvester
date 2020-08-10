@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/beatlabs/harvester/sync"
+
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	addr = "127.0.0.1:8500"
+	addr = "not-an-address:8500"
 )
 
 func TestCreateWithConsul(t *testing.T) {

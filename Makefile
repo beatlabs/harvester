@@ -8,6 +8,10 @@ test: fmtcheck
 testint: fmtcheck
 	go test ./... -cover -race -tags=integration -count=1
 
+test-with-coverage:
+	go test ./... -mod=vendor -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
+	./scripts/codecov.sh
+
 cover: fmtcheck
 	go test ./... -coverpkg=./... -coverprofile=cover.out -tags=integration -covermode=atomic && \
 	go tool cover -func=cover.out &&\
@@ -35,7 +39,12 @@ ci-lint:
 	docker-compose -f ./docker-compose.ci.yaml run harvester-ci make lint
 
 ci-test:
-	docker-compose -f ./docker-compose.ci.yaml run harvester-ci make test
+	docker-compose -f ./docker-compose.ci.yaml run -e CODECOV_TOKEN=${CODECOV_TOKEN} harvester-ci make test-with-coverage
+
+ci-all:
+	make ci-initialize
+	make ci-lint
+	make ci-test
 
 # disallow any parallelism (-j) for Make. This is necessary since some
 # commands during the build process create temporary files that collide

@@ -14,10 +14,6 @@ jobs:
         run: make ci-lint
 
       - name: Run tests
+        env:
+          CODECOV_TOKEN: ${{ secrets.CodeCovToken }}
         run: make ci-test
-
-#      - name: Upload code coverage
-#        env:
-#          CODECOV_TOKEN: ${{ secrets.CodeCovToken }}
-#        run: |
-#          bash <(curl -s https://codecov.io/bash)

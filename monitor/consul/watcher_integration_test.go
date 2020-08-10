@@ -4,81 +4,65 @@ package consul
 
 import (
 	"context"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/tests"
+
 	"github.com/hashicorp/consul/api"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-const (
-	addr = "127.0.0.1:8500"
-)
-
-func TestMain(m *testing.M) {
-	config := api.DefaultConfig()
-	config.Address = addr
-	consul, err := api.NewClient(config)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = cleanup(consul)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = setup(consul)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ret := m.Run()
-	err = cleanup(consul)
-	if err != nil {
-		log.Fatal(err)
-	}
-	os.Exit(ret)
+type watcherTestSuite struct {
+	suite.Suite
+	consulRuntime *tests.ConsulRuntime
 }
 
-func TestWatch(t *testing.T) {
+func TestWatcherTestSuite(t *testing.T) {
+	suite.Run(t, new(watcherTestSuite))
+}
+
+func (s *watcherTestSuite) SetupSuite() {
+	var err error
+	s.consulRuntime, err = tests.NewConsulRuntime(tests.ConsulVersion)
+	s.NoError(err)
+	s.NoError(s.consulRuntime.StartUp())
+
+	consul, err := s.consulRuntime.GetClient()
+	s.NoError(err)
+	s.NoError(setup(consul))
+}
+
+func (s *watcherTestSuite) TearDownSuite() {
+	s.NoError(s.consulRuntime.TearDown())
+}
+
+func (s *watcherTestSuite) TestWatch() {
 	ch := make(chan []*change.Change)
-	w, err := New(addr, "", "", 0, NewKeyItem("key1"), NewPrefixItem("prefix1"))
-	require.NoError(t, err)
-	require.NotNil(t, w)
+	w, err := New(s.consulRuntime.GetAddress(), "", "", 0, NewKeyItem("key1"), NewPrefixItem("prefix1"))
+	s.Require().NoError(err)
+	s.Require().NotNil(w)
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 	err = w.Watch(ctx, ch)
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
 	for i := 0; i < 2; i++ {
 		cc := <-ch
 		for _, cng := range cc {
 			switch cng.Key() {
 			case "prefix1/key2":
-				assert.Equal(t, "2", cng.Value())
+				s.Equal("2", cng.Value())
 			case "prefix1/key3":
-				assert.Equal(t, "3", cng.Value())
+				s.Equal("3", cng.Value())
 			case "key1":
-				assert.Equal(t, "1", cng.Value())
+				s.Equal("1", cng.Value())
 			default:
-				assert.Fail(t, "key invalid", cng.Key())
+				s.Fail("key invalid", cng.Key())
 			}
-			assert.True(t, cng.Version() > 0)
+			s.True(cng.Version() > 0)
 		}
 	}
-}
-
-func cleanup(consul *api.Client) error {
-	_, err := consul.KV().Delete("key1", nil)
-	if err != nil {
-		return err
-	}
-	_, err = consul.KV().DeleteTree("prefix1", nil)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func setup(consul *api.Client) error {

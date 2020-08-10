@@ -3,87 +3,72 @@
 package consul
 
 import (
-	"log"
-	"os"
 	"testing"
 
+	"github.com/beatlabs/harvester/tests"
+
 	"github.com/hashicorp/consul/api"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-const (
-	addr = "127.0.0.1:8500"
-)
-
-func TestMain(m *testing.M) {
-	config := api.DefaultConfig()
-	config.Address = addr
-	consul, err := api.NewClient(config)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = cleanup(consul)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = setup(consul)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ret := m.Run()
-	err = cleanup(consul)
-	if err != nil {
-		log.Fatal(err)
-	}
-	os.Exit(ret)
+type getterTestSuite struct {
+	suite.Suite
+	consulRuntime *tests.ConsulRuntime
 }
 
-func TestGetter_Get(t *testing.T) {
+func TestGetterTestSuite(t *testing.T) {
+	suite.Run(t, new(getterTestSuite))
+}
+
+func (s *getterTestSuite) SetupSuite() {
+	var err error
+	s.consulRuntime, err = tests.NewConsulRuntime(tests.ConsulVersion)
+	s.NoError(err)
+	s.NoError(s.consulRuntime.StartUp())
+
+	consul, err := s.consulRuntime.GetClient()
+	s.NoError(err)
+	s.NoError(setup(consul))
+}
+
+func (s *getterTestSuite) TearDownSuite() {
+	s.NoError(s.consulRuntime.TearDown())
+}
+
+func (s *getterTestSuite) TestGetter_Get() {
 	one := "1"
 	type args struct {
 		key  string
 		addr string
 	}
-	tests := []struct {
+	testList := []struct {
 		name    string
 		args    args
 		want    *string
 		wantErr bool
 	}{
-		{name: "success", args: args{addr: addr, key: "get_key1"}, want: &one, wantErr: false},
-		{name: "missing key", args: args{addr: addr, key: "get_key2"}, want: nil, wantErr: false},
+		{name: "success", args: args{addr: s.consulRuntime.GetAddress(), key: "get_key1"}, want: &one, wantErr: false},
+		{name: "missing key", args: args{addr: s.consulRuntime.GetAddress(), key: "get_key2"}, want: nil, wantErr: false},
 		{name: "wrong address", args: args{addr: "xxx", key: "get_key1"}, want: nil, wantErr: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tt := range testList {
+		s.Run(tt.name, func() {
 			gtr, err := New(tt.args.addr, "", "", 0)
-			require.NoError(t, err)
+			s.Require().NoError(err)
 			got, version, err := gtr.Get(tt.args.key)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Empty(t, got)
+				s.Error(err)
+				s.Empty(got)
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, got)
-				assert.True(t, version >= uint64(0))
+				s.NoError(err)
+				s.Equal(tt.want, got)
+				s.True(version >= uint64(0))
 			}
 		})
 	}
 }
 
-func cleanup(consul *api.Client) error {
-	_, err := consul.KV().Delete("get_key1", nil)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func setup(consul *api.Client) error {
 	_, err := consul.KV().Put(&api.KVPair{Key: "get_key1", Value: []byte("1")}, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
