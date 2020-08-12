@@ -1,3 +1,4 @@
+// Package change supports change management of config values.
 package change
 
 import "github.com/beatlabs/harvester/config"
@@ -11,7 +12,7 @@ type Change struct {
 }
 
 // New constructor.
-func New(src config.Source, key string, value string, version uint64) *Change {
+func New(src config.Source, key, value string, version uint64) *Change {
 	return &Change{src: src, key: key, value: value, version: version}
 }
 

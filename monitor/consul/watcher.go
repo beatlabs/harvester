@@ -1,3 +1,4 @@
+// Package consul handles the monitor capabilities of harvester using ConsulLogger.
 package consul
 
 import (
@@ -7,10 +8,9 @@ import (
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/beatlabs/harvester/config"
-	harvesterlog "github.com/beatlabs/harvester/log"
+	"github.com/beatlabs/harvester/log"
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
-	"github.com/hashicorp/go-hclog"
 )
 
 // Item definition.
@@ -29,7 +29,7 @@ func NewPrefixItem(key string) Item {
 	return Item{tp: "keyprefix", key: key}
 }
 
-// Watcher of Consul changes.
+// Watcher of ConsulLogger changes.
 type Watcher struct {
 	cl    *api.Client
 	dc    string
@@ -81,12 +81,11 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		}
 		w.pp = append(w.pp, pl)
 		go func(tp, key string) {
-			logger := hclog.New(&hclog.LoggerOptions{Output: harvesterlog.Writer()})
-			err := pl.RunWithClientAndHclog(w.cl, logger)
+			err := pl.RunWithClientAndHclog(w.cl, log.ConsulLogger())
 			if err != nil {
-				harvesterlog.Errorf("plan %s of type %s failed: %v", tp, key, err)
+				log.Errorf("plan %s of type %s failed: %v", tp, key, err)
 			} else {
-				harvesterlog.Debugf("plan %s of type %s is running", tp, key)
+				log.Debugf("plan %s of type %s is running", tp, key)
 			}
 		}(i.tp, i.key)
 	}
@@ -95,7 +94,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		for _, pl := range w.pp {
 			pl.Stop()
 		}
-		harvesterlog.Infof("all watch plans have been stopped")
+		log.Infof("all watch plans have been stopped")
 	}()
 
 	return nil
@@ -112,12 +111,12 @@ func (w *Watcher) createKeyPlan(key string, ch chan<- []*change.Change) (*watch.
 		}
 		pair, ok := data.(*api.KVPair)
 		if !ok {
-			harvesterlog.Errorf("data is not kv pair: %v", data)
+			log.Errorf("data is not kv pair: %v", data)
 		} else {
 			ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
 		}
 	}
-	harvesterlog.Infof("plan for key %s created", key)
+	log.Infof("plan for key %s created", key)
 	return pl, nil
 }
 
@@ -132,7 +131,7 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 		}
 		pp, ok := data.(api.KVPairs)
 		if !ok {
-			harvesterlog.Errorf("data is not kv pairs: %v", data)
+			log.Errorf("data is not kv pairs: %v", data)
 		} else {
 			cc := make([]*change.Change, len(pp))
 			for i := 0; i < len(pp); i++ {
@@ -141,7 +140,7 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 			ch <- cc
 		}
 	}
-	harvesterlog.Infof("plan for keyprefix %s created", keyPrefix)
+	log.Infof("plan for keyprefix %s created", keyPrefix)
 	return pl, nil
 }
 
