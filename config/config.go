@@ -1,3 +1,4 @@
+// Package config handles config struct parsing.
 package config
 
 import (

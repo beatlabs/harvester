@@ -1,3 +1,4 @@
+// Package monitor handles config value monitoring and changing.
 package monitor
 
 import (

@@ -1,10 +1,11 @@
+// Package log handles logging capabilities of harvester.
 package log
 
 import (
 	"errors"
-	"io"
 	"log"
-	"os"
+
+	hclog "github.com/hashicorp/go-hclog"
 )
 
 // Func function definition.
@@ -23,11 +24,10 @@ var (
 	errorf = func(format string, v ...interface{}) {
 		log.Printf("ERROR: "+format, v...)
 	}
-	writer io.Writer = os.Stdout
 )
 
 // Setup allows for setting up custom loggers.
-func Setup(wr io.Writer, inf, waf, erf, dbf Func) error {
+func Setup(inf, waf, erf, dbf Func) error {
 	if inf == nil {
 		return errors.New("info log function is nil")
 	}
@@ -40,20 +40,12 @@ func Setup(wr io.Writer, inf, waf, erf, dbf Func) error {
 	if dbf == nil {
 		return errors.New("debug log function is nil")
 	}
-	if wr == nil {
-		return errors.New("writer is nil")
-	}
 	infof = inf
 	warnf = waf
 	errorf = erf
 	debugf = dbf
-	writer = wr
+	hclog.SetDefault(consulLog)
 	return nil
-}
-
-// Writer returns the loggers writer interface.
-func Writer() io.Writer {
-	return writer
 }
 
 // Infof provides log info capabilities.
