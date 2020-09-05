@@ -72,28 +72,32 @@ func TestCreate_SeedError(t *testing.T) {
 }
 
 type testConfig struct {
-	Name    sync.String  `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64   `seed:"18"  consul:"harvester/age"`
-	Balance sync.Float64 `seed:"99.9"  consul:"harvester/balance"`
-	HasJob  sync.Bool    `seed:"true"  consul:"harvester/has-job"`
+	Name    sync.String       `seed:"John Doe" consul:"harvester1/name"`
+	Age     sync.Int64        `seed:"18"  consul:"harvester/age"`
+	Balance sync.Float64      `seed:"99.9"  consul:"harvester/balance"`
+	HasJob  sync.Bool         `seed:"true"  consul:"harvester/has-job"`
+	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/FunTime"`
 }
 
 type testConfigNoConsul struct {
-	Name     sync.String  `seed:"John Doe"`
-	Age      sync.Int64   `seed:"18"`
-	Balance  sync.Float64 `seed:"99.9"`
-	HasJob   sync.Bool    `seed:"true"`
+	Name     sync.String       `seed:"John Doe"`
+	Age      sync.Int64        `seed:"18"`
+	Balance  sync.Float64      `seed:"99.9"`
+	HasJob   sync.Bool         `seed:"true"`
+	FunTime  sync.TimeDuration `seed:"3s"`
 	Position struct {
 		Salary sync.Int64 `seed:"8000"`
 		Place  struct {
-			RoomNumber sync.Int64 `seed:"24"`
+			RoomNumber sync.Int64        `seed:"24"`
+			SignTime   sync.TimeDuration `seed:"8s"`
 		}
 	}
 }
 
 type testConfigSeedError struct {
-	Name    sync.String  `seed:"John Doe"`
-	Age     sync.Int64   `seed:"XXX"`
-	Balance sync.Float64 `seed:"99.9"`
-	HasJob  sync.Bool    `seed:"true"`
+	Name    sync.String       `seed:"John Doe"`
+	Age     sync.Int64        `seed:"XXX"`
+	Balance sync.Float64      `seed:"99.9"`
+	HasJob  sync.Bool         `seed:"true"`
+	FunTime sync.TimeDuration `seed:"1s"`
 }

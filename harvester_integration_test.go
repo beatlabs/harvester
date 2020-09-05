@@ -50,10 +50,11 @@ var (
 )
 
 type testConfigWithSecret struct {
-	Name    sync.Secret  `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64   `seed:"18" consul:"harvester/age"`
-	Balance sync.Float64 `seed:"99.9" consul:"harvester/balance"`
-	HasJob  sync.Bool    `seed:"true" consul:"harvester/has-job"`
+	Name    sync.Secret       `seed:"John Doe" consul:"harvester1/name"`
+	Age     sync.Int64        `seed:"18" consul:"harvester/age"`
+	Balance sync.Float64      `seed:"99.9" consul:"harvester/balance"`
+	HasJob  sync.Bool         `seed:"true" consul:"harvester/has-job"`
+	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/FunTime"`
 	Foo     fooStruct
 }
 
@@ -104,6 +105,7 @@ func Test_harvester_Harvest(t *testing.T) {
 	assert.Equal(t, int64(99), cfg.Age.Get())
 	assert.Equal(t, 111.1, cfg.Balance.Get())
 	assert.Equal(t, false, cfg.HasJob.Get())
+	assert.Equal(t, 1*time.Second, cfg.FunTime.Get())
 	assert.Equal(t, int64(123), cfg.Foo.Bar.Get())
 
 	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Anderson")}, nil)
@@ -111,10 +113,15 @@ func Test_harvester_Harvest(t *testing.T) {
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
 
+	_, err = csl.Put(&api.KVPair{Key: "harvester1/FunTime", Value: []byte(time.ParseDuration("5s"))}, nil)
+	require.NoError(t, err)
+	time.Sleep(1000 * time.Millisecond)
+	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
+
 	_, err = csl.Put(&api.KVPair{Key: "harvester/foo/bar", Value: []byte("42")}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, int64(42), cfg.Foo.Bar.Get())
+	assert.Equal(t, 5*time.Second, cfg.FunTime.Get())
 }
 
 func testLogOutput(buf *bytes.Buffer, t *testing.T) {
