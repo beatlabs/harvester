@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/beatlabs/harvester/config"
 	"github.com/beatlabs/harvester/sync"
@@ -140,6 +141,7 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_XXX", "XXX"))
 	require.NoError(t, os.Setenv("ENV_AGE", "25"))
+	require.NoError(t, os.Setenv("ENV_WORK_HOURS", "9h"))
 
 	c := testConfig{}
 	goodCfg, err := config.New(&c)
@@ -202,18 +204,20 @@ func TestSeeder_Seed(t *testing.T) {
 				assert.Equal(t, 99.9, c.Balance.Get())
 				assert.True(t, c.HasJob.Get())
 				assert.Equal(t, "foobar", c.About.Get())
+				assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
 			}
 		})
 	}
 }
 
 type testConfig struct {
-	Name    sync.String  `seed:"John Doe"`
-	Age     sync.Int64   `seed:"18" env:"ENV_AGE"`
-	City    sync.String  `seed:"London" flag:"city"`
-	Balance sync.Float64 `seed:"99.9" env:"ENV_BALANCE"`
-	HasJob  sync.Bool    `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
-	About   sync.String  `seed:"" file:"testdata/test.txt"`
+	Name      sync.String       `seed:"John Doe"`
+	Age       sync.Int64        `seed:"18" env:"ENV_AGE"`
+	City      sync.String       `seed:"London" flag:"city"`
+	Balance   sync.Float64      `seed:"99.9" env:"ENV_BALANCE"`
+	HasJob    sync.Bool         `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	About     sync.String       `seed:"" file:"testdata/test.txt"`
+	WorkHours sync.TimeDuration `seed:"10h" flag:"workHours" env:"ENV_WORK_HOURS" consul:"/config/work_hours"`
 }
 
 type testInvalidFileInt struct {
@@ -253,6 +257,10 @@ func (tcg *testConsulGet) Get(key string) (*string, uint64, error) {
 	}
 	val := "XXX"
 	if key == "/config/XXX" {
+		return &val, 0, nil
+	}
+	if key == "/config/work_hours" {
+		val := "9h"
 		return &val, 0, nil
 	}
 	val = "true"
