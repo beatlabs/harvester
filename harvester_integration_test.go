@@ -23,6 +23,7 @@ var (
 		`INFO: automatically monitoring consul key "harvester/age"`,
 		`INFO: automatically monitoring consul key "harvester/balance"`,
 		`INFO: automatically monitoring consul key "harvester/has-job"`,
+		`INFO: automatically monitoring consul key "harvester/FunTime"`,
 		`INFO: automatically monitoring consul key "harvester/foo/bar"`,
 		`INFO: field "Name" updated with value "***", version: `,
 		`INFO: seed value *** applied on field Name`,
@@ -37,14 +38,18 @@ var (
 		`INFO: field "Balance" updated with value "111.100000", version: `,
 		`INFO: consul value 111.100000 applied on field Balance`,
 		`INFO: field "HasJob" updated with value "true", version: `,
-		`INFO: seed value true applied on field HasJob`,
+		`INFO: field "FunTime" updated with value "1s", version: `,
+		`INFO: seed value 1s applied on field FunTime`,
 		`INFO: field "HasJob" updated with value "false", version: `,
 		`INFO: consul value false applied on field HasJob`,
+		`INFO: field "FunTime" updated with value "1s", version:`,
+		`INFO: seed value 1s applied on field FunTime`,
 		`INFO: field "FooBar" updated with value "123", version: `,
 		`INFO: plan for key harvester1/name created`,
 		`INFO: plan for key harvester/age created`,
 		`INFO: plan for key harvester/balance created`,
 		`INFO: plan for key harvester/has-job created`,
+		`INFO: plan for key harvester/FunTime created`,
 		`INFO: plan for key harvester/foo/bar created`,
 	}
 )
@@ -99,6 +104,7 @@ func Test_harvester_Harvest(t *testing.T) {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 	err = h.Harvest(ctx)
+
 	testLogOutput(buf, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "Mr. Smith", cfg.Name.Get())
