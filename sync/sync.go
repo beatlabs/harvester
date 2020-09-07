@@ -155,7 +155,7 @@ func (s *String) SetString(val string) error {
 	return nil
 }
 
-// String type with concurrent access support.
+// TimeDuration is Time.Duration type with concurrent access support.
 type TimeDuration struct {
 	rw    sync.RWMutex
 	value time.Duration

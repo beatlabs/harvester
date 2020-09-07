@@ -113,7 +113,9 @@ func Test_harvester_Harvest(t *testing.T) {
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
 
-	_, err = csl.Put(&api.KVPair{Key: "harvester1/FunTime", Value: []byte(time.ParseDuration("5s"))}, nil)
+	duration, err := time.ParseDuration("5s")
+	require.NoError(t, err)
+	_, err = csl.Put(&api.KVPair{Key: "harvester1/FunTime", Value: []byte(duration)}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
