@@ -124,12 +124,12 @@ func Test_harvester_Harvest(t *testing.T) {
 	_, err = csl.Put(&api.KVPair{Key: "harvester/FunTime", Value: []byte(duration.String())}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
+	assert.Equal(t, 5*time.Second, cfg.FunTime.Get())
 
 	_, err = csl.Put(&api.KVPair{Key: "harvester/foo/bar", Value: []byte("42")}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, 5*time.Second, cfg.FunTime.Get())
+	assert.Equal(t, int64(42), cfg.Foo.Bar.Get())
 }
 
 func testLogOutput(buf *bytes.Buffer, t *testing.T) {
