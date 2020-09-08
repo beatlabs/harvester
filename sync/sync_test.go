@@ -2,6 +2,7 @@ package sync
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -97,4 +98,24 @@ func TestSecret_SetString(t *testing.T) {
 	var s Secret
 	assert.NoError(t, s.SetString("foo"))
 	assert.Equal(t, "foo", s.Get())
+}
+
+func TestTimeDuration(t *testing.T) {
+	var f TimeDuration
+	testTime := 3 * time.Second
+	ch := make(chan struct{})
+	go func() {
+		f.Set(testTime)
+		ch <- struct{}{}
+	}()
+	<-ch
+	assert.Equal(t, testTime, f.Get())
+	assert.Equal(t, testTime.String(), f.String())
+}
+
+func TestTimeDuration_SetString(t *testing.T) {
+	var f TimeDuration
+	assert.Error(t, f.SetString("kuku"))
+	assert.NoError(t, f.SetString("3s"))
+	assert.Equal(t, 3*time.Second, f.Get())
 }
