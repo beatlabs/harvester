@@ -76,7 +76,7 @@ type testConfig struct {
 	Age     sync.Int64        `seed:"18"  consul:"harvester/age"`
 	Balance sync.Float64      `seed:"99.9"  consul:"harvester/balance"`
 	HasJob  sync.Bool         `seed:"true"  consul:"harvester/has-job"`
-	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/FunTime"`
+	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/fun-time"`
 }
 
 type testConfigNoConsul struct {

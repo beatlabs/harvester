@@ -23,7 +23,7 @@ var (
 		`INFO: automatically monitoring consul key "harvester/age"`,
 		`INFO: automatically monitoring consul key "harvester/balance"`,
 		`INFO: automatically monitoring consul key "harvester/has-job"`,
-		`INFO: automatically monitoring consul key "harvester/FunTime"`,
+		`INFO: automatically monitoring consul key "harvester/fun-time"`,
 		`INFO: automatically monitoring consul key "harvester/foo/bar"`,
 		`INFO: field "Name" updated with value "***", version: `,
 		`INFO: seed value *** applied on field Name`,
@@ -38,18 +38,18 @@ var (
 		`INFO: field "Balance" updated with value "111.100000", version: `,
 		`INFO: consul value 111.100000 applied on field Balance`,
 		`INFO: field "HasJob" updated with value "true", version: `,
-		`INFO: field "FunTime" updated with value "1s", version: `,
-		`INFO: seed value 1s applied on field FunTime`,
+		`INFO: field "fun-time" updated with value "1s", version: `,
+		`INFO: seed value 1s applied on field fun-time`,
 		`INFO: field "HasJob" updated with value "false", version: `,
 		`INFO: consul value false applied on field HasJob`,
-		`INFO: field "FunTime" updated with value "1s", version:`,
-		`INFO: seed value 1s applied on field FunTime`,
+		`INFO: field "fun-time" updated with value "1s", version:`,
+		`INFO: seed value 1s applied on field fun-time`,
 		`INFO: field "FooBar" updated with value "123", version: `,
 		`INFO: plan for key harvester1/name created`,
 		`INFO: plan for key harvester/age created`,
 		`INFO: plan for key harvester/balance created`,
 		`INFO: plan for key harvester/has-job created`,
-		`INFO: plan for key harvester/FunTime created`,
+		`INFO: plan for key harvester/fun-time created`,
 		`INFO: plan for key harvester/foo/bar created`,
 	}
 )
@@ -59,7 +59,7 @@ type testConfigWithSecret struct {
 	Age     sync.Int64        `seed:"18" consul:"harvester/age"`
 	Balance sync.Float64      `seed:"99.9" consul:"harvester/balance"`
 	HasJob  sync.Bool         `seed:"true" consul:"harvester/has-job"`
-	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/FunTime"`
+	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/fun-time"`
 	Foo     fooStruct
 }
 
@@ -121,7 +121,7 @@ func Test_harvester_Harvest(t *testing.T) {
 
 	duration, err := time.ParseDuration("5s")
 	require.NoError(t, err)
-	_, err = csl.Put(&api.KVPair{Key: "harvester/FunTime", Value: []byte(duration.String())}, nil)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/fun-time", Value: []byte(duration.String())}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, 5*time.Second, cfg.FunTime.Get())
