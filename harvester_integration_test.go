@@ -23,6 +23,7 @@ var (
 		`INFO: automatically monitoring consul key "harvester/age"`,
 		`INFO: automatically monitoring consul key "harvester/balance"`,
 		`INFO: automatically monitoring consul key "harvester/has-job"`,
+		`INFO: automatically monitoring consul key "harvester/fun-time"`,
 		`INFO: automatically monitoring consul key "harvester/foo/bar"`,
 		`INFO: field "Name" updated with value "***", version: `,
 		`INFO: seed value *** applied on field Name`,
@@ -37,7 +38,6 @@ var (
 		`INFO: field "Balance" updated with value "111.100000", version: `,
 		`INFO: consul value 111.100000 applied on field Balance`,
 		`INFO: field "HasJob" updated with value "true", version: `,
-		`INFO: seed value true applied on field HasJob`,
 		`INFO: field "HasJob" updated with value "false", version: `,
 		`INFO: consul value false applied on field HasJob`,
 		`INFO: field "FooBar" updated with value "123", version: `,
@@ -45,15 +45,17 @@ var (
 		`INFO: plan for key harvester/age created`,
 		`INFO: plan for key harvester/balance created`,
 		`INFO: plan for key harvester/has-job created`,
+		`INFO: plan for key harvester/fun-time created`,
 		`INFO: plan for key harvester/foo/bar created`,
 	}
 )
 
 type testConfigWithSecret struct {
-	Name    sync.Secret  `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64   `seed:"18" consul:"harvester/age"`
-	Balance sync.Float64 `seed:"99.9" consul:"harvester/balance"`
-	HasJob  sync.Bool    `seed:"true" consul:"harvester/has-job"`
+	Name    sync.Secret       `seed:"John Doe" consul:"harvester1/name"`
+	Age     sync.Int64        `seed:"18" consul:"harvester/age"`
+	Balance sync.Float64      `seed:"99.9" consul:"harvester/balance"`
+	HasJob  sync.Bool         `seed:"true" consul:"harvester/has-job"`
+	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/fun-time"`
 	Foo     fooStruct
 }
 
@@ -98,18 +100,27 @@ func Test_harvester_Harvest(t *testing.T) {
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 	err = h.Harvest(ctx)
+
 	testLogOutput(buf, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "Mr. Smith", cfg.Name.Get())
 	assert.Equal(t, int64(99), cfg.Age.Get())
 	assert.Equal(t, 111.1, cfg.Balance.Get())
 	assert.Equal(t, false, cfg.HasJob.Get())
+	assert.Equal(t, 1*time.Second, cfg.FunTime.Get())
 	assert.Equal(t, int64(123), cfg.Foo.Bar.Get())
 
 	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Anderson")}, nil)
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
+
+	duration, err := time.ParseDuration("5s")
+	require.NoError(t, err)
+	_, err = csl.Put(&api.KVPair{Key: "harvester/fun-time", Value: []byte(duration.String())}, nil)
+	require.NoError(t, err)
+	time.Sleep(1000 * time.Millisecond)
+	assert.Equal(t, 5*time.Second, cfg.FunTime.Get())
 
 	_, err = csl.Put(&api.KVPair{Key: "harvester/foo/bar", Value: []byte("42")}, nil)
 	require.NoError(t, err)

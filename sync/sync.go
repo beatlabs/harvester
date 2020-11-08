@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // Bool type with concurrent access support.
@@ -151,6 +152,43 @@ func (s *String) String() string {
 // SetString parses and sets a value from string type.
 func (s *String) SetString(val string) error {
 	s.Set(val)
+	return nil
+}
+
+// TimeDuration is Time.Duration type with concurrent access support.
+type TimeDuration struct {
+	rw    sync.RWMutex
+	value time.Duration
+}
+
+// Get returns the internal value.
+func (s *TimeDuration) Get() time.Duration {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.value
+}
+
+// Set a value.
+func (s *TimeDuration) Set(value time.Duration) {
+	s.rw.Lock()
+	defer s.rw.Unlock()
+	s.value = value
+}
+
+// String returns string representation of value.
+func (s *TimeDuration) String() string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.value.String()
+}
+
+// SetString parses and sets a value from string type.
+func (s *TimeDuration) SetString(val string) error {
+	value, err := time.ParseDuration(val)
+	if err != nil {
+		return err
+	}
+	s.Set(value)
 	return nil
 }
 

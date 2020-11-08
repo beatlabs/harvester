@@ -23,6 +23,7 @@ type Config struct {
     Signature      sync.String          `file:"signature.txt"`
     Sandbox        sync.Bool            `seed:"true" env:"ENV_SANDBOX" consul:"/config/sandbox-mode"`
     AccessToken    sync.Secret          `seed:"defaultaccesstoken" env:"ENV_ACCESS_TOKEN" consul:"/config/access-token"`
+    WorkDuration   sync.TimeDuration    `seed:"1s" env:"ENV_WORK_DURATION" consul:"/config/work-duration"`
 }
 ```
 
@@ -32,6 +33,7 @@ The above defines the following fields:
 - CacheRetention, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_CACHE_RETENTION_SECONDS` holds
 - LogLevel, which will be seeded with the value `DEBUG`, and if exists, overridden with whatever value the flag `loglevel` holds
 - Sandbox, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_SANDBOX` holds and then from consul if the consul seeder and/or watcher are provided.
+- WorkDuration, which will be seeded with the value `1s`, and if exists, overridden with whatever value the env var `ENV_WORK_DURATION` holds and then from consul if the consul seeder and/or watcher are provided.
 
 The fields have to be one of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
 
@@ -40,6 +42,7 @@ The fields have to be one of the types that the sync package supports in order t
 - sync.Float64, allows for concurrent float64 manipulation
 - sync.Bool, allows for concurrent bool manipulation
 - sync.Secret, allows for concurrent secret manipulation. Secrets can only be strings
+- sync.TimeDuration, allows for concurrent time.duration manipulation.
 
 For sensitive configuration (passwords, tokens, etc.) that shouldn't be printed in log, you can use the `Secret` flavor of `sync` types. If one of these is selected, then at harvester log instead of the real value the text `***` will be displayed.
 
