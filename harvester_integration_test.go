@@ -16,39 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	csl       *api.KV
-	secretLog = []string{
-		`INFO: automatically monitoring consul key "harvester1/name"`,
-		`INFO: automatically monitoring consul key "harvester/age"`,
-		`INFO: automatically monitoring consul key "harvester/balance"`,
-		`INFO: automatically monitoring consul key "harvester/has-job"`,
-		`INFO: automatically monitoring consul key "harvester/fun-time"`,
-		`INFO: automatically monitoring consul key "harvester/foo/bar"`,
-		`INFO: field "Name" updated with value "***", version: `,
-		`INFO: seed value *** applied on field Name`,
-		`INFO: field "Name" updated with value "***", version: `,
-		`INFO: consul value *** applied on field Name`,
-		`INFO: field "Age" updated with value "18", version: `,
-		`INFO: seed value 18 applied on field Age`,
-		`INFO: field "Age" updated with value "99", version: `,
-		`INFO: consul value 99 applied on field Age`,
-		`INFO: field "Balance" updated with value "99.900000", version: `,
-		`INFO: seed value 99.900000 applied on field Balance`,
-		`INFO: field "Balance" updated with value "111.100000", version: `,
-		`INFO: consul value 111.100000 applied on field Balance`,
-		`INFO: field "HasJob" updated with value "true", version: `,
-		`INFO: field "HasJob" updated with value "false", version: `,
-		`INFO: consul value false applied on field HasJob`,
-		`INFO: field "FooBar" updated with value "123", version: `,
-		`INFO: plan for key harvester1/name created`,
-		`INFO: plan for key harvester/age created`,
-		`INFO: plan for key harvester/balance created`,
-		`INFO: plan for key harvester/has-job created`,
-		`INFO: plan for key harvester/fun-time created`,
-		`INFO: plan for key harvester/foo/bar created`,
-	}
-)
+var csl *api.KV
 
 type testConfigWithSecret struct {
 	Name    sync.Secret       `seed:"John Doe" consul:"harvester1/name"`
@@ -101,7 +69,6 @@ func Test_harvester_Harvest(t *testing.T) {
 	defer cnl()
 	err = h.Harvest(ctx)
 
-	testLogOutput(buf, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "Mr. Smith", cfg.Name.Get())
 	assert.Equal(t, int64(99), cfg.Age.Get())
@@ -126,13 +93,6 @@ func Test_harvester_Harvest(t *testing.T) {
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, int64(42), cfg.Foo.Bar.Get())
-}
-
-func testLogOutput(buf *bytes.Buffer, t *testing.T) {
-	log := buf.String()
-	for _, logLine := range secretLog {
-		assert.Contains(t, log, logLine)
-	}
 }
 
 func cleanup() error {
