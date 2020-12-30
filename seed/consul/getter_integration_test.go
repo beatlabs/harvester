@@ -45,18 +45,17 @@ func TestGetter_Get(t *testing.T) {
 		key  string
 		addr string
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    args
 		want    *string
 		wantErr bool
 	}{
-		{name: "success", args: args{addr: addr, key: "get_key1"}, want: &one, wantErr: false},
-		{name: "missing key", args: args{addr: addr, key: "get_key2"}, want: nil, wantErr: false},
-		{name: "wrong address", args: args{addr: "xxx", key: "get_key1"}, want: nil, wantErr: true},
+		"success":       {args: args{addr: addr, key: "get_key1"}, want: &one, wantErr: false},
+		"missing key":   {args: args{addr: addr, key: "get_key2"}, want: nil, wantErr: false},
+		"wrong address": {args: args{addr: "xxx", key: "get_key1"}, want: nil, wantErr: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			gtr, err := New(tt.args.addr, "", "", 0)
 			require.NoError(t, err)
 			got, version, err := gtr.Get(tt.args.key)

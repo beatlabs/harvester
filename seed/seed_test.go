@@ -17,16 +17,15 @@ func TestNewParam(t *testing.T) {
 		src    config.Source
 		getter Getter
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", args: args{src: config.SourceConsul, getter: &testConsulGet{}}, wantErr: false},
-		{name: "missing getter", args: args{src: config.SourceConsul, getter: nil}, wantErr: true},
+		"success":        {args: args{src: config.SourceConsul, getter: &testConsulGet{}}, wantErr: false},
+		"missing getter": {args: args{src: config.SourceConsul, getter: nil}, wantErr: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := NewParam(tt.args.src, tt.args.getter)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -169,24 +168,23 @@ func TestSeeder_Seed(t *testing.T) {
 	type args struct {
 		cfg *config.Config
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		fields  fields
 		args    args
 		wantErr bool
 	}{
-		{name: "success", fields: fields{consulParam: prmSuccess}, args: args{cfg: goodCfg}},
-		{name: "consul get nil", args: args{cfg: goodCfg}, wantErr: true},
-		{name: "consul get error, seed successful", fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}},
-		{name: "consul missing value", fields: fields{consulParam: prmSuccess}, args: args{cfg: missingCfg}, wantErr: true},
-		{name: "invalid int", args: args{cfg: invalidIntCfg}, wantErr: true},
-		{name: "invalid float", args: args{cfg: invalidFloatCfg}, wantErr: true},
-		{name: "invalid bool", fields: fields{consulParam: prmSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
-		{name: "invalid file int", args: args{cfg: invalidFileIntCfg}, wantErr: true},
-		{name: "file read error, seed successful", args: args{cfg: fileNotExistCfg}},
+		"success":                           {fields: fields{consulParam: prmSuccess}, args: args{cfg: goodCfg}},
+		"consul get nil":                    {args: args{cfg: goodCfg}, wantErr: true},
+		"consul get error, seed successful": {fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}},
+		"consul missing value":              {fields: fields{consulParam: prmSuccess}, args: args{cfg: missingCfg}, wantErr: true},
+		"invalid int":                       {args: args{cfg: invalidIntCfg}, wantErr: true},
+		"invalid float":                     {args: args{cfg: invalidFloatCfg}, wantErr: true},
+		"invalid bool":                      {fields: fields{consulParam: prmSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
+		"invalid file int":                  {args: args{cfg: invalidFileIntCfg}, wantErr: true},
+		"file read error, seed successful":  {args: args{cfg: fileNotExistCfg}},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			var s *Seeder
 			if tt.fields.consulParam == nil {
 				s = New()

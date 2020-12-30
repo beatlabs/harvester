@@ -17,23 +17,22 @@ func TestField_Set(t *testing.T) {
 		value   string
 		version uint64
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		field   Field
 		args    args
 		wantErr bool
 	}{
-		{name: "success String", field: *cfg.Fields[0], args: args{value: "John Doe", version: 3}, wantErr: false},
-		{name: "success Int64", field: *cfg.Fields[1], args: args{value: "18", version: 1}, wantErr: false},
-		{name: "success Float64", field: *cfg.Fields[2], args: args{value: "99.9", version: 1}, wantErr: false},
-		{name: "success Bool", field: *cfg.Fields[3], args: args{value: "true", version: 1}, wantErr: false},
-		{name: "failure Int64", field: *cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
-		{name: "failure Float64", field: *cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
-		{name: "failure Bool", field: *cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
-		{name: "warn String version older", field: *cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: false},
+		"success String":            {field: *cfg.Fields[0], args: args{value: "John Doe", version: 3}, wantErr: false},
+		"success Int64":             {field: *cfg.Fields[1], args: args{value: "18", version: 1}, wantErr: false},
+		"success Float64":           {field: *cfg.Fields[2], args: args{value: "99.9", version: 1}, wantErr: false},
+		"success Bool":              {field: *cfg.Fields[3], args: args{value: "true", version: 1}, wantErr: false},
+		"failure Int64":             {field: *cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
+		"failure Float64":           {field: *cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
+		"failure Bool":              {field: *cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
+		"warn String version older": {field: *cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: false},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			err := tt.field.Set(tt.args.value, tt.args.version)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -48,21 +47,20 @@ func TestNew(t *testing.T) {
 	type args struct {
 		cfg interface{}
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", args: args{cfg: &testConfig{}}, wantErr: false},
-		{name: "cfg is nil", args: args{cfg: nil}, wantErr: true},
-		{name: "cfg is not pointer", args: args{cfg: testConfig{}}, wantErr: true},
-		{name: "cfg field not supported", args: args{cfg: &testInvalidTypeConfig{}}, wantErr: true},
-		{name: "cfg duplicate consul key", args: args{cfg: &testDuplicateConfig{}}, wantErr: true},
-		{name: "cfg tagged struct not supported", args: args{cfg: &testInvalidNestedStructWithTags{}}, wantErr: true},
-		{name: "cfg nested duplicate consul key", args: args{cfg: &testDuplicateNestedConsulConfig{}}, wantErr: true},
+		"success":                         {args: args{cfg: &testConfig{}}, wantErr: false},
+		"cfg is nil":                      {args: args{cfg: nil}, wantErr: true},
+		"cfg is not pointer":              {args: args{cfg: testConfig{}}, wantErr: true},
+		"cfg field not supported":         {args: args{cfg: &testInvalidTypeConfig{}}, wantErr: true},
+		"cfg duplicate consul key":        {args: args{cfg: &testDuplicateConfig{}}, wantErr: true},
+		"cfg tagged struct not supported": {args: args{cfg: &testInvalidNestedStructWithTags{}}, wantErr: true},
+		"cfg nested duplicate consul key": {args: args{cfg: &testDuplicateNestedConsulConfig{}}, wantErr: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg, nil)
 			if tt.wantErr {
 				assert.Error(t, err)

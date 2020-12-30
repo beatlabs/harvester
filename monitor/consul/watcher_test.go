@@ -17,18 +17,17 @@ func TestNew(t *testing.T) {
 		timeout time.Duration
 		ii      []Item
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", args: args{addr: "xxx", timeout: 1 * time.Second, ii: ii}, wantErr: false},
-		{name: "success default timeout", args: args{addr: "xxx", timeout: 0, ii: ii}, wantErr: false},
-		{name: "empty address", args: args{addr: "", timeout: 1 * time.Second, ii: ii}, wantErr: true},
-		{name: "empty items", args: args{addr: "xxx", timeout: 1 * time.Second, ii: nil}, wantErr: true},
+		"success":                 {args: args{addr: "xxx", timeout: 1 * time.Second, ii: ii}, wantErr: false},
+		"success default timeout": {args: args{addr: "xxx", timeout: 0, ii: ii}, wantErr: false},
+		"empty address":           {args: args{addr: "", timeout: 1 * time.Second, ii: ii}, wantErr: true},
+		"empty items":             {args: args{addr: "xxx", timeout: 1 * time.Second, ii: nil}, wantErr: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.addr, "dc", "token", tt.args.timeout, tt.args.ii...)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -48,16 +47,15 @@ func TestWatcher_Watch(t *testing.T) {
 		ctx context.Context
 		ch  chan<- []*change.Change
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    args
 		wantErr bool
 	}{
-		{name: "missing context", args: args{}, wantErr: true},
-		{name: "missing chan", args: args{ctx: context.Background()}, wantErr: true},
+		"missing context": {args: args{}, wantErr: true},
+		"missing chan":    {args: args{ctx: context.Background()}, wantErr: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			err = w.Watch(tt.args.ctx, tt.args.ch)
 			if tt.wantErr {
 				assert.Error(t, err)
