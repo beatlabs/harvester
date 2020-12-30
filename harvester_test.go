@@ -43,6 +43,32 @@ func TestCreateWithConsul(t *testing.T) {
 	}
 }
 
+func TestWithNotification(t *testing.T) {
+	type args struct {
+		cfg      interface{}
+		chNotify chan<- string
+	}
+	tests := map[string]struct {
+		args    args
+		wantErr bool
+	}{
+		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}, wantErr: true},
+		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan string, 0)}, wantErr: false},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := New(tt.args.cfg).WithNotification(tt.args.chNotify).Create()
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, got)
+			}
+		})
+	}
+}
+
 func TestCreate_NoConsul(t *testing.T) {
 	cfg := &testConfigNoConsul{}
 	got, err := New(cfg).Create()

@@ -37,7 +37,7 @@ func main() {
 		wg.Done()
 	}()
 
-	h, err := harvester.NewWithNotification(&cfg, chNotify).Create()
+	h, err := harvester.New(&cfg).WithNotification(chNotify).Create()
 	if err != nil {
 		log.Fatalf("failed to create harvester: %v", err)
 	}
