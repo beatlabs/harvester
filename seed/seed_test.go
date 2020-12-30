@@ -123,7 +123,7 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 			os.Args = append(os.Args, tC.extraCliArgs...)
 
 			seeder := New()
-			cfg, err := config.New(tC.inputConfig)
+			cfg, err := config.New(tC.inputConfig, nil)
 			require.NoError(t, err)
 			err = seeder.Seed(cfg)
 
@@ -144,23 +144,23 @@ func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_WORK_HOURS", "9h"))
 
 	c := testConfig{}
-	goodCfg, err := config.New(&c)
+	goodCfg, err := config.New(&c, nil)
 	require.NoError(t, err)
 	prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
 	require.NoError(t, err)
-	invalidIntCfg, err := config.New(&testInvalidInt{})
+	invalidIntCfg, err := config.New(&testInvalidInt{}, nil)
 	require.NoError(t, err)
-	invalidFloatCfg, err := config.New(&testInvalidFloat{})
+	invalidFloatCfg, err := config.New(&testInvalidFloat{}, nil)
 	require.NoError(t, err)
-	invalidBoolCfg, err := config.New(&testInvalidBool{})
+	invalidBoolCfg, err := config.New(&testInvalidBool{}, nil)
 	require.NoError(t, err)
-	missingCfg, err := config.New(&testMissingValue{})
+	missingCfg, err := config.New(&testMissingValue{}, nil)
 	require.NoError(t, err)
 	prmError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
 	require.NoError(t, err)
-	invalidFileIntCfg, err := config.New(&testInvalidFileInt{})
+	invalidFileIntCfg, err := config.New(&testInvalidFileInt{}, nil)
 	require.NoError(t, err)
-	fileNotExistCfg, err := config.New(&testFileDoesNotExist{})
+	fileNotExistCfg, err := config.New(&testFileDoesNotExist{}, nil)
 	require.NoError(t, err)
 
 	type fields struct {

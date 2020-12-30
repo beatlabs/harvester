@@ -14,9 +14,10 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	cfg, err := config.New(&testConfig{})
+	cfg, err := config.New(&testConfig{}, nil)
 	require.NoError(t, err)
-	errCfg, err := config.New(&testConfig{})
+	errCfg, err := config.New(&testConfig{}, nil)
+	require.NoError(t, err)
 	errCfg.Fields[3].Sources()[config.SourceConsul] = "/config/balance"
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}}
@@ -49,7 +50,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestMonitor_Monitor_Error(t *testing.T) {
-	cfg, err := config.New(&testConfig{})
+	cfg, err := config.New(&testConfig{}, nil)
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}, &testWatcher{err: true}}
 	mon, err := New(cfg, watchers...)
@@ -60,7 +61,7 @@ func TestMonitor_Monitor_Error(t *testing.T) {
 
 func TestMonitor_Monitor(t *testing.T) {
 	c := &testConfig{}
-	cfg, err := config.New(c)
+	cfg, err := config.New(c, nil)
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}}
 	mon, err := New(cfg, watchers...)
@@ -88,7 +89,7 @@ type testWatcher struct {
 	err bool
 }
 
-func (tw *testWatcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
+func (tw *testWatcher) Watch(_ context.Context, ch chan<- []*change.Change) error {
 	if tw.err {
 		return errors.New("TEST")
 	}

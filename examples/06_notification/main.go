@@ -4,15 +4,16 @@ import (
 	"context"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/beatlabs/harvester"
-	"github.com/beatlabs/harvester/sync"
+	harvestersync "github.com/beatlabs/harvester/sync"
 )
 
 type config struct {
-	IndexName      sync.String `seed:"customers-v1"`
-	CacheRetention sync.Int64  `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
-	LogLevel       sync.String `seed:"DEBUG" flag:"loglevel"`
+	IndexName      harvestersync.String `seed:"customers-v1"`
+	CacheRetention harvestersync.Int64  `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
+	LogLevel       harvestersync.String `seed:"DEBUG" flag:"loglevel"`
 }
 
 func main() {
@@ -25,8 +26,18 @@ func main() {
 	}
 
 	cfg := config{}
+	chNotify := make(chan string)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 
-	h, err := harvester.New(&cfg).Create()
+	go func() {
+		for change := range chNotify {
+			log.Printf("notification: " + change)
+		}
+		wg.Done()
+	}()
+
+	h, err := harvester.NewWithNotification(&cfg, chNotify).Create()
 	if err != nil {
 		log.Fatalf("failed to create harvester: %v", err)
 	}
@@ -37,4 +48,6 @@ func main() {
 	}
 
 	log.Printf("Config : IndexName: %s, CacheRetention: %d, LogLevel: %s\n", cfg.IndexName.Get(), cfg.CacheRetention.Get(), cfg.LogLevel.Get())
+	close(chNotify)
+	wg.Wait()
 }

@@ -10,7 +10,7 @@ import (
 
 func TestField_Set(t *testing.T) {
 	c := testConfig{}
-	cfg, err := New(&c)
+	cfg, err := New(&c, nil)
 	require.NoError(t, err)
 	cfg.Fields[0].version = 2
 	type args struct {
@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.cfg)
+			got, err := New(tt.args.cfg, nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, got)
@@ -97,20 +97,27 @@ func assertField(t *testing.T, fld *Field, name, typ string, sources map[Source]
 
 func TestConfig_Set(t *testing.T) {
 	c := testConfig{}
-	cfg, err := New(&c)
+	chNotify := make(chan string, 1)
+	cfg, err := New(&c, chNotify)
 	require.NoError(t, err)
 	err = cfg.Fields[0].Set("John Doe", 1)
 	assert.NoError(t, err)
+	assert.Equal(t, "field [Name] of type [String] changed from [] to [John Doe]", <-chNotify)
 	err = cfg.Fields[1].Set("18", 1)
 	assert.NoError(t, err)
+	assert.Equal(t, "field [Age] of type [Int64] changed from [0] to [18]", <-chNotify)
 	err = cfg.Fields[2].Set("99.9", 1)
 	assert.NoError(t, err)
+	assert.Equal(t, "field [Balance] of type [Float64] changed from [0.000000] to [99.9]", <-chNotify)
 	err = cfg.Fields[3].Set("true", 1)
 	assert.NoError(t, err)
+	assert.Equal(t, "field [HasJob] of type [Bool] changed from [false] to [true]", <-chNotify)
 	err = cfg.Fields[4].Set("6000", 1)
 	assert.NoError(t, err)
+	assert.Equal(t, "field [PositionSalary] of type [Int64] changed from [0] to [6000]", <-chNotify)
 	err = cfg.Fields[5].Set("baz", 1)
 	assert.NoError(t, err)
+	assert.Equal(t, "field [LevelOneLevelTwoDeepField] of type [String] changed from [] to [baz]", <-chNotify)
 	assert.Equal(t, "John Doe", c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
 	assert.Equal(t, 99.9, c.Balance.Get())

@@ -56,7 +56,20 @@ type Builder struct {
 // New constructor.
 func New(cfg interface{}) *Builder {
 	b := &Builder{}
-	c, err := config.New(cfg)
+	c, err := config.New(cfg, nil)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	b.cfg = c
+	b.seedParams = []seed.Param{}
+	return b
+}
+
+// NewWithNotification constructor.
+func NewWithNotification(cfg interface{}, chNotify chan string) *Builder {
+	b := &Builder{}
+	c, err := config.New(cfg, chNotify)
 	if err != nil {
 		b.err = err
 		return b
