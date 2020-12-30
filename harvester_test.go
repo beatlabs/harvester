@@ -53,7 +53,7 @@ func TestWithNotification(t *testing.T) {
 		wantErr bool
 	}{
 		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}, wantErr: true},
-		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan string, 0)}, wantErr: false},
+		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan string)}, wantErr: false},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
