@@ -5,11 +5,13 @@ github.com/davecgh/go-spew/spew
 # github.com/fatih/color v1.9.0
 github.com/fatih/color
 # github.com/hashicorp/consul/api v1.8.1
+## explicit
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
 # github.com/hashicorp/go-cleanhttp v0.5.1
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-hclog v0.15.0
+## explicit
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-immutable-radix v1.0.0
 github.com/hashicorp/go-immutable-radix
@@ -30,6 +32,7 @@ github.com/mitchellh/mapstructure
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/stretchr/testify v1.6.1
+## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae
