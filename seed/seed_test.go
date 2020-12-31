@@ -138,74 +138,111 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 }
 
 func TestSeeder_Seed(t *testing.T) {
-	require.NoError(t, os.Setenv("ENV_XXX", "XXX"))
 	require.NoError(t, os.Setenv("ENV_AGE", "25"))
 	require.NoError(t, os.Setenv("ENV_WORK_HOURS", "9h"))
 
-	c := testConfig{}
-	goodCfg, err := config.New(&c, nil)
-	require.NoError(t, err)
-	prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
-	require.NoError(t, err)
-	invalidIntCfg, err := config.New(&testInvalidInt{}, nil)
-	require.NoError(t, err)
-	invalidFloatCfg, err := config.New(&testInvalidFloat{}, nil)
-	require.NoError(t, err)
-	invalidBoolCfg, err := config.New(&testInvalidBool{}, nil)
-	require.NoError(t, err)
-	missingCfg, err := config.New(&testMissingValue{}, nil)
-	require.NoError(t, err)
 	prmError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
 	require.NoError(t, err)
-	invalidFileIntCfg, err := config.New(&testInvalidFileInt{}, nil)
-	require.NoError(t, err)
-	fileNotExistCfg, err := config.New(&testFileDoesNotExist{}, nil)
-	require.NoError(t, err)
 
-	type fields struct {
-		consulParam *Param
-	}
-	type args struct {
-		cfg *config.Config
-	}
-	tests := map[string]struct {
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		"success":                           {fields: fields{consulParam: prmSuccess}, args: args{cfg: goodCfg}},
-		"consul get nil":                    {args: args{cfg: goodCfg}, wantErr: true},
-		"consul get error, seed successful": {fields: fields{consulParam: prmError}, args: args{cfg: goodCfg}},
-		"consul missing value":              {fields: fields{consulParam: prmSuccess}, args: args{cfg: missingCfg}, wantErr: true},
-		"invalid int":                       {args: args{cfg: invalidIntCfg}, wantErr: true},
-		"invalid float":                     {args: args{cfg: invalidFloatCfg}, wantErr: true},
-		"invalid bool":                      {fields: fields{consulParam: prmSuccess}, args: args{cfg: invalidBoolCfg}, wantErr: true},
-		"invalid file int":                  {args: args{cfg: invalidFileIntCfg}, wantErr: true},
-		"file read error, seed successful":  {args: args{cfg: fileNotExistCfg}},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			var s *Seeder
-			if tt.fields.consulParam == nil {
-				s = New()
-			} else {
-				s = New(*tt.fields.consulParam)
-			}
+	t.Run("consul success", func(t *testing.T) {
+		c := testConfig{}
+		goodCfg, err := config.New(&c, nil)
+		require.NoError(t, err)
+		prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
+		require.NoError(t, err)
 
-			err := s.Seed(tt.args.cfg)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, "John Doe", c.Name.Get())
-				assert.Equal(t, int64(25), c.Age.Get())
-				assert.Equal(t, 99.9, c.Balance.Get())
-				assert.True(t, c.HasJob.Get())
-				assert.Equal(t, "foobar", c.About.Get())
-				assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
-			}
-		})
-	}
+		err = New(*prmSuccess).Seed(goodCfg)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "John Doe", c.Name.Get())
+		assert.Equal(t, int64(25), c.Age.Get())
+		assert.Equal(t, 99.9, c.Balance.Get())
+		assert.True(t, c.HasJob.Get())
+		assert.Equal(t, "foobar", c.About.Get())
+		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
+	})
+
+	t.Run("consul error, success", func(t *testing.T) {
+		c := testConfig{}
+		goodCfg, err := config.New(&c, nil)
+		require.NoError(t, err)
+
+		err = New(*prmError).Seed(goodCfg)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "John Doe", c.Name.Get())
+		assert.Equal(t, int64(25), c.Age.Get())
+		assert.Equal(t, 99.9, c.Balance.Get())
+		assert.True(t, c.HasJob.Get())
+		assert.Equal(t, "foobar", c.About.Get())
+		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
+	})
+
+	t.Run("file not exists, success", func(t *testing.T) {
+		c := &testFileDoesNotExist{}
+		fileNotExistCfg, err := config.New(c, nil)
+		require.NoError(t, err)
+
+		err = New(*prmError).Seed(fileNotExistCfg)
+
+		assert.NoError(t, err)
+		assert.Equal(t, int64(20), c.Age.Get())
+	})
+
+	t.Run("consul nil, failure", func(t *testing.T) {
+		c := testConfig{}
+		goodCfg, err := config.New(&c, nil)
+		require.NoError(t, err)
+
+		err = New().Seed(goodCfg)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("consul missing value, failure", func(t *testing.T) {
+		missingCfg, err := config.New(&testMissingValue{}, nil)
+		require.NoError(t, err)
+
+		err = New().Seed(missingCfg)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid int, failure", func(t *testing.T) {
+		invalidIntCfg, err := config.New(&testInvalidInt{}, nil)
+		require.NoError(t, err)
+
+		err = New().Seed(invalidIntCfg)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid float, failure", func(t *testing.T) {
+		invalidFloatCfg, err := config.New(&testInvalidFloat{}, nil)
+		require.NoError(t, err)
+
+		err = New().Seed(invalidFloatCfg)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid bool, failure", func(t *testing.T) {
+		invalidBoolCfg, err := config.New(&testInvalidBool{}, nil)
+		require.NoError(t, err)
+
+		err = New().Seed(invalidBoolCfg)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid file int, failure", func(t *testing.T) {
+		invalidFileIntCfg, err := config.New(&testInvalidFileInt{}, nil)
+		require.NoError(t, err)
+
+		err = New().Seed(invalidFileIntCfg)
+
+		assert.Error(t, err)
+	})
 }
 
 type testConfig struct {
