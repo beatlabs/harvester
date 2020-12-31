@@ -22,7 +22,7 @@ func newParser() *parser {
 	return &parser{}
 }
 
-func (p *parser) ParseCfg(cfg interface{}, chNotify chan<- string) ([]*Field, error) {
+func (p *parser) ParseCfg(cfg interface{}, chNotify chan<- ChangeNotification) ([]*Field, error) {
 	p.dups = make(map[Source]string)
 
 	tp := reflect.TypeOf(cfg)
@@ -33,7 +33,7 @@ func (p *parser) ParseCfg(cfg interface{}, chNotify chan<- string) ([]*Field, er
 	return p.getFields("", tp.Elem(), reflect.ValueOf(cfg).Elem(), chNotify)
 }
 
-func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, chNotify chan<- string) ([]*Field, error) {
+func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, chNotify chan<- ChangeNotification) ([]*Field, error) {
 	var ff []*Field
 
 	for i := 0; i < tp.NumField(); i++ {
@@ -62,7 +62,7 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, ch
 	return ff, nil
 }
 
-func (p *parser) createField(prefix string, f reflect.StructField, val reflect.Value, chNotify chan<- string) (*Field, error) {
+func (p *parser) createField(prefix string, f reflect.StructField, val reflect.Value, chNotify chan<- ChangeNotification) (*Field, error) {
 	fld := newField(prefix, f, val, chNotify)
 
 	value, ok := fld.Sources()[SourceConsul]

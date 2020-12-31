@@ -104,7 +104,12 @@ The above snippet set's up a `Harvester` instance with consul seed and monitor.
 
 ## Notification support
 
-In order to be able to monitor the changes in the configuration we can provide
+In order to be able to monitor the changes in the configuration we provide a way to notify when a change is happening via the builder.
+
+```go
+    h, err := harvester.New(&cfg).WithNotification(chNotify).Create()
+    ...
+```
 
 ## Consul
 

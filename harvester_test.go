@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/beatlabs/harvester/config"
 	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,14 +46,14 @@ func TestCreateWithConsul(t *testing.T) {
 func TestWithNotification(t *testing.T) {
 	type args struct {
 		cfg      interface{}
-		chNotify chan<- string
+		chNotify chan<- config.ChangeNotification
 	}
 	tests := map[string]struct {
 		args    args
 		wantErr bool
 	}{
 		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}, wantErr: true},
-		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan string)}, wantErr: false},
+		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan config.ChangeNotification)}, wantErr: false},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {

@@ -7,10 +7,11 @@ import (
 	"sync"
 
 	"github.com/beatlabs/harvester"
+	"github.com/beatlabs/harvester/config"
 	harvestersync "github.com/beatlabs/harvester/sync"
 )
 
-type config struct {
+type cfg struct {
 	IndexName      harvestersync.String `seed:"customers-v1"`
 	CacheRetention harvestersync.Int64  `seed:"43200" env:"ENV_CACHE_RETENTION_SECONDS"`
 	LogLevel       harvestersync.String `seed:"DEBUG" flag:"loglevel"`
@@ -25,14 +26,14 @@ func main() {
 		log.Fatalf("failed to set env var: %v", err)
 	}
 
-	cfg := config{}
-	chNotify := make(chan string)
+	cfg := cfg{}
+	chNotify := make(chan config.ChangeNotification)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
 		for change := range chNotify {
-			log.Printf("notification: " + change)
+			log.Printf("notification: " + change.String())
 		}
 		wg.Done()
 	}()

@@ -57,7 +57,7 @@ type Builder struct {
 	seedConsulCfg    *consulConfig
 	monitorConsulCfg *consulConfig
 	err              error
-	chNotify         chan<- string
+	chNotify         chan<- config.ChangeNotification
 }
 
 // New constructor.
@@ -66,7 +66,7 @@ func New(cfg interface{}) *Builder {
 }
 
 // WithNotification constructor.
-func (b *Builder) WithNotification(chNotify chan<- string) *Builder {
+func (b *Builder) WithNotification(chNotify chan<- config.ChangeNotification) *Builder {
 	if b.err != nil {
 		return b
 	}

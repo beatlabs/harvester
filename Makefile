@@ -30,6 +30,7 @@ deeplint: fmtcheck
 
 deps:
 	docker container inspect badger > /dev/null 2>&1 || docker run -d --rm -p 8500:8500 -p 8600:8600/udp --name=badger consul:1.4.3 agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0  -http-port 8500 -log-level=err
+	sleep 1
 
 ci: fmtcheck lint deps
 	go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic

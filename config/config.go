@@ -33,6 +33,17 @@ type CfgType interface {
 	SetString(string) error
 }
 
+type ChangeNotification struct {
+	Name     string
+	Type     string
+	Previous string
+	Current  string
+}
+
+func (n ChangeNotification) String() string {
+	return fmt.Sprintf("field [%s] of type [%s] changed from [%s] to [%s]", n.Name, n.Type, n.Previous, n.Current)
+}
+
 // Field definition of a config value that can change.
 type Field struct {
 	name        string
@@ -40,11 +51,11 @@ type Field struct {
 	version     uint64
 	structField CfgType
 	sources     map[Source]string
-	chNotify    chan<- string
+	chNotify    chan<- ChangeNotification
 }
 
 // newField constructor.
-func newField(prefix string, fld reflect.StructField, val reflect.Value, chNotify chan<- string) *Field {
+func newField(prefix string, fld reflect.StructField, val reflect.Value, chNotify chan<- ChangeNotification) *Field {
 	f := &Field{
 		name:        prefix + fld.Name,
 		tp:          fld.Type.Name(),
@@ -112,7 +123,12 @@ func (f *Field) sendNotification(prev string, current string) {
 	if f.chNotify == nil {
 		return
 	}
-	f.chNotify <- fmt.Sprintf("field [%s] of type [%s] changed from [%s] to [%s]", f.name, f.tp, prev, current)
+	f.chNotify <- ChangeNotification{
+		Name:     f.name,
+		Type:     f.tp,
+		Previous: prev,
+		Current:  current,
+	}
 }
 
 // Config manages configuration and handles updates on the values.
@@ -121,7 +137,7 @@ type Config struct {
 }
 
 // New creates a new monitor.
-func New(cfg interface{}, chNotify chan<- string) (*Config, error) {
+func New(cfg interface{}, chNotify chan<- ChangeNotification) (*Config, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}

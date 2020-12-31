@@ -95,27 +95,33 @@ func assertField(t *testing.T, fld *Field, name, typ string, sources map[Source]
 
 func TestConfig_Set(t *testing.T) {
 	c := testConfig{}
-	chNotify := make(chan string, 1)
+	chNotify := make(chan ChangeNotification, 1)
 	cfg, err := New(&c, chNotify)
 	require.NoError(t, err)
 	err = cfg.Fields[0].Set("John Doe", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, "field [Name] of type [String] changed from [] to [John Doe]", <-chNotify)
+	change := <-chNotify
+	assert.Equal(t, "field [Name] of type [String] changed from [] to [John Doe]", change.String())
 	err = cfg.Fields[1].Set("18", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, "field [Age] of type [Int64] changed from [0] to [18]", <-chNotify)
+	change = <-chNotify
+	assert.Equal(t, "field [Age] of type [Int64] changed from [0] to [18]", change.String())
 	err = cfg.Fields[2].Set("99.9", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, "field [Balance] of type [Float64] changed from [0.000000] to [99.9]", <-chNotify)
+	change = <-chNotify
+	assert.Equal(t, "field [Balance] of type [Float64] changed from [0.000000] to [99.9]", change.String())
 	err = cfg.Fields[3].Set("true", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, "field [HasJob] of type [Bool] changed from [false] to [true]", <-chNotify)
+	change = <-chNotify
+	assert.Equal(t, "field [HasJob] of type [Bool] changed from [false] to [true]", change.String())
 	err = cfg.Fields[4].Set("6000", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, "field [PositionSalary] of type [Int64] changed from [0] to [6000]", <-chNotify)
+	change = <-chNotify
+	assert.Equal(t, "field [PositionSalary] of type [Int64] changed from [0] to [6000]", change.String())
 	err = cfg.Fields[5].Set("baz", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, "field [LevelOneLevelTwoDeepField] of type [String] changed from [] to [baz]", <-chNotify)
+	change = <-chNotify
+	assert.Equal(t, "field [LevelOneLevelTwoDeepField] of type [String] changed from [] to [baz]", change.String())
 	assert.Equal(t, "John Doe", c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
 	assert.Equal(t, 99.9, c.Balance.Get())
