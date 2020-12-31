@@ -33,6 +33,7 @@ type CfgType interface {
 	SetString(string) error
 }
 
+// ChangeNotification definition for a configuration change.
 type ChangeNotification struct {
 	Name     string
 	Type     string
