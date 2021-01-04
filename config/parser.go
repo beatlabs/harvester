@@ -22,7 +22,7 @@ func newParser() *parser {
 	return &parser{}
 }
 
-func (p *parser) ParseCfg(cfg interface{}) ([]*Field, error) {
+func (p *parser) ParseCfg(cfg interface{}, chNotify chan<- ChangeNotification) ([]*Field, error) {
 	p.dups = make(map[Source]string)
 
 	tp := reflect.TypeOf(cfg)
@@ -30,10 +30,10 @@ func (p *parser) ParseCfg(cfg interface{}) ([]*Field, error) {
 		return nil, errors.New("configuration should be a pointer type")
 	}
 
-	return p.getFields("", tp.Elem(), reflect.ValueOf(cfg).Elem())
+	return p.getFields("", tp.Elem(), reflect.ValueOf(cfg).Elem(), chNotify)
 }
 
-func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value) ([]*Field, error) {
+func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, chNotify chan<- ChangeNotification) ([]*Field, error) {
 	var ff []*Field
 
 	for i := 0; i < tp.NumField(); i++ {
@@ -46,13 +46,13 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value) ([
 
 		switch typ {
 		case typeField:
-			fld, err := p.createField(prefix, f, val.Field(i))
+			fld, err := p.createField(prefix, f, val.Field(i), chNotify)
 			if err != nil {
 				return nil, err
 			}
 			ff = append(ff, fld)
 		case typeStruct:
-			nested, err := p.getFields(prefix+f.Name, f.Type, val.Field(i))
+			nested, err := p.getFields(prefix+f.Name, f.Type, val.Field(i), chNotify)
 			if err != nil {
 				return nil, err
 			}
@@ -62,8 +62,8 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value) ([
 	return ff, nil
 }
 
-func (p *parser) createField(prefix string, f reflect.StructField, val reflect.Value) (*Field, error) {
-	fld := newField(prefix, f, val)
+func (p *parser) createField(prefix string, f reflect.StructField, val reflect.Value, chNotify chan<- ChangeNotification) (*Field, error) {
+	fld := newField(prefix, f, val, chNotify)
 
 	value, ok := fld.Sources()[SourceConsul]
 	if ok {

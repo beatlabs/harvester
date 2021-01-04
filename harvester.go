@@ -2,6 +2,7 @@ package harvester
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/beatlabs/harvester/config"
@@ -45,24 +46,35 @@ func (h *harvester) Harvest(ctx context.Context) error {
 	return h.monitor.Monitor(ctx)
 }
 
+type consulConfig struct {
+	addr, dataCenter, token string
+	timeout                 time.Duration
+}
+
 // Builder of a harvester instance.
 type Builder struct {
-	cfg        *config.Config
-	watchers   []monitor.Watcher
-	seedParams []seed.Param
-	err        error
+	cfg              interface{}
+	seedConsulCfg    *consulConfig
+	monitorConsulCfg *consulConfig
+	err              error
+	chNotify         chan<- config.ChangeNotification
 }
 
 // New constructor.
 func New(cfg interface{}) *Builder {
-	b := &Builder{}
-	c, err := config.New(cfg)
-	if err != nil {
-		b.err = err
+	return &Builder{cfg: cfg}
+}
+
+// WithNotification constructor.
+func (b *Builder) WithNotification(chNotify chan<- config.ChangeNotification) *Builder {
+	if b.err != nil {
 		return b
 	}
-	b.cfg = c
-	b.seedParams = []seed.Param{}
+	if chNotify == nil {
+		b.err = errors.New("notification channel is nil")
+		return b
+	}
+	b.chNotify = chNotify
 	return b
 }
 
@@ -71,41 +83,27 @@ func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Du
 	if b.err != nil {
 		return b
 	}
-	getter, err := seedConsul.New(addr, dataCenter, token, timeout)
-	if err != nil {
-		b.err = err
-		return b
+	b.seedConsulCfg = &consulConfig{
+		addr:       addr,
+		dataCenter: dataCenter,
+		token:      token,
+		timeout:    timeout,
 	}
-	p, err := seed.NewParam(config.SourceConsul, getter)
-	if err != nil {
-		b.err = err
-		return b
-	}
-	b.seedParams = append(b.seedParams, *p)
 	return b
 }
 
 // WithConsulMonitor enables support for monitoring key/prefixes on ConsulLogger. It automatically parses the config
 // and monitors every field found tagged with ConsulLogger.
-func (b *Builder) WithConsulMonitor(addr, dc, token string, timeout time.Duration) *Builder {
+func (b *Builder) WithConsulMonitor(addr, dataCenter, token string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
-	items := make([]consul.Item, 0)
-	for _, field := range b.cfg.Fields {
-		consulKey, ok := field.Sources()[config.SourceConsul]
-		if !ok {
-			continue
-		}
-		log.Infof(`automatically monitoring consul key "%s"`, consulKey)
-		items = append(items, consul.NewKeyItem(consulKey))
+	b.monitorConsulCfg = &consulConfig{
+		addr:       addr,
+		dataCenter: dataCenter,
+		token:      token,
+		timeout:    timeout,
 	}
-	wtc, err := consul.New(addr, dc, token, timeout, items...)
-	if err != nil {
-		b.err = err
-		return b
-	}
-	b.watchers = append(b.watchers, wtc)
 	return b
 }
 
@@ -114,15 +112,64 @@ func (b *Builder) Create() (Harvester, error) {
 	if b.err != nil {
 		return nil, b.err
 	}
-	sd := seed.New(b.seedParams...)
 
-	var mon Monitor
-	if len(b.watchers) == 0 {
-		return &harvester{seeder: sd, cfg: b.cfg}, nil
-	}
-	mon, err := monitor.New(b.cfg, b.watchers...)
+	cfg, err := config.New(b.cfg, b.chNotify)
 	if err != nil {
 		return nil, err
 	}
-	return &harvester{seeder: sd, monitor: mon, cfg: b.cfg}, nil
+
+	sd, err := b.setupSeeding()
+	if err != nil {
+		return nil, err
+	}
+	mon, err := b.setupMonitoring(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &harvester{seeder: sd, monitor: mon, cfg: cfg}, nil
+}
+
+func (b *Builder) setupSeeding() (Seeder, error) {
+	pp := make([]seed.Param, 0)
+	if b.seedConsulCfg != nil {
+
+		getter, err := seedConsul.New(b.seedConsulCfg.addr, b.seedConsulCfg.dataCenter, b.seedConsulCfg.token, b.seedConsulCfg.timeout)
+		if err != nil {
+			return nil, err
+		}
+
+		p, err := seed.NewParam(config.SourceConsul, getter)
+		if err != nil {
+			return nil, err
+		}
+		pp = append(pp, *p)
+	}
+
+	return seed.New(pp...), nil
+}
+
+func (b *Builder) setupMonitoring(cfg *config.Config) (Monitor, error) {
+	if b.monitorConsulCfg == nil {
+		return nil, nil
+	}
+	items := make([]consul.Item, 0)
+	for _, field := range cfg.Fields {
+		consulKey, ok := field.Sources()[config.SourceConsul]
+		if !ok {
+			continue
+		}
+		log.Infof(`automatically monitoring consul key "%s"`, consulKey)
+		items = append(items, consul.NewKeyItem(consulKey))
+	}
+	wtc, err := consul.New(b.monitorConsulCfg.addr, b.monitorConsulCfg.dataCenter, b.monitorConsulCfg.token, b.monitorConsulCfg.timeout, items...)
+	if err != nil {
+		return nil, err
+	}
+
+	mon, err := monitor.New(cfg, wtc)
+	if err != nil {
+		return nil, err
+	}
+	return mon, nil
 }

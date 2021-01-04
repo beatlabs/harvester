@@ -33,6 +33,18 @@ type CfgType interface {
 	SetString(string) error
 }
 
+// ChangeNotification definition for a configuration change.
+type ChangeNotification struct {
+	Name     string
+	Type     string
+	Previous string
+	Current  string
+}
+
+func (n ChangeNotification) String() string {
+	return fmt.Sprintf("field [%s] of type [%s] changed from [%s] to [%s]", n.Name, n.Type, n.Previous, n.Current)
+}
+
 // Field definition of a config value that can change.
 type Field struct {
 	name        string
@@ -40,16 +52,18 @@ type Field struct {
 	version     uint64
 	structField CfgType
 	sources     map[Source]string
+	chNotify    chan<- ChangeNotification
 }
 
 // newField constructor.
-func newField(prefix string, fld reflect.StructField, val reflect.Value) *Field {
+func newField(prefix string, fld reflect.StructField, val reflect.Value, chNotify chan<- ChangeNotification) *Field {
 	f := &Field{
 		name:        prefix + fld.Name,
 		tp:          fld.Type.Name(),
 		version:     0,
 		structField: val.Addr().Interface().(CfgType),
 		sources:     make(map[Source]string),
+		chNotify:    chNotify,
 	}
 
 	for _, tag := range sourceTags {
@@ -94,13 +108,28 @@ func (f *Field) Set(value string, version uint64) error {
 		return nil
 	}
 
+	prevValue := f.structField.String()
+
 	if err := f.structField.SetString(value); err != nil {
 		return err
 	}
 
 	f.version = version
 	log.Infof("field %q updated with value %q, version: %d", f.name, f, version)
+	f.sendNotification(prevValue, value)
 	return nil
+}
+
+func (f *Field) sendNotification(prev string, current string) {
+	if f.chNotify == nil {
+		return
+	}
+	f.chNotify <- ChangeNotification{
+		Name:     f.name,
+		Type:     f.tp,
+		Previous: prev,
+		Current:  current,
+	}
 }
 
 // Config manages configuration and handles updates on the values.
@@ -109,12 +138,12 @@ type Config struct {
 }
 
 // New creates a new monitor.
-func New(cfg interface{}) (*Config, error) {
+func New(cfg interface{}, chNotify chan<- ChangeNotification) (*Config, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
 
-	ff, err := newParser().ParseCfg(cfg)
+	ff, err := newParser().ParseCfg(cfg, chNotify)
 	if err != nil {
 		return nil, err
 	}

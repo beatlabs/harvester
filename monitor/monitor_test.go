@@ -14,9 +14,10 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	cfg, err := config.New(&testConfig{})
+	cfg, err := config.New(&testConfig{}, nil)
 	require.NoError(t, err)
-	errCfg, err := config.New(&testConfig{})
+	errCfg, err := config.New(&testConfig{}, nil)
+	require.NoError(t, err)
 	errCfg.Fields[3].Sources()[config.SourceConsul] = "/config/balance"
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}}
@@ -24,18 +25,17 @@ func TestNew(t *testing.T) {
 		cfg *config.Config
 		ww  []Watcher
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    args
 		wantErr bool
 	}{
-		{name: "success", args: args{cfg: cfg, ww: watchers}, wantErr: false},
-		{name: "missing cfg", args: args{cfg: nil, ww: watchers}, wantErr: true},
-		{name: "empty watchers", args: args{cfg: cfg, ww: nil}, wantErr: true},
-		{name: "error watchers", args: args{cfg: errCfg, ww: watchers}, wantErr: true},
+		"success":        {args: args{cfg: cfg, ww: watchers}, wantErr: false},
+		"missing cfg":    {args: args{cfg: nil, ww: watchers}, wantErr: true},
+		"empty watchers": {args: args{cfg: cfg, ww: nil}, wantErr: true},
+		"error watchers": {args: args{cfg: errCfg, ww: watchers}, wantErr: true},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg, tt.args.ww...)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -49,7 +49,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestMonitor_Monitor_Error(t *testing.T) {
-	cfg, err := config.New(&testConfig{})
+	cfg, err := config.New(&testConfig{}, nil)
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}, &testWatcher{err: true}}
 	mon, err := New(cfg, watchers...)
@@ -60,7 +60,7 @@ func TestMonitor_Monitor_Error(t *testing.T) {
 
 func TestMonitor_Monitor(t *testing.T) {
 	c := &testConfig{}
-	cfg, err := config.New(c)
+	cfg, err := config.New(c, nil)
 	require.NoError(t, err)
 	watchers := []Watcher{&testWatcher{}}
 	mon, err := New(cfg, watchers...)
@@ -88,7 +88,7 @@ type testWatcher struct {
 	err bool
 }
 
-func (tw *testWatcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
+func (tw *testWatcher) Watch(_ context.Context, ch chan<- []*change.Change) error {
 	if tw.err {
 		return errors.New("TEST")
 	}

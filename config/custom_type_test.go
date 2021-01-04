@@ -12,7 +12,7 @@ import (
 
 func TestCustomField(t *testing.T) {
 	c := &testConfig{}
-	cfg, err := config.New(c)
+	cfg, err := config.New(c, nil)
 	assert.NoError(t, err)
 	err = cfg.Fields[0].Set("expected", 1)
 	assert.NoError(t, err)
@@ -24,7 +24,7 @@ func TestCustomField(t *testing.T) {
 
 func TestErrorValidationOnCustomField(t *testing.T) {
 	c := &testConfig{}
-	cfg, err := config.New(c)
+	cfg, err := config.New(c, nil)
 	assert.NoError(t, err)
 	err = cfg.Fields[0].Set("not_expected", 1)
 	assert.Error(t, err)

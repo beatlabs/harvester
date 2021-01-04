@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/beatlabs/harvester/config"
 	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,21 +18,46 @@ func TestCreateWithConsul(t *testing.T) {
 		cfg  interface{}
 		addr string
 	}
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    args
 		wantErr bool
 	}{
-		{name: "invalid cfg", args: args{cfg: "test", addr: addr}, wantErr: true},
-		{name: "invalid address", args: args{cfg: &testConfig{}, addr: ""}, wantErr: true},
-		{name: "success", args: args{cfg: &testConfig{}, addr: addr}, wantErr: false},
+		"invalid cfg":     {args: args{cfg: "test", addr: addr}, wantErr: true},
+		"invalid address": {args: args{cfg: &testConfig{}, addr: ""}, wantErr: true},
+		"success":         {args: args{cfg: &testConfig{}, addr: addr}, wantErr: false},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg).
 				WithConsulSeed(tt.args.addr, "", "", 0).
 				WithConsulMonitor(tt.args.addr, "", "", 0).
 				Create()
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, got)
+			}
+		})
+	}
+}
+
+func TestWithNotification(t *testing.T) {
+	type args struct {
+		cfg      interface{}
+		chNotify chan<- config.ChangeNotification
+	}
+	tests := map[string]struct {
+		args    args
+		wantErr bool
+	}{
+		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}, wantErr: true},
+		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan config.ChangeNotification)}, wantErr: false},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := New(tt.args.cfg).WithNotification(tt.args.chNotify).Create()
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, got)
