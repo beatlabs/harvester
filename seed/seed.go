@@ -79,7 +79,11 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				log.Infof("env var value %v applied on field %s", f, f.Name())
 				seedMap[f] = true
 			} else {
-				log.Warnf("env var %s did not exist for field %s", key, f.Name())
+				if seedMap[f] {
+					log.Infof("env var %s did not exist for field %s", key, f.Name())
+				} else {
+					log.Warnf("env var %s did not exist for field %s and no seed value provided", key, f.Name())
+				}
 			}
 		}
 		key, ok = ss[config.SourceFlag]
