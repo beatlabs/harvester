@@ -57,6 +57,8 @@ func generateMap(ff []*config.Field) (sourceMap, error) {
 			}
 			mp[config.SourceConsul][key] = f
 		}
+
+		// TODO REdis
 	}
 	return mp, nil
 }

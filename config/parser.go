@@ -71,6 +71,7 @@ func (p *parser) createField(prefix string, f reflect.StructField, val reflect.V
 			return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceConsul)
 		}
 	}
+	// TODO: Redis
 
 	return fld, nil
 }

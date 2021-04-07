@@ -19,6 +19,8 @@ const (
 	SourceEnv Source = "env"
 	// SourceConsul defines a value from consul.
 	SourceConsul Source = "consul"
+	// SourceRedis defines a value from redis.
+	SourceRedis Source = "redis"
 	// SourceFlag defines a value from CLI flag.
 	SourceFlag Source = "flag"
 	// SourceFile defines a value from external file.

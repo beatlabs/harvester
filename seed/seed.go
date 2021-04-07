@@ -128,6 +128,8 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			log.Infof("consul value %v applied on field %s", f, f.Name())
 			seedMap[f] = true
 		}
+
+		// TODO: redis
 	}
 
 	if len(flagInfos) > 0 {
