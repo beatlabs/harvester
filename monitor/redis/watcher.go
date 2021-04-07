@@ -19,6 +19,7 @@ type Watcher struct {
 	pollInterval time.Duration
 }
 
+// New watcher.
 func New(client *redis.Client, pollInterval time.Duration, keys []string) (*Watcher, error) {
 	if client == nil {
 		return nil, errors.New("client is nil")
