@@ -18,10 +18,11 @@ const (
 func TestCreateWithConsulAndRedis(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{})
 	type args struct {
-		cfg                interface{}
-		consulAddress      string
-		seedRedisClient    *redis.Client
-		monitorRedisClient *redis.Client
+		cfg                    interface{}
+		consulAddress          string
+		seedRedisClient        *redis.Client
+		monitorRedisClient     *redis.Client
+		monitoringPollInterval time.Duration
 	}
 	tests := map[string]struct {
 		args        args
@@ -29,42 +30,56 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 	}{
 		"invalid config": {
 			args: args{
-				cfg:                "test",
-				consulAddress:      addr,
-				seedRedisClient:    redisClient,
-				monitorRedisClient: redisClient,
+				cfg:                    "test",
+				consulAddress:          addr,
+				seedRedisClient:        redisClient,
+				monitorRedisClient:     redisClient,
+				monitoringPollInterval: 10 * time.Millisecond,
 			}, expectedErr: "configuration should be a pointer type",
 		},
 		"invalid consul address": {
 			args: args{
-				cfg:                &testConfig{},
-				consulAddress:      "",
-				seedRedisClient:    redisClient,
-				monitorRedisClient: redisClient,
+				cfg:                    &testConfig{},
+				consulAddress:          "",
+				seedRedisClient:        redisClient,
+				monitorRedisClient:     redisClient,
+				monitoringPollInterval: 10 * time.Millisecond,
 			}, expectedErr: "address is empty",
 		},
 		"invalid redis seed client": {
 			args: args{
-				cfg:                &testConfig{},
-				consulAddress:      addr,
-				seedRedisClient:    nil,
-				monitorRedisClient: redisClient,
+				cfg:                    &testConfig{},
+				consulAddress:          addr,
+				seedRedisClient:        nil,
+				monitorRedisClient:     redisClient,
+				monitoringPollInterval: 10 * time.Millisecond,
 			}, expectedErr: "redis seed client is nil",
 		},
 		"invalid redis monitor client": {
 			args: args{
-				cfg:                &testConfig{},
-				consulAddress:      addr,
-				seedRedisClient:    redisClient,
-				monitorRedisClient: nil,
+				cfg:                    &testConfig{},
+				consulAddress:          addr,
+				seedRedisClient:        redisClient,
+				monitorRedisClient:     nil,
+				monitoringPollInterval: 10 * time.Millisecond,
 			}, expectedErr: "redis monitor client is nil",
+		},
+		"invalid redis monitor poll interval": {
+			args: args{
+				cfg:                    &testConfig{},
+				consulAddress:          addr,
+				seedRedisClient:        redisClient,
+				monitorRedisClient:     redisClient,
+				monitoringPollInterval: -1,
+			}, expectedErr: "redis monitor poll interval should be a positive number",
 		},
 		"success": {
 			args: args{
-				cfg:                &testConfig{},
-				consulAddress:      addr,
-				seedRedisClient:    redisClient,
-				monitorRedisClient: redisClient,
+				cfg:                    &testConfig{},
+				consulAddress:          addr,
+				seedRedisClient:        redisClient,
+				monitorRedisClient:     redisClient,
+				monitoringPollInterval: 10 * time.Millisecond,
 			},
 		},
 	}
@@ -74,7 +89,7 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 				WithConsulSeed(tt.args.consulAddress, "", "", 0).
 				WithConsulMonitor(tt.args.consulAddress, "", "", 0).
 				WithRedisSeed(tt.args.seedRedisClient).
-				WithRedisMonitor(tt.args.monitorRedisClient, 10*time.Millisecond).
+				WithRedisMonitor(tt.args.monitorRedisClient, tt.args.monitoringPollInterval).
 				Create()
 			if tt.expectedErr != "" {
 				assert.EqualError(t, err, tt.expectedErr)
