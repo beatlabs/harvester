@@ -21,7 +21,7 @@ func TestNewParam(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		"success":        {args: args{src: config.SourceConsul, getter: &testConsulGet{}}, wantErr: false},
+		"success":        {args: args{src: config.SourceConsul, getter: &stubGetter{}}, wantErr: false},
 		"missing getter": {args: args{src: config.SourceConsul, getter: nil}, wantErr: true},
 	}
 	for name, tt := range tests {
@@ -141,17 +141,18 @@ func TestSeeder_Seed(t *testing.T) {
 	require.NoError(t, os.Setenv("ENV_AGE", "25"))
 	require.NoError(t, os.Setenv("ENV_WORK_HOURS", "9h"))
 
-	prmError, err := NewParam(config.SourceConsul, &testConsulGet{err: true})
+	consulParamSuccess, err := NewParam(config.SourceConsul, &stubGetter{})
+	require.NoError(t, err)
+
+	redisParamSuccess, err := NewParam(config.SourceRedis, &stubGetter{})
 	require.NoError(t, err)
 
 	t.Run("consul success", func(t *testing.T) {
 		c := testConfig{}
 		goodCfg, err := config.New(&c, nil)
 		require.NoError(t, err)
-		prmSuccess, err := NewParam(config.SourceConsul, &testConsulGet{})
-		require.NoError(t, err)
 
-		err = New(*prmSuccess).Seed(goodCfg)
+		err = New(*consulParamSuccess, *redisParamSuccess).Seed(goodCfg)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
@@ -160,6 +161,7 @@ func TestSeeder_Seed(t *testing.T) {
 		assert.True(t, c.HasJob.Get())
 		assert.Equal(t, "foobar", c.About.Get())
 		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
+		assert.Equal(t, true, c.IsAdult.Get())
 	})
 
 	t.Run("consul error, success", func(t *testing.T) {
@@ -167,7 +169,10 @@ func TestSeeder_Seed(t *testing.T) {
 		goodCfg, err := config.New(&c, nil)
 		require.NoError(t, err)
 
-		err = New(*prmError).Seed(goodCfg)
+		consulParamError, err := NewParam(config.SourceConsul, &stubGetter{err: true})
+		require.NoError(t, err)
+
+		err = New(*consulParamError, *redisParamSuccess).Seed(goodCfg)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
@@ -176,6 +181,27 @@ func TestSeeder_Seed(t *testing.T) {
 		assert.True(t, c.HasJob.Get())
 		assert.Equal(t, "foobar", c.About.Get())
 		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
+		assert.Equal(t, true, c.IsAdult.Get())
+	})
+
+	t.Run("redis error, success", func(t *testing.T) {
+		c := testConfig{}
+		goodCfg, err := config.New(&c, nil)
+		require.NoError(t, err)
+
+		redisParamFailure, err := NewParam(config.SourceRedis, &stubGetter{err: true})
+		require.NoError(t, err)
+
+		err = New(*consulParamSuccess, *redisParamFailure).Seed(goodCfg)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "John Doe", c.Name.Get())
+		assert.Equal(t, int64(25), c.Age.Get())
+		assert.Equal(t, 99.9, c.Balance.Get())
+		assert.True(t, c.HasJob.Get())
+		assert.Equal(t, "foobar", c.About.Get())
+		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
+		assert.Equal(t, false, c.IsAdult.Get())
 	})
 
 	t.Run("file not exists, success", func(t *testing.T) {
@@ -183,7 +209,7 @@ func TestSeeder_Seed(t *testing.T) {
 		fileNotExistCfg, err := config.New(c, nil)
 		require.NoError(t, err)
 
-		err = New(*prmError).Seed(fileNotExistCfg)
+		err = New().Seed(fileNotExistCfg)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(20), c.Age.Get())
@@ -253,6 +279,7 @@ type testConfig struct {
 	HasJob    sync.Bool         `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 	About     sync.String       `seed:"" file:"testdata/test.txt"`
 	WorkHours sync.TimeDuration `seed:"10h" flag:"workHours" env:"ENV_WORK_HOURS" consul:"/config/work_hours"`
+	IsAdult   sync.Bool         `seed:"false" env:"ENV_IS_ADULT" redis:"is-adult"`
 }
 
 type testInvalidFileInt struct {
@@ -279,11 +306,11 @@ type testMissingValue struct {
 	HasJob sync.Bool `consul:"/config/YYY"`
 }
 
-type testConsulGet struct {
+type stubGetter struct {
 	err bool
 }
 
-func (tcg *testConsulGet) Get(key string) (*string, uint64, error) {
+func (tcg *stubGetter) Get(key string) (*string, uint64, error) {
 	if tcg.err {
 		return nil, 0, errors.New("TEST")
 	}

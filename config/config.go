@@ -27,7 +27,7 @@ const (
 	SourceFile Source = "file"
 )
 
-var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceFlag, SourceFile}
+var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceRedis, SourceFlag, SourceFile}
 
 // CfgType represents an interface which any config field type must implement.
 type CfgType interface {

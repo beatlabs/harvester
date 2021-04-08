@@ -58,6 +58,7 @@ func TestNew(t *testing.T) {
 		"cfg duplicate consul key":        {args: args{cfg: &testDuplicateConfig{}}, wantErr: true},
 		"cfg tagged struct not supported": {args: args{cfg: &testInvalidNestedStructWithTags{}}, wantErr: true},
 		"cfg nested duplicate consul key": {args: args{cfg: &testDuplicateNestedConsulConfig{}}, wantErr: true},
+		"cfg nested duplicate redis key":  {args: args{cfg: &testDuplicateNestedRedisConfig{}}, wantErr: true},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -68,7 +69,7 @@ func TestNew(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, got)
-				assert.Len(t, got.Fields, 6)
+				assert.Len(t, got.Fields, 7)
 				assertField(t, got.Fields[0], "Name", "String",
 					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME"})
 				assertField(t, got.Fields[1], "Age", "Int64",
@@ -81,6 +82,8 @@ func TestNew(t *testing.T) {
 					map[Source]string{SourceSeed: "2000", SourceEnv: "ENV_SALARY"})
 				assertField(t, got.Fields[5], "LevelOneLevelTwoDeepField", "String",
 					map[Source]string{SourceSeed: "foobar"})
+				assertField(t, got.Fields[6], "IsAdult", "Bool",
+					map[Source]string{SourceSeed: "true", SourceEnv: "ENV_IS_ADULT", SourceRedis: "is-adult"})
 			}
 		})
 	}
@@ -122,12 +125,17 @@ func TestConfig_Set(t *testing.T) {
 	assert.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [LevelOneLevelTwoDeepField] of type [String] changed from [] to [baz]", change.String())
+	err = cfg.Fields[6].Set("true", 1)
+	assert.NoError(t, err)
+	change = <-chNotify
+	assert.Equal(t, "field [IsAdult] of type [Bool] changed from [false] to [true]", change.String())
 	assert.Equal(t, "John Doe", c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
 	assert.Equal(t, 99.9, c.Balance.Get())
 	assert.Equal(t, true, c.HasJob.Get())
 	assert.Equal(t, int64(6000), c.Position.Salary.Get())
 	assert.Equal(t, "baz", c.LevelOne.LevelTwo.DeepField.Get())
+	assert.Equal(t, true, c.IsAdult.Get())
 }
 
 type testNestedConfig struct {
@@ -145,12 +153,20 @@ type testConfig struct {
 			DeepField sync.String `seed:"foobar"`
 		}
 	}
+	IsAdult sync.Bool `seed:"true" env:"ENV_IS_ADULT" redis:"is-adult"`
 }
 
 type testDuplicateNestedConsulConfig struct {
 	Age1   sync.Int64 `env:"ENV_AGE" consul:"/config/age"`
 	Nested struct {
 		Age2 sync.Int64 `env:"ENV_AGE" consul:"/config/age"`
+	}
+}
+
+type testDuplicateNestedRedisConfig struct {
+	Age1   sync.Int64 `env:"ENV_AGE" redis:"age"`
+	Nested struct {
+		Age2 sync.Int64 `env:"ENV_AGE" redis:"age"`
 	}
 }
 
