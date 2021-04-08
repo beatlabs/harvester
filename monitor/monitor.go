@@ -44,6 +44,9 @@ func generateMap(ff []*config.Field) (sourceMap, error) {
 	mp := make(sourceMap)
 	for _, f := range ff {
 		for source, val := range f.Sources() {
+			if source == config.SourceSeed {
+				continue
+			}
 			_, ok := mp[source]
 			if !ok {
 				mp[source] = map[string]*config.Field{val: f}

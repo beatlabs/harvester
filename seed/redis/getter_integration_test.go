@@ -12,9 +12,7 @@ import (
 )
 
 func TestGetter_Get(t *testing.T) {
-	client := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
+	client := redis.NewClient(&redis.Options{})
 
 	const key = "key"
 	const val = "value"

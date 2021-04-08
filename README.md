@@ -78,6 +78,8 @@ Seed and env tags are supported by default, the Consul getter has to be setup wh
 - Monitor a key and apply if tag key matches
 - Monitor a key-prefix and apply if tag key matches
 
+TODO REDIS
+
 ### Monitor
 
 `Harvester` allows for dynamically changing the config value by monitoring a source. The following sources are available:

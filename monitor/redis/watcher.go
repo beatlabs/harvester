@@ -65,17 +65,19 @@ func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
 }
 
 func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
-	values, err := w.client.MGet(ctx, w.keys...).Result()
-	if err != nil {
-		log.Errorf("failed to MGET keys %v: %v", w.keys, err)
-	}
-	changes := make([]*change.Change, 0, len(values))
+	// values, err := w.client.MGet(ctx, w.keys...).Result()
+	// if err != nil {
+	// 	log.Errorf("failed to MGET keys %v: %v", w.keys, err)
+	// }
+	changes := make([]*change.Change, 0, len(w.keys))
 
-	for i := 0; i < len(values); i++ {
-		if values[i] == nil {
-			continue
+	for _, key := range w.keys {
+		val, err := w.client.Get(ctx, key).Result()
+		if err != nil {
+			log.Errorf("failed to get key %v: %v", key, err)
 		}
-		changes = append(changes, change.New(config.SourceRedis, w.keys[i], values[i].(string), 0))
+		changes = append(changes, change.New(config.SourceRedis, key, val, 0))
 	}
+
 	ch <- changes
 }

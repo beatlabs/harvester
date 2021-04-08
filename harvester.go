@@ -9,8 +9,11 @@ import (
 	"github.com/beatlabs/harvester/log"
 	"github.com/beatlabs/harvester/monitor"
 	"github.com/beatlabs/harvester/monitor/consul"
+	redismon "github.com/beatlabs/harvester/monitor/redis"
 	"github.com/beatlabs/harvester/seed"
-	seedConsul "github.com/beatlabs/harvester/seed/consul"
+	seedconsul "github.com/beatlabs/harvester/seed/consul"
+	seedredis "github.com/beatlabs/harvester/seed/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 // Seeder interface for seeding initial values of the configuration.
@@ -53,11 +56,14 @@ type consulConfig struct {
 
 // Builder of a harvester instance.
 type Builder struct {
-	cfg              interface{}
-	seedConsulCfg    *consulConfig
-	monitorConsulCfg *consulConfig
-	err              error
-	chNotify         chan<- config.ChangeNotification
+	cfg                      interface{}
+	seedConsulCfg            *consulConfig
+	monitorConsulCfg         *consulConfig
+	err                      error
+	chNotify                 chan<- config.ChangeNotification
+	monitorRedisClient       *redis.Client
+	seedRedisClient          *redis.Client
+	monitorRedisPollInterval time.Duration
 }
 
 // New constructor.
@@ -107,6 +113,38 @@ func (b *Builder) WithConsulMonitor(addr, dataCenter, token string, timeout time
 	return b
 }
 
+// WithRedisSeed enables support for seeding values with redis.
+func (b *Builder) WithRedisSeed(client *redis.Client) *Builder {
+	if b.err != nil {
+		return b
+	}
+	if client == nil {
+		b.err = errors.New("redis seed client is nil")
+		return b
+	}
+	b.seedRedisClient = client
+	return b
+}
+
+// WithRedisMonitor enables support for monitoring keys in Redis. It automatically parses the config
+// and monitors every field found tagged with ConsulLogger.
+func (b *Builder) WithRedisMonitor(client *redis.Client, pollInterval time.Duration) *Builder {
+	if b.err != nil {
+		return b
+	}
+	if client == nil {
+		b.err = errors.New("redis monitor client is nil")
+		return b
+	}
+	if pollInterval <= 0 {
+		b.err = errors.New("redis monitor poll interval should be a positive number")
+		return b
+	}
+	b.monitorRedisClient = client
+	b.monitorRedisPollInterval = pollInterval
+	return b
+}
+
 // Create the harvester instance.
 func (b *Builder) Create() (Harvester, error) {
 	if b.err != nil {
@@ -132,24 +170,80 @@ func (b *Builder) Create() (Harvester, error) {
 
 func (b *Builder) setupSeeding() (Seeder, error) {
 	pp := make([]seed.Param, 0)
-	if b.seedConsulCfg != nil {
 
-		getter, err := seedConsul.New(b.seedConsulCfg.addr, b.seedConsulCfg.dataCenter, b.seedConsulCfg.token, b.seedConsulCfg.timeout)
-		if err != nil {
-			return nil, err
-		}
+	consulSeedParam, err := b.setupConsulSeeding()
+	if err != nil {
+		return nil, err
+	}
+	if consulSeedParam != nil {
+		pp = append(pp, *consulSeedParam)
+	}
 
-		p, err := seed.NewParam(config.SourceConsul, getter)
-		if err != nil {
-			return nil, err
-		}
-		pp = append(pp, *p)
+	redisSeedParam, err := b.setupRedisSeeding()
+	if err != nil {
+		return nil, err
+	}
+	if redisSeedParam != nil {
+		pp = append(pp, *redisSeedParam)
 	}
 
 	return seed.New(pp...), nil
 }
 
+func (b *Builder) setupConsulSeeding() (*seed.Param, error) {
+	if b.seedConsulCfg == nil {
+		return nil, nil
+	}
+
+	getter, err := seedconsul.New(b.seedConsulCfg.addr, b.seedConsulCfg.dataCenter, b.seedConsulCfg.token,
+		b.seedConsulCfg.timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return seed.NewParam(config.SourceConsul, getter)
+}
+
+func (b *Builder) setupRedisSeeding() (*seed.Param, error) {
+	if b.seedRedisClient == nil {
+		return nil, nil
+	}
+
+	getter, err := seedredis.New(b.seedRedisClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return seed.NewParam(config.SourceRedis, getter)
+}
+
 func (b *Builder) setupMonitoring(cfg *config.Config) (Monitor, error) {
+	var watchers []monitor.Watcher
+
+	consulWatcher, err := b.setupConsulMonitoring(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if consulWatcher != nil {
+		watchers = append(watchers, consulWatcher)
+	}
+
+	redisWatcher, err := b.setupRedisMonitoring(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if redisWatcher != nil {
+		watchers = append(watchers, redisWatcher)
+	}
+
+	if len(watchers) == 0 {
+		return nil, nil
+	}
+
+	return monitor.New(cfg, watchers...)
+}
+
+func (b *Builder) setupConsulMonitoring(cfg *config.Config) (*consul.Watcher, error) {
 	if b.monitorConsulCfg == nil {
 		return nil, nil
 	}
@@ -162,14 +256,22 @@ func (b *Builder) setupMonitoring(cfg *config.Config) (Monitor, error) {
 		log.Infof(`automatically monitoring consul key "%s"`, consulKey)
 		items = append(items, consul.NewKeyItem(consulKey))
 	}
-	wtc, err := consul.New(b.monitorConsulCfg.addr, b.monitorConsulCfg.dataCenter, b.monitorConsulCfg.token, b.monitorConsulCfg.timeout, items...)
-	if err != nil {
-		return nil, err
-	}
+	return consul.New(b.monitorConsulCfg.addr, b.monitorConsulCfg.dataCenter, b.monitorConsulCfg.token,
+		b.monitorConsulCfg.timeout, items...)
+}
 
-	mon, err := monitor.New(cfg, wtc)
-	if err != nil {
-		return nil, err
+func (b *Builder) setupRedisMonitoring(cfg *config.Config) (*redismon.Watcher, error) {
+	if b.monitorRedisClient == nil {
+		return nil, nil
 	}
-	return mon, nil
+	items := make([]string, 0)
+	for _, field := range cfg.Fields {
+		redisKey, ok := field.Sources()[config.SourceRedis]
+		if !ok {
+			continue
+		}
+		log.Infof(`automatically monitoring redis key "%s"`, redisKey)
+		items = append(items, redisKey)
+	}
+	return redismon.New(b.monitorRedisClient, b.monitorRedisPollInterval, items)
 }

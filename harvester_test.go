@@ -3,9 +3,11 @@ package harvester
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/beatlabs/harvester/config"
 	"github.com/beatlabs/harvester/sync"
+	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,27 +15,69 @@ const (
 	addr = "127.0.0.1:8500"
 )
 
-func TestCreateWithConsul(t *testing.T) {
+func TestCreateWithConsulAndRedis(t *testing.T) {
+	redisClient := redis.NewClient(&redis.Options{})
 	type args struct {
-		cfg  interface{}
-		addr string
+		cfg                interface{}
+		consulAddress      string
+		seedRedisClient    *redis.Client
+		monitorRedisClient *redis.Client
 	}
 	tests := map[string]struct {
-		args    args
-		wantErr bool
+		args        args
+		expectedErr string
 	}{
-		"invalid cfg":     {args: args{cfg: "test", addr: addr}, wantErr: true},
-		"invalid address": {args: args{cfg: &testConfig{}, addr: ""}, wantErr: true},
-		"success":         {args: args{cfg: &testConfig{}, addr: addr}, wantErr: false},
+		"invalid config": {
+			args: args{
+				cfg:                "test",
+				consulAddress:      addr,
+				seedRedisClient:    redisClient,
+				monitorRedisClient: redisClient,
+			}, expectedErr: "configuration should be a pointer type",
+		},
+		"invalid consul address": {
+			args: args{
+				cfg:                &testConfig{},
+				consulAddress:      "",
+				seedRedisClient:    redisClient,
+				monitorRedisClient: redisClient,
+			}, expectedErr: "address is empty",
+		},
+		"invalid redis seed client": {
+			args: args{
+				cfg:                &testConfig{},
+				consulAddress:      addr,
+				seedRedisClient:    nil,
+				monitorRedisClient: redisClient,
+			}, expectedErr: "redis seed client is nil",
+		},
+		"invalid redis monitor client": {
+			args: args{
+				cfg:                &testConfig{},
+				consulAddress:      addr,
+				seedRedisClient:    redisClient,
+				monitorRedisClient: nil,
+			}, expectedErr: "redis monitor client is nil",
+		},
+		"success": {
+			args: args{
+				cfg:                &testConfig{},
+				consulAddress:      addr,
+				seedRedisClient:    redisClient,
+				monitorRedisClient: redisClient,
+			},
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg).
-				WithConsulSeed(tt.args.addr, "", "", 0).
-				WithConsulMonitor(tt.args.addr, "", "", 0).
+				WithConsulSeed(tt.args.consulAddress, "", "", 0).
+				WithConsulMonitor(tt.args.consulAddress, "", "", 0).
+				WithRedisSeed(tt.args.seedRedisClient).
+				WithRedisMonitor(tt.args.monitorRedisClient, 10*time.Millisecond).
 				Create()
-			if tt.wantErr {
-				assert.Error(t, err)
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
 				assert.Nil(t, got)
 			} else {
 				assert.NoError(t, err)
@@ -69,7 +113,7 @@ func TestWithNotification(t *testing.T) {
 	}
 }
 
-func TestCreate_NoConsul(t *testing.T) {
+func TestCreate_NoConsulOrRedis(t *testing.T) {
 	cfg := &testConfigNoConsul{}
 	got, err := New(cfg).Create()
 	assert.NoError(t, err)
@@ -103,6 +147,7 @@ type testConfig struct {
 	Balance sync.Float64      `seed:"99.9"  consul:"harvester/balance"`
 	HasJob  sync.Bool         `seed:"true"  consul:"harvester/has-job"`
 	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/fun-time"`
+	IsAdult sync.Bool         `seed:"false" redis:"is-adult"`
 }
 
 type testConfigNoConsul struct {

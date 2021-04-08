@@ -14,9 +14,7 @@ import (
 )
 
 func TestWatch(t *testing.T) {
-	client := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
+	client := redis.NewClient(&redis.Options{})
 
 	const (
 		key1 = "key1"
