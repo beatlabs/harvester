@@ -23,3 +23,4 @@ PR's should have the following requirements:
 - High code coverage
 - Coding style (go fmt)
 - Linting we use [golangci-lint](https://github.com/golangci/golangci-lint)
+- The PR will be merged by squashing the commit which creates one commit per work item (bug, feature, etc)
