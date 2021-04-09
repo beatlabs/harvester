@@ -19,13 +19,15 @@ const (
 	SourceEnv Source = "env"
 	// SourceConsul defines a value from consul.
 	SourceConsul Source = "consul"
+	// SourceRedis defines a value from redis.
+	SourceRedis Source = "redis"
 	// SourceFlag defines a value from CLI flag.
 	SourceFlag Source = "flag"
 	// SourceFile defines a value from external file.
 	SourceFile Source = "file"
 )
 
-var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceFlag, SourceFile}
+var sourceTags = [...]Source{SourceSeed, SourceEnv, SourceConsul, SourceRedis, SourceFlag, SourceFile}
 
 // CfgType represents an interface which any config field type must implement.
 type CfgType interface {
