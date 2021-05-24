@@ -179,6 +179,7 @@ type Cmdable interface {
 	LInsertAfter(ctx context.Context, key string, pivot, value interface{}) *IntCmd
 	LLen(ctx context.Context, key string) *IntCmd
 	LPop(ctx context.Context, key string) *StringCmd
+	LPopCount(ctx context.Context, key string, count int) *StringSliceCmd
 	LPos(ctx context.Context, key string, value string, args LPosArgs) *IntCmd
 	LPosCount(ctx context.Context, key string, value string, count int64, args LPosArgs) *IntSliceCmd
 	LPush(ctx context.Context, key string, values ...interface{}) *IntCmd
@@ -200,6 +201,7 @@ type Cmdable interface {
 	SInter(ctx context.Context, keys ...string) *StringSliceCmd
 	SInterStore(ctx context.Context, destination string, keys ...string) *IntCmd
 	SIsMember(ctx context.Context, key string, member interface{}) *BoolCmd
+	SMIsMember(ctx context.Context, key string, members ...interface{}) *BoolSliceCmd
 	SMembers(ctx context.Context, key string) *StringSliceCmd
 	SMembersMap(ctx context.Context, key string) *StringStructMapCmd
 	SMove(ctx context.Context, source, destination string, member interface{}) *BoolCmd
@@ -1313,6 +1315,12 @@ func (c cmdable) LPop(ctx context.Context, key string) *StringCmd {
 	return cmd
 }
 
+func (c cmdable) LPopCount(ctx context.Context, key string, count int) *StringSliceCmd {
+	cmd := NewStringSliceCmd(ctx, "lpop", key, count)
+	_ = c(ctx, cmd)
+	return cmd
+}
+
 type LPosArgs struct {
 	Rank, MaxLen int64
 }
@@ -1504,6 +1512,17 @@ func (c cmdable) SInterStore(ctx context.Context, destination string, keys ...st
 
 func (c cmdable) SIsMember(ctx context.Context, key string, member interface{}) *BoolCmd {
 	cmd := NewBoolCmd(ctx, "sismember", key, member)
+	_ = c(ctx, cmd)
+	return cmd
+}
+
+// Redis `SMISMEMBER key member [member ...]` command.
+func (c cmdable) SMIsMember(ctx context.Context, key string, members ...interface{}) *BoolSliceCmd {
+	args := make([]interface{}, 2, 2+len(members))
+	args[0] = "smismember"
+	args[1] = key
+	args = appendArgs(args, members)
+	cmd := NewBoolSliceCmd(ctx, args...)
 	_ = c(ctx, cmd)
 	return cmd
 }
@@ -1799,6 +1818,7 @@ func (c cmdable) XPending(ctx context.Context, stream, group string) *XPendingCm
 type XPendingExtArgs struct {
 	Stream   string
 	Group    string
+	Idle     time.Duration
 	Start    string
 	End      string
 	Count    int64
@@ -1806,8 +1826,12 @@ type XPendingExtArgs struct {
 }
 
 func (c cmdable) XPendingExt(ctx context.Context, a *XPendingExtArgs) *XPendingExtCmd {
-	args := make([]interface{}, 0, 7)
-	args = append(args, "xpending", a.Stream, a.Group, a.Start, a.End, a.Count)
+	args := make([]interface{}, 0, 9)
+	args = append(args, "xpending", a.Stream, a.Group)
+	if a.Idle != 0 {
+		args = append(args, "idle", formatMs(ctx, a.Idle))
+	}
+	args = append(args, a.Start, a.End, a.Count)
 	if a.Consumer != "" {
 		args = append(args, a.Consumer)
 	}
