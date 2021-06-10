@@ -11,24 +11,37 @@ import (
 	"time"
 
 	"github.com/beatlabs/harvester/sync"
+	"github.com/go-redis/redis/v8"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var csl *api.KV
+var (
+	csl         *api.KV
+	redisClient = redis.NewClient(&redis.Options{})
+)
+
+const (
+	redisWorkTimeKey   = "work-time"
+	redisWorkTimeValue = "2s"
+	redisDooKey        = "doo"
+	redisDooValue      = "999"
+)
 
 type testConfigWithSecret struct {
-	Name    sync.Secret       `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64        `seed:"18" consul:"harvester/age"`
-	Balance sync.Float64      `seed:"99.9" consul:"harvester/balance"`
-	HasJob  sync.Bool         `seed:"true" consul:"harvester/has-job"`
-	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/fun-time"`
-	Foo     fooStruct
+	Name     sync.Secret       `seed:"John Doe" consul:"harvester1/name"`
+	Age      sync.Int64        `seed:"18" consul:"harvester/age"`
+	Balance  sync.Float64      `seed:"99.9" consul:"harvester/balance"`
+	HasJob   sync.Bool         `seed:"true" consul:"harvester/has-job"`
+	FunTime  sync.TimeDuration `seed:"1s" consul:"harvester/fun-time"`
+	WorkTime sync.TimeDuration `seed:"1s" redis:"work-time"`
+	Foo      fooStruct
 }
 
 type fooStruct struct {
 	Bar sync.Int64 `seed:"123" consul:"harvester/foo/bar"`
+	Doo sync.Int64 `seed:"234" redis:"doo"`
 }
 
 func TestMain(m *testing.M) {
@@ -39,6 +52,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 	csl = c.KV()
+
 	err = cleanup()
 	if err != nil {
 		log.Fatal(err)
@@ -62,6 +76,8 @@ func Test_harvester_Harvest(t *testing.T) {
 	h, err := New(&cfg).
 		WithConsulSeed(addr, "", "", 0).
 		WithConsulMonitor(addr, "", "", 0).
+		WithRedisSeed(redisClient).
+		WithRedisMonitor(redisClient, 10*time.Millisecond).
 		Create()
 	require.NoError(t, err)
 
@@ -75,7 +91,9 @@ func Test_harvester_Harvest(t *testing.T) {
 	assert.Equal(t, 111.1, cfg.Balance.Get())
 	assert.Equal(t, false, cfg.HasJob.Get())
 	assert.Equal(t, 1*time.Second, cfg.FunTime.Get())
+	assert.Equal(t, 2*time.Second, cfg.WorkTime.Get())
 	assert.Equal(t, int64(123), cfg.Foo.Bar.Get())
+	assert.Equal(t, int64(999), cfg.Foo.Doo.Get())
 
 	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Anderson")}, nil)
 	require.NoError(t, err)
@@ -93,6 +111,12 @@ func Test_harvester_Harvest(t *testing.T) {
 	require.NoError(t, err)
 	time.Sleep(1000 * time.Millisecond)
 	assert.Equal(t, int64(42), cfg.Foo.Bar.Get())
+
+	res, err := redisClient.Set(context.Background(), redisWorkTimeKey, "3s", 0).Result()
+	require.NoError(t, err)
+	require.Equal(t, "OK", res)
+	time.Sleep(1000 * time.Millisecond)
+	assert.Equal(t, 3*time.Second, cfg.WorkTime.Get())
 }
 
 func cleanup() error {
@@ -101,6 +125,10 @@ func cleanup() error {
 		return err
 	}
 	_, err = csl.DeleteTree("harvester", nil)
+	if err != nil {
+		return err
+	}
+	_, err = redisClient.Del(context.Background(), redisWorkTimeKey, redisDooKey).Result()
 	if err != nil {
 		return err
 	}
@@ -121,6 +149,14 @@ func setup() error {
 		return err
 	}
 	_, err = csl.Put(&api.KVPair{Key: "harvester/has-job", Value: []byte("false")}, nil)
+	if err != nil {
+		return err
+	}
+	_, err = redisClient.Set(context.Background(), redisWorkTimeKey, redisWorkTimeValue, 0).Result()
+	if err != nil {
+		return err
+	}
+	_, err = redisClient.Set(context.Background(), redisDooKey, redisDooValue, 0).Result()
 	if err != nil {
 		return err
 	}

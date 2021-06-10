@@ -43,19 +43,20 @@ func New(cfg *config.Config, ww ...Watcher) (*Monitor, error) {
 func generateMap(ff []*config.Field) (sourceMap, error) {
 	mp := make(sourceMap)
 	for _, f := range ff {
-		key, ok := f.Sources()[config.SourceConsul]
-		if !ok {
-			continue
-		}
-		_, ok = mp[config.SourceConsul]
-		if !ok {
-			mp[config.SourceConsul] = map[string]*config.Field{key: f}
-		} else {
-			_, ok := mp[config.SourceConsul][key]
-			if ok {
-				return nil, fmt.Errorf("consul key %s already exists in monitor map", key)
+		for source, val := range f.Sources() {
+			if source == config.SourceSeed {
+				continue
 			}
-			mp[config.SourceConsul][key] = f
+			_, ok := mp[source]
+			if !ok {
+				mp[source] = map[string]*config.Field{val: f}
+			} else {
+				_, ok := mp[source][val]
+				if ok {
+					return nil, fmt.Errorf("%s key %s already exists in monitor map", source, val)
+				}
+				mp[source][val] = f
+			}
 		}
 	}
 	return mp, nil

@@ -74,14 +74,16 @@ func TestMonitor_Monitor(t *testing.T) {
 	assert.Equal(t, 111.11, c.Balance.Get())
 	assert.Equal(t, false, c.HasJob.Get())
 	assert.Equal(t, 6*time.Hour, c.WorkHours.Get())
+	assert.Equal(t, 7*time.Hour, c.NonWorkHours.Get())
 }
 
 type testConfig struct {
-	Name      sync.String       `seed:"John Doe" env:"ENV_NAME"`
-	Age       sync.Int64        `env:"ENV_AGE" consul:"/config/age"`
-	Balance   sync.Float64      `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
-	HasJob    sync.Bool         `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
-	WorkHours sync.TimeDuration `seed:"5h" env:"ENV_WORK_HOURS" consul:"/config/work_hours"`
+	Name         sync.String       `seed:"John Doe" env:"ENV_NAME"`
+	Age          sync.Int64        `env:"ENV_AGE" consul:"/config/age"`
+	Balance      sync.Float64      `seed:"99.9" env:"ENV_BALANCE" consul:"/config/balance"`
+	HasJob       sync.Bool         `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
+	WorkHours    sync.TimeDuration `seed:"5h" env:"ENV_WORK_HOURS" consul:"/config/work_hours"`
+	NonWorkHours sync.TimeDuration `seed:"5h" env:"ENV_NON_WORK_HOURS" redis:"/config/non_work_hours"`
 }
 
 type testWatcher struct {
@@ -101,6 +103,7 @@ func (tw *testWatcher) Watch(_ context.Context, ch chan<- []*change.Change) erro
 		change.New(config.SourceConsul, "/config/has-job", "false", 0),
 		change.New(config.SourceConsul, "/config/has-job", "XXX", 2),
 		change.New(config.SourceConsul, "/config/work_hours", (6 * time.Hour).String(), 2),
+		change.New(config.SourceRedis, "/config/non_work_hours", (7 * time.Hour).String(), 2),
 	}
 	return nil
 }

@@ -128,6 +128,29 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			log.Infof("consul value %v applied on field %s", f, f.Name())
 			seedMap[f] = true
 		}
+
+		key, ok = ss[config.SourceRedis]
+		if ok {
+			gtr, ok := s.getters[config.SourceRedis]
+			if !ok {
+				return errors.New("redis getter required")
+			}
+			value, version, err := gtr.Get(key)
+			if err != nil {
+				log.Errorf("failed to get redis key %s for field %s: %v", key, f.Name(), err)
+				continue
+			}
+			if value == nil {
+				log.Warnf("redis key %s did not exist for field %s", key, f.Name())
+				continue
+			}
+			err = f.Set(*value, version)
+			if err != nil {
+				return err
+			}
+			log.Infof("redis value %v applied on field %s", f, f.Name())
+			seedMap[f] = true
+		}
 	}
 
 	if len(flagInfos) > 0 {

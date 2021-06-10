@@ -24,6 +24,7 @@ type Config struct {
     Sandbox        sync.Bool            `seed:"true" env:"ENV_SANDBOX" consul:"/config/sandbox-mode"`
     AccessToken    sync.Secret          `seed:"defaultaccesstoken" env:"ENV_ACCESS_TOKEN" consul:"/config/access-token"`
     WorkDuration   sync.TimeDuration    `seed:"1s" env:"ENV_WORK_DURATION" consul:"/config/work-duration"`
+    OpeningBalance sync.Float64         `seed:"0.0" env:"ENV_OPENING_BALANCE" redis:"opening-balance"`
 }
 ```
 
@@ -32,8 +33,9 @@ The above defines the following fields:
 - IndexName, which will be seeded with the value `customers-v1`
 - CacheRetention, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_CACHE_RETENTION_SECONDS` holds
 - LogLevel, which will be seeded with the value `DEBUG`, and if exists, overridden with whatever value the flag `loglevel` holds
-- Sandbox, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_SANDBOX` holds and then from consul if the consul seeder and/or watcher are provided.
-- WorkDuration, which will be seeded with the value `1s`, and if exists, overridden with whatever value the env var `ENV_WORK_DURATION` holds and then from consul if the consul seeder and/or watcher are provided.
+- Sandbox, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_SANDBOX` holds and then from Consul if the consul seeder and/or watcher are provided.
+- WorkDuration, which will be seeded with the value `1s`, and if exists, overridden with whatever value the env var `ENV_WORK_DURATION` holds and then from Consul if the consul seeder and/or watcher are provided.
+- OpeningBalance, which will be seeded with the value `0.0`, and if exists, overridden with whatever value the env var `ENV_OPENING_BALANCE` holds and then from Redis if the redis seeder and/or watcher are provided.
 
 The fields have to be one of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
 
@@ -75,8 +77,8 @@ Seed and env tags are supported by default, the Consul getter has to be setup wh
 
 ## Monitoring phase (Consul only)
   
-- Monitor a key and apply if tag key matches
-- Monitor a key-prefix and apply if tag key matches
+- Monitor a key and apply if tag key matches (Consul and Redis)
+- Monitor a key-prefix and apply if tag key matches (Consul only)
 
 ### Monitor
 
@@ -92,15 +94,19 @@ The `Harvester` builder pattern is used to create a `Harvester` instance. The bu
 
 - Consul seed, for setting up seeding from Consul
 - Consul monitor, for setting up monitoring from Consul
+- Redis seed, for setting up seeding from Redis
+- Redis monitor, for setting up monitoring from Redis
 
 ```go
     h, err := New(&cfg).
                 WithConsulSeed("address", "dc", "token").
                 WithConsulMonitor("address", "dc", "token").
+                WithRedisSeed(redisClient).
+                WithRedisMonitor(redisClient, 10*time.Millisecond).
                 Create()
 ```
 
-The above snippet set's up a `Harvester` instance with consul seed and monitor.
+The above snippet set's up a `Harvester` instance with Consul and Redis seed and monitor.
 
 ## Notification support
 
