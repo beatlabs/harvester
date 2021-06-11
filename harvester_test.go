@@ -20,8 +20,8 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 	type args struct {
 		cfg                    interface{}
 		consulAddress          string
-		seedRedisClient        *redis.Client
-		monitorRedisClient     *redis.Client
+		seedRedisClient        redis.UniversalClient
+		monitorRedisClient     redis.UniversalClient
 		monitoringPollInterval time.Duration
 	}
 	tests := map[string]struct {

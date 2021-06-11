@@ -10,11 +10,11 @@ import (
 
 // Getter definition.
 type Getter struct {
-	client *redis.Client
+	client redis.UniversalClient
 }
 
 // New creates a getter.
-func New(client *redis.Client) (*Getter, error) {
+func New(client redis.UniversalClient) (*Getter, error) {
 	if client == nil {
 		return nil, errors.New("client is nil")
 	}

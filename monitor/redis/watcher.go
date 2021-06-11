@@ -14,13 +14,13 @@ import (
 
 // Watcher of Redis changes.
 type Watcher struct {
-	client       *redis.Client
+	client       redis.UniversalClient
 	keys         []string
 	pollInterval time.Duration
 }
 
 // New watcher.
-func New(client *redis.Client, pollInterval time.Duration, keys []string) (*Watcher, error) {
+func New(client redis.UniversalClient, pollInterval time.Duration, keys []string) (*Watcher, error) {
 	if client == nil {
 		return nil, errors.New("client is nil")
 	}
