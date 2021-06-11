@@ -9,7 +9,7 @@ import (
 
 func TestNew(t *testing.T) {
 	type args struct {
-		client *redis.Client
+		client redis.UniversalClient
 	}
 	tests := map[string]struct {
 		args        args

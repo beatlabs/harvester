@@ -63,13 +63,13 @@ func TestWatch(t *testing.T) {
 	}
 }
 
-func set(t *testing.T, client *redis.Client, key string, val string) {
+func set(t *testing.T, client redis.UniversalClient, key string, val string) {
 	getResult, err := client.Set(context.Background(), key, val, 0).Result()
 	require.NoError(t, err)
 	require.Equal(t, "OK", getResult)
 }
 
-func del(t *testing.T, client *redis.Client, key string) {
+func del(t *testing.T, client redis.UniversalClient, key string) {
 	delResult, err := client.Del(context.Background(), key).Result()
 	require.NoError(t, err)
 	require.Equal(t, int64(1), delResult)

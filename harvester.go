@@ -61,8 +61,8 @@ type Builder struct {
 	monitorConsulCfg         *consulConfig
 	err                      error
 	chNotify                 chan<- config.ChangeNotification
-	monitorRedisClient       *redis.Client
-	seedRedisClient          *redis.Client
+	monitorRedisClient       redis.UniversalClient
+	seedRedisClient          redis.UniversalClient
 	monitorRedisPollInterval time.Duration
 }
 
@@ -114,7 +114,7 @@ func (b *Builder) WithConsulMonitor(addr, dataCenter, token string, timeout time
 }
 
 // WithRedisSeed enables support for seeding values with redis.
-func (b *Builder) WithRedisSeed(client *redis.Client) *Builder {
+func (b *Builder) WithRedisSeed(client redis.UniversalClient) *Builder {
 	if b.err != nil {
 		return b
 	}
@@ -128,7 +128,7 @@ func (b *Builder) WithRedisSeed(client *redis.Client) *Builder {
 
 // WithRedisMonitor enables support for monitoring keys in Redis. It automatically parses the config
 // and monitors every field found tagged with ConsulLogger.
-func (b *Builder) WithRedisMonitor(client *redis.Client, pollInterval time.Duration) *Builder {
+func (b *Builder) WithRedisMonitor(client redis.UniversalClient, pollInterval time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
