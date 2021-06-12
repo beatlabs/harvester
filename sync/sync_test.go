@@ -53,7 +53,7 @@ func TestFloat64(t *testing.T) {
 		ch <- struct{}{}
 	}()
 	<-ch
-	assert.Equal(t, float64(1.23), f.Get())
+	assert.Equal(t, 1.23, f.Get())
 	assert.Equal(t, "1.230000", f.String())
 }
 

@@ -91,12 +91,12 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 	for _, c := range cc {
 		mp, ok := m.mp[c.Source()]
 		if !ok {
-			log.Warnf("source %s not found", c.Source())
+			log.Debugf("source %s not found", c.Source())
 			continue
 		}
 		fld, ok := mp[c.Key()]
 		if !ok {
-			log.Warnf("key %s not found", c.Key())
+			log.Debugf("key %s not found", c.Key())
 			continue
 		}
 

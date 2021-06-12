@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	hclog "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 )
 

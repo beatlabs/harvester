@@ -253,7 +253,7 @@ func (b *Builder) setupConsulMonitoring(cfg *config.Config) (*consul.Watcher, er
 		if !ok {
 			continue
 		}
-		log.Infof(`automatically monitoring consul key "%s"`, consulKey)
+		log.Debugf(`automatically monitoring consul key "%s"`, consulKey)
 		items = append(items, consul.NewKeyItem(consulKey))
 	}
 	return consul.New(b.monitorConsulCfg.addr, b.monitorConsulCfg.dataCenter, b.monitorConsulCfg.token,
@@ -270,7 +270,7 @@ func (b *Builder) setupRedisMonitoring(cfg *config.Config) (*redismon.Watcher, e
 		if !ok {
 			continue
 		}
-		log.Infof(`automatically monitoring redis key "%s"`, redisKey)
+		log.Debugf(`automatically monitoring redis key "%s"`, redisKey)
 		items = append(items, redisKey)
 	}
 	return redismon.New(b.monitorRedisClient, b.monitorRedisPollInterval, items)
