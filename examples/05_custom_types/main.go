@@ -7,16 +7,15 @@ import (
 	"os"
 	"regexp"
 	"strings"
-
-	gosync "sync"
+	"sync"
 
 	"github.com/beatlabs/harvester"
-	"github.com/beatlabs/harvester/sync"
+	harvestersync "github.com/beatlabs/harvester/sync"
 )
 
 type config struct {
-	IndexName sync.String `seed:"customers-v1"`
-	Email     Email       `seed:"foo@example.com" env:"ENV_EMAIL"`
+	IndexName harvestersync.String `seed:"customers-v1"`
+	Email     Email                `seed:"foo@example.com" env:"ENV_EMAIL"`
 }
 
 func main() {
@@ -48,7 +47,7 @@ const emailPattern = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9
 
 // Email represents a custom config structure.
 type Email struct {
-	m      gosync.RWMutex
+	m      sync.RWMutex
 	v      string
 	name   string
 	domain string

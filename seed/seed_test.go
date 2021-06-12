@@ -56,7 +56,7 @@ func (c *configWithoutSeedStruct) GetAge() *sync.Int64 { return &c.Age }
 
 func TestSeeder_Seed_Flags(t *testing.T) {
 	// Each test can alter os.Args, so we need to reset it manually with their original value.
-	originalArgs := []string{}
+	originalArgs := make([]string, 0)
 	originalArgs = append(originalArgs, os.Args...)
 
 	testCases := []struct {

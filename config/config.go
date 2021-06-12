@@ -117,7 +117,7 @@ func (f *Field) Set(value string, version uint64) error {
 	}
 
 	f.version = version
-	log.Infof("field %q updated with value %q, version: %d", f.name, f, version)
+	log.Debugf("field %q updated with value %q, version: %d", f.name, f, version)
 	f.sendNotification(prevValue, value)
 	return nil
 }

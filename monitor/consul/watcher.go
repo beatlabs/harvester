@@ -94,7 +94,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		for _, pl := range w.pp {
 			pl.Stop()
 		}
-		log.Infof("all watch plans have been stopped")
+		log.Debugf("all watch plans have been stopped")
 	}()
 
 	return nil
@@ -116,7 +116,7 @@ func (w *Watcher) createKeyPlan(key string, ch chan<- []*change.Change) (*watch.
 			ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
 		}
 	}
-	log.Infof("plan for key %s created", key)
+	log.Debugf("plan for key %s created", key)
 	return pl, nil
 }
 
@@ -140,7 +140,7 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 			ch <- cc
 		}
 	}
-	log.Infof("plan for keyprefix %s created", keyPrefix)
+	log.Debugf("plan for keyprefix %s created", keyPrefix)
 	return pl, nil
 }
 
