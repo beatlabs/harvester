@@ -68,6 +68,7 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 	values, err := w.client.MGet(ctx, w.keys...).Result()
 	if err != nil {
 		log.Errorf("failed to MGET keys %v: %v", w.keys, err)
+		return
 	}
 	changes := make([]*change.Change, 0, len(w.keys))
 
