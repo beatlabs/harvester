@@ -2,8 +2,10 @@
 package sync
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -220,5 +222,52 @@ func (s *Secret) String() string {
 // SetString parses and sets a value from string type.
 func (s *Secret) SetString(val string) error {
 	s.Set(val)
+	return nil
+}
+
+type StringMap struct {
+	rw    sync.RWMutex
+	value map[string]string
+}
+
+func (s *StringMap) Get() map[string]string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.value
+}
+
+func (s *StringMap) Set(value map[string]string) {
+	s.rw.Lock()
+	defer s.rw.Unlock()
+	s.value = value
+}
+
+func (s *StringMap) String() string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	b := new(bytes.Buffer)
+	firstChar := ""
+	for key, value := range s.value {
+		_, _ = fmt.Fprintf(b, "%s%s=%q", firstChar, key, value)
+		firstChar = ","
+	}
+	return b.String()
+}
+
+func (s *StringMap) SetString(val string) error {
+	dict := make(map[string]string, 0)
+	if val == "" || strings.TrimSpace(val) == "" {
+		s.Set(dict)
+		return nil
+	}
+	for _, pair := range strings.Split(val, ",") {
+		items := strings.SplitN(pair, ":", 2)
+		if len(items) != 2 {
+			return fmt.Errorf("map must be formatted as `key:value`, got %q", pair)
+		}
+		key, value := strings.TrimSpace(items[0]), strings.TrimSpace(items[1])
+		dict[key] = value
+	}
+	s.Set(dict)
 	return nil
 }
