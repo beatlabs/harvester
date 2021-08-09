@@ -119,3 +119,55 @@ func TestTimeDuration_SetString(t *testing.T) {
 	assert.NoError(t, f.SetString("3s"))
 	assert.Equal(t, 3*time.Second, f.Get())
 }
+
+func TestStringMap(t *testing.T) {
+	var sm StringMap
+	ch := make(chan struct{})
+	go func() {
+		sm.Set(map[string]string{"key": "value"})
+		ch <- struct{}{}
+	}()
+	<-ch
+	assert.Equal(t, map[string]string{"key": "value"}, sm.Get())
+	assert.Equal(t, "key=\"value\"", sm.String())
+}
+
+func TestStringMap_SetString(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		result      map[string]string
+		throwsError bool
+	}{
+		{"empty", "", map[string]string{}, false},
+		{"empty with spaces", "   ", map[string]string{}, false},
+		{"single item", "key:value", map[string]string{"key": "value"}, false},
+		{"single item with route as val", "key:http://thing", map[string]string{"key": "http://thing"}, false},
+		{"key without value", "key", nil, true},
+		{"multiple items", "key1:value,key2:value", map[string]string{"key1": "value", "key2": "value"}, false},
+		{"multiple items with spaces", " key1 : value , key2 :value ", map[string]string{"key1": "value", "key2": "value"}, false},
+		{"multiple urls", "key1:http://one,key2:https://two", map[string]string{"key1": "http://one", "key2": "https://two"}, false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sm := StringMap{}
+
+			err := sm.SetString(test.input)
+			if test.throwsError {
+				assert.Error(t, err)
+			}
+
+			assert.Equal(t, test.result, sm.Get())
+		})
+	}
+}
+
+func TestStringMap_SetString_DoesntOverrideValueIfError(t *testing.T) {
+	sm := StringMap{}
+
+	assert.NoError(t, sm.SetString("k1:v1"))
+	assert.Equal(t, map[string]string{"k1": "v1"}, sm.Get())
+
+	assert.Error(t, sm.SetString("k1:v1,k2:v2,k3"))
+	assert.Equal(t, map[string]string{"k1": "v1"}, sm.Get())
+}
