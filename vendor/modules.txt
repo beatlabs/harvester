@@ -18,10 +18,12 @@ github.com/go-redis/redis/v8/internal/pool
 github.com/go-redis/redis/v8/internal/proto
 github.com/go-redis/redis/v8/internal/rand
 github.com/go-redis/redis/v8/internal/util
-# github.com/hashicorp/consul/api v1.9.1
+# github.com/hashicorp/consul/api v1.10.0
 ## explicit
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
+# github.com/hashicorp/consul/sdk v0.8.0
+## explicit
 # github.com/hashicorp/go-cleanhttp v0.5.1
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-hclog v0.16.2
