@@ -2,6 +2,7 @@ package harvester
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -88,6 +89,7 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 			got, err := New(tt.args.cfg).
 				WithConsulSeed(tt.args.consulAddress, "", "", 0).
 				WithConsulMonitor(tt.args.consulAddress, "", "", 0).
+				WithConsulFolderPrefixMonitor(tt.args.consulAddress, "", "", "", 0).
 				WithRedisSeed(tt.args.seedRedisClient).
 				WithRedisMonitor(tt.args.monitorRedisClient, tt.args.monitoringPollInterval).
 				Create()
@@ -126,6 +128,43 @@ func TestWithNotification(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWithConsulFolderPrefixMonitor(t *testing.T) {
+	tests := []struct {
+		Name                string
+		InputFolderPrefix   string
+		ExpectedKeyLocation string
+	}{
+		{
+			Name:                "Setup Consul with folder prefix",
+			InputFolderPrefix:   "folder/prefix",
+			ExpectedKeyLocation: "folder/prefix/key1",
+		},
+		{
+			Name:                "Setup Consul with empty folder prefix",
+			ExpectedKeyLocation: "key1",
+		},
+		{
+			Name:                "Setup Consul with folder prefix trailing /",
+			InputFolderPrefix:   "folder/prefix/",
+			ExpectedKeyLocation: "folder/prefix/key1",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			builder := New(testConfig{})
+			builder.WithConsulFolderPrefixMonitor("addr", "data-center", "token", test.InputFolderPrefix, time.Second*42)
+
+			assert.Equal(t, "addr", builder.monitorConsulCfg.addr)
+			assert.Equal(t, "data-center", builder.monitorConsulCfg.dataCenter)
+			assert.Equal(t, "token", builder.monitorConsulCfg.token)
+			assert.Equal(t, time.Second*42, builder.monitorConsulCfg.timeout)
+			assert.Equal(t, test.ExpectedKeyLocation, filepath.Join(builder.monitorConsulCfg.folderPrefix, "key1"))
+		})
+	}
+
 }
 
 func TestCreate_NoConsulOrRedis(t *testing.T) {
