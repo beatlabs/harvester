@@ -1,10 +1,9 @@
-//go:build integration
+// +build integration
 
 package consul
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"testing"

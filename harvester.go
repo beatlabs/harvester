@@ -98,6 +98,12 @@ func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Du
 	return b
 }
 
+// WithConsulMonitor enables support for monitoring key/prefixes on ConsulLogger. It automatically parses the config
+// and monitors every field found tagged with ConsulLogger.
+func (b *Builder) WithConsulMonitor(addr, dataCenter, token string, timeout time.Duration) *Builder {
+	return b.WithConsulFolderPrefixMonitor(addr, dataCenter, token, "", timeout)
+}
+
 // WithConsulFolderPrefixMonitor enables support for monitoring key/prefixes on ConsulLogger. It automatically parses the config
 // and monitors every field found tagged with ConsulLogger.
 func (b *Builder) WithConsulFolderPrefixMonitor(addr, dataCenter, token, folderPrefix string, timeout time.Duration) *Builder {
@@ -110,21 +116,6 @@ func (b *Builder) WithConsulFolderPrefixMonitor(addr, dataCenter, token, folderP
 		token:        token,
 		folderPrefix: folderPrefix,
 		timeout:      timeout,
-	}
-	return b
-}
-
-// WithConsulMonitor enables support for monitoring key/prefixes on ConsulLogger. It automatically parses the config
-// and monitors every field found tagged with ConsulLogger.
-func (b *Builder) WithConsulMonitor(addr, dataCenter, token string, timeout time.Duration) *Builder {
-	if b.err != nil {
-		return b
-	}
-	b.monitorConsulCfg = &consulConfig{
-		addr:       addr,
-		dataCenter: dataCenter,
-		token:      token,
-		timeout:    timeout,
 	}
 	return b
 }
