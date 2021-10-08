@@ -4,6 +4,7 @@ package consul
 import (
 	"context"
 	"errors"
+	"path"
 	"time"
 
 	"github.com/beatlabs/harvester/change"
@@ -15,13 +16,19 @@ import (
 
 // Item definition.
 type Item struct {
-	tp  string
-	key string
+	tp     string
+	key    string
+	prefix string
 }
 
 // NewKeyItem creates a new key watch item for the watcher.
 func NewKeyItem(key string) Item {
 	return Item{tp: "key", key: key}
+}
+
+// NewKeyItemWithPrefix creates a new key item for a given key and prefix.
+func NewKeyItemWithPrefix(key, prefix string) Item {
+	return Item{tp: "key", key: key, prefix: prefix}
 }
 
 // NewPrefixItem creates a prefix key watch item for the watcher.
@@ -72,7 +79,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		var err error
 		switch i.tp {
 		case "key":
-			pl, err = w.createKeyPlan(i.key, ch)
+			pl, err = w.createKeyPlanWithPrefix(i.key, i.prefix, ch)
 		case "keyprefix":
 			pl, err = w.createKeyPrefixPlan(i.key, ch)
 		}
@@ -100,8 +107,8 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 	return nil
 }
 
-func (w *Watcher) createKeyPlan(key string, ch chan<- []*change.Change) (*watch.Plan, error) {
-	pl, err := w.getPlan("key", key)
+func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
+	pl, err := w.getPlan("key", path.Join(prefix, key))
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +120,7 @@ func (w *Watcher) createKeyPlan(key string, ch chan<- []*change.Change) (*watch.
 		if !ok {
 			log.Errorf("data is not kv pair: %v", data)
 		} else {
-			ch <- []*change.Change{change.New(config.SourceConsul, pair.Key, string(pair.Value), pair.ModifyIndex)}
+			ch <- []*change.Change{change.New(config.SourceConsul, key, string(pair.Value), pair.ModifyIndex)}
 		}
 	}
 	log.Debugf("plan for key %s created", key)

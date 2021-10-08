@@ -50,8 +50,8 @@ func (h *harvester) Harvest(ctx context.Context) error {
 }
 
 type consulConfig struct {
-	addr, dataCenter, token string
-	timeout                 time.Duration
+	addr, dataCenter, token, folderPrefix string
+	timeout                               time.Duration
 }
 
 // Builder of a harvester instance.
@@ -101,14 +101,21 @@ func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Du
 // WithConsulMonitor enables support for monitoring key/prefixes on ConsulLogger. It automatically parses the config
 // and monitors every field found tagged with ConsulLogger.
 func (b *Builder) WithConsulMonitor(addr, dataCenter, token string, timeout time.Duration) *Builder {
+	return b.WithConsulFolderPrefixMonitor(addr, dataCenter, token, "", timeout)
+}
+
+// WithConsulFolderPrefixMonitor enables support for monitoring key/prefixes on ConsulLogger. It automatically parses the config
+// and monitors every field found tagged with ConsulLogger.
+func (b *Builder) WithConsulFolderPrefixMonitor(addr, dataCenter, token, folderPrefix string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
 	b.monitorConsulCfg = &consulConfig{
-		addr:       addr,
-		dataCenter: dataCenter,
-		token:      token,
-		timeout:    timeout,
+		addr:         addr,
+		dataCenter:   dataCenter,
+		token:        token,
+		folderPrefix: folderPrefix,
+		timeout:      timeout,
 	}
 	return b
 }
@@ -254,7 +261,7 @@ func (b *Builder) setupConsulMonitoring(cfg *config.Config) (*consul.Watcher, er
 			continue
 		}
 		log.Debugf(`automatically monitoring consul key "%s"`, consulKey)
-		items = append(items, consul.NewKeyItem(consulKey))
+		items = append(items, consul.NewKeyItemWithPrefix(consulKey, b.monitorConsulCfg.folderPrefix))
 	}
 	return consul.New(b.monitorConsulCfg.addr, b.monitorConsulCfg.dataCenter, b.monitorConsulCfg.token,
 		b.monitorConsulCfg.timeout, items...)
