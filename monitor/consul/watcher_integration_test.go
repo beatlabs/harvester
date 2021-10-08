@@ -4,6 +4,7 @@ package consul
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -43,7 +44,7 @@ func TestMain(m *testing.M) {
 
 func TestWatch(t *testing.T) {
 	ch := make(chan []*change.Change)
-	w, err := New(addr, "", "", 0, NewKeyItemWithPrefix("key1", ""), NewPrefixItem("prefix1"))
+	w, err := New(addr, "", "", 0, NewKeyItemWithPrefix("key4", "consul/folder"), NewKeyItemWithPrefix("key1", ""), NewPrefixItem("prefix"))
 	require.NoError(t, err)
 	require.NotNil(t, w)
 	ctx, cnl := context.WithCancel(context.Background())
@@ -61,6 +62,8 @@ func TestWatch(t *testing.T) {
 				assert.Equal(t, "3", cng.Value())
 			case "key1":
 				assert.Equal(t, "1", cng.Value())
+			case "key4":
+				assert.Equal(t, "42", cng.Value())
 			default:
 				assert.Fail(t, "key invalid", cng.Key())
 			}
@@ -82,7 +85,11 @@ func cleanup(consul *api.Client) error {
 }
 
 func setup(consul *api.Client) error {
-	_, err := consul.KV().Put(&api.KVPair{Key: "key1", Value: []byte("1")}, nil)
+	_, err := consul.KV().Put(&api.KVPair{Key: "consul/folder/key4", Value: []byte("42")}, nil)
+	if err != nil {
+		return err
+	}
+	_, err = consul.KV().Put(&api.KVPair{Key: "key1", Value: []byte("1")}, nil)
 	if err != nil {
 		return err
 	}
