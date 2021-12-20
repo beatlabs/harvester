@@ -18,7 +18,7 @@ github.com/go-redis/redis/v8/internal/pool
 github.com/go-redis/redis/v8/internal/proto
 github.com/go-redis/redis/v8/internal/rand
 github.com/go-redis/redis/v8/internal/util
-# github.com/hashicorp/consul/api v1.11.0
+# github.com/hashicorp/consul/api v1.12.0
 ## explicit
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
@@ -33,7 +33,7 @@ github.com/hashicorp/go-immutable-radix
 github.com/hashicorp/go-rootcerts
 # github.com/hashicorp/golang-lru v0.5.0
 github.com/hashicorp/golang-lru/simplelru
-# github.com/hashicorp/serf v0.9.5
+# github.com/hashicorp/serf v0.9.6
 github.com/hashicorp/serf/coordinate
 # github.com/mattn/go-colorable v0.1.6
 github.com/mattn/go-colorable
