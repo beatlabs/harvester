@@ -2,12 +2,12 @@ package redis
 
 import (
 	"context"
-	"github.com/beatlabs/harvester/config"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/config"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,7 +72,7 @@ func TestWatcher_Versioning(t *testing.T) {
 	client := (&clientStub{t: t}).
 		WithValues("val1.1", "val2.1", "val3.1"). // Initial values
 		WithValues("val1.1", "val2.2", "val3.2"). // Only keys 2 and 3 are updated
-		WithValues("val1.1", "val2.1", "val3.2") // Only 2 is updated, to its previous value
+		WithValues("val1.1", "val2.1", "val3.2")  // Only 2 is updated, to its previous value
 
 	expected := [][]*change.Change{
 		{
