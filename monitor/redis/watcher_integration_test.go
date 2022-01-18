@@ -104,5 +104,4 @@ func transformChangesToSlices(ch chan []*change.Change) []*change.Change {
 			return changes
 		}
 	}
-	return changes
 }

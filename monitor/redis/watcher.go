@@ -89,7 +89,7 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 			continue
 		}
 
-		w.versions[i] += 1
+		w.versions[i]++
 		w.hashes[i] = hash
 
 		changes = append(changes, change.New(config.SourceRedis, key, value, w.versions[i]))
