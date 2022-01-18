@@ -95,6 +95,10 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 		changes = append(changes, change.New(config.SourceRedis, key, value, w.versions[i]))
 	}
 
+	if len(changes) == 0 {
+		return
+	}
+
 	ch <- changes
 }
 
