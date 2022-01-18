@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWatchasd(t *testing.T) {
+func TestWatch(t *testing.T) {
 	client := redis.NewClient(&redis.Options{})
 
 	const (
