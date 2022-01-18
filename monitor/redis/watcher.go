@@ -3,6 +3,8 @@ package redis
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -16,6 +18,8 @@ import (
 type Watcher struct {
 	client       redis.UniversalClient
 	keys         []string
+	versions     []uint64
+	hashes       []string
 	pollInterval time.Duration
 }
 
@@ -34,6 +38,8 @@ func New(client redis.UniversalClient, pollInterval time.Duration, keys []string
 	return &Watcher{
 		client:       client,
 		keys:         keys,
+		versions:     make([]uint64, len(keys)),
+		hashes:       make([]string, len(keys)),
 		pollInterval: pollInterval,
 	}, nil
 }
@@ -77,8 +83,22 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 			continue
 		}
 
-		changes = append(changes, change.New(config.SourceRedis, key, values[i].(string), 0))
+		value := values[i].(string)
+		hash := w.hash(value)
+		if hash == w.hashes[i] {
+			continue
+		}
+
+		w.versions[i] += 1
+		w.hashes[i] = hash
+
+		changes = append(changes, change.New(config.SourceRedis, key, value, w.versions[i]))
 	}
 
 	ch <- changes
+}
+
+func (w *Watcher) hash(value string) string {
+	hash := md5.Sum([]byte(value))
+	return hex.EncodeToString(hash[:])
 }
