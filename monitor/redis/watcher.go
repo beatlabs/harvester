@@ -73,10 +73,19 @@ func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
 func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 	values := make([]interface{}, len(w.keys))
 	for i, key := range w.keys {
-		v, err := w.client.Get(ctx, key).Result()
+		strCmd := w.client.Get(ctx, key)
+		if strCmd == nil {
+			log.Errorf("failed to get value for key %s: nil strCmd", key)
+			continue
+		}
+		if strCmd.Err() != nil {
+			log.Errorf("failed to get value for key %s: %s", key, strCmd.Err())
+			continue
+		}
+		v, err := strCmd.Result()
 		if err != nil {
 			log.Errorf("failed to Get value for key %s: %s", key, err)
-			return
+			continue
 		}
 		values[i] = v
 	}

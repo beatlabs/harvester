@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -69,11 +70,35 @@ func TestWatcher_Watch(t *testing.T) {
 }
 
 func TestWatcher_Versioning(t *testing.T) {
-	client := (&clientStub{t: t}).
-		WithValues("val1.1", "val2.1", "val3.1"). // Initial values
-		WithValues("val1.1", "val2.2", "val3.2"). // Only keys 2 and 3 are updated
-		WithValues("val1.1", "val2.1", "val3.2")  // Only 2 is updated, to its previous value
-
+	watchedKeys := []string{"key1", "key2", "key3"}
+	// each element represent the state of redis server at each subsequent poll
+	redisInternalState := []map[string]interface{}{
+		{
+			"key1": "val1.1",
+			"key2": "val2.1",
+			"key3": "val3.1",
+		},
+		{
+			"key1": "val1.1", // no change
+			"key2": "val2.2", // change
+			"key3": "val3.2", // change
+		},
+		{
+			"key2": "val2.1", // change
+		},
+		{
+			"key4": "val4.1", // no change -> not subscribed to this key
+		},
+		{
+			"key4": "val4.1", // no change -> not subscribed to this key
+		},
+		{
+			"key1": nil, // delete change
+		},
+		{
+			"key2": errors.New("error"), // change
+		},
+	}
 	expected := [][]*change.Change{
 		{
 			change.New(config.SourceRedis, "key1", "val1.1", 1),
@@ -89,7 +114,11 @@ func TestWatcher_Versioning(t *testing.T) {
 		},
 	}
 
-	w, err := New(client, 1*time.Millisecond, []string{"key1", "key2", "key3"})
+	client := clientStub{t: t, m: sync.Mutex{}, watchedKeys: watchedKeys}
+	for _, mv := range redisInternalState {
+		client.AppendMockValues(mv)
+	}
+	w, err := New(&client, 5*time.Millisecond, []string{"key1", "key2", "key3"})
 	require.NoError(t, err)
 	assert.Equal(t, []uint64{0, 0, 0}, w.versions)
 	assert.Equal(t, []string{"", "", ""}, w.hashes)
@@ -100,29 +129,21 @@ func TestWatcher_Versioning(t *testing.T) {
 	err = w.Watch(ctx, ch)
 	assert.NoError(t, err)
 
+	// time for completing all the polling for the different states
 	time.Sleep(100 * time.Millisecond)
 
-	cancel()
-
 	found := make([][]*change.Change, 0)
-
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
-		for {
-			select {
-			case cc := <-ch:
-				if len(cc) == 0 {
-					break
-				}
-				found = append(found, cc)
-			default:
-				wg.Done()
-				return
-			}
+		for cc := range ch {
+			found = append(found, cc)
 		}
+		wg.Done()
 	}()
+	close(ch)
+	cancel()
 	wg.Wait()
 
 	assert.Equal(t, expected, found)
@@ -131,20 +152,54 @@ func TestWatcher_Versioning(t *testing.T) {
 type clientStub struct {
 	t *testing.T
 	*redis.Client
+	m                sync.Mutex
+	watchedKeys      []string
+	internalGetCalls int
 
-	cmds []*redis.SliceCmd
+	keyToCmd []map[string]*redis.StringCmd
 }
 
-func (c *clientStub) WithValues(values ...interface{}) *clientStub {
-	c.cmds = append(c.cmds, redis.NewSliceResult(values, nil))
+func (c *clientStub) AppendMockValues(values map[string]interface{}) *clientStub {
+	mockResp := make(map[string]*redis.StringCmd)
+	for k, v := range values {
+		if v == nil {
+			mockResp[k] = nil
+			continue
+		}
+		if s, ok := v.(string); ok {
+			mockResp[k] = redis.NewStringResult(s, nil)
+			continue
+		}
+		mockResp[k] = redis.NewStringResult("", errors.New("Error"))
+	}
+
+	if c.keyToCmd == nil {
+		c.keyToCmd = make([]map[string]*redis.StringCmd, 0)
+	}
+	c.keyToCmd = append(c.keyToCmd, mockResp)
 	return c
 }
 
-func (c *clientStub) MGet(_ context.Context, keys ...string) *redis.SliceCmd {
-	if len(c.cmds) == 0 {
-		return redis.NewSliceResult(make([]interface{}, len(keys)), nil)
+func (c *clientStub) Get(_ context.Context, key string) *redis.StringCmd {
+	c.m.Lock()
+	defer c.m.Unlock()
+	c.internalGetCalls++
+	defer c.rollInternalRedisState()
+	if len(c.keyToCmd) == 0 {
+		return redis.NewStringResult("", errors.New("error"))
 	}
-	shifted := c.cmds[0]
-	c.cmds = c.cmds[1:]
-	return shifted
+	shifted := c.keyToCmd[0]
+	if v, ok := shifted[key]; ok {
+		return v
+	}
+
+	return nil
+
+}
+
+func (c *clientStub) rollInternalRedisState() {
+	// replace redis virtual state every len(watchedKeys) calls to Get
+	if len(c.keyToCmd) > 0 && (c.internalGetCalls)%len(c.watchedKeys) == 0 {
+		c.keyToCmd = c.keyToCmd[1:]
+	}
 }
