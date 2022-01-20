@@ -137,12 +137,16 @@ func TestWatcher_Versioning(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		for cc := range ch {
-			found = append(found, cc)
+		defer wg.Done()
+		for {
+			select {
+			case cc := <-ch:
+				found = append(found, cc)
+			default:
+				return
+			}
 		}
-		wg.Done()
 	}()
-	close(ch)
 	cancel()
 	wg.Wait()
 
@@ -160,6 +164,8 @@ type clientStub struct {
 }
 
 func (c *clientStub) AppendMockValues(values map[string]interface{}) *clientStub {
+	c.m.Lock()
+	defer c.m.Unlock()
 	mockResp := make(map[string]*redis.StringCmd)
 	for k, v := range values {
 		if v == nil {
