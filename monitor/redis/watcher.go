@@ -70,24 +70,25 @@ func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
 	}
 }
 
+func toPtr(s string) *string {
+	return &s
+}
+
 func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
-	values := make([]interface{}, len(w.keys))
+	values := make([]*string, len(w.keys))
 	for i, key := range w.keys {
 		strCmd := w.client.Get(ctx, key)
 		if strCmd == nil {
 			log.Errorf("failed to get value for key %s: nil strCmd", key)
 			continue
 		}
-		if strCmd.Err() != nil {
+		// notice: if the key is not found we default to the same behavior as if
+		// the key was found with an empty value string
+		if strCmd.Err() != nil && strCmd.Err() != redis.Nil {
 			log.Errorf("failed to get value for key %s: %s", key, strCmd.Err())
 			continue
 		}
-		v, err := strCmd.Result()
-		if err != nil {
-			log.Errorf("failed to Get value for key %s: %s", key, err)
-			continue
-		}
-		values[i] = v
+		values[i] = toPtr(strCmd.Val())
 	}
 
 	changes := make([]*change.Change, 0, len(w.keys))
@@ -97,7 +98,7 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 			continue
 		}
 
-		value := values[i].(string)
+		value := *values[i]
 		hash := w.hash(value)
 		if hash == w.hashes[i] {
 			continue

@@ -74,29 +74,39 @@ func TestWatcher_Versioning(t *testing.T) {
 	// each element represent the state of redis server at each subsequent poll
 	redisInternalState := []map[string]interface{}{
 		{
+			// watch triggers change in key1, key2 and key3
 			"key1": "val1.1",
 			"key2": "val2.1",
 			"key3": "val3.1",
 		},
 		{
+			// watch triggers change in key2 and key3
 			"key1": "val1.1", // no change
 			"key2": "val2.2", // change
 			"key3": "val3.2", // change
 		},
 		{
-			"key2": "val2.1", // change
+			// whole watch does not trigger change
+			"key1": errors.New("error key1"), // error occurred -> no change should be triggered
+			"key2": errors.New("error key2"), // error occurred -> no change should be triggered
+			"key3": errors.New("error key3"), // error occurred -> no change should be triggered
 		},
 		{
+			// watch triggers change only in key1 ("")
+			"key2": "val2.2", // no change from previous
+			"key3": "val3.2", // no change from previous
+		},
+		{
+			// all subscribed keys deleted -> should trigger update to "" for key2 and key3 (as key1 was already "")
 			"key4": "val4.1", // no change -> not subscribed to this key
 		},
 		{
-			"key4": "val4.1", // no change -> not subscribed to this key
+			// no change in key1, key2 and key3 -> should not trigger update
+			"key4": "val4.2", // no change -> not subscribed to this key
 		},
 		{
-			"key1": nil, // delete change
-		},
-		{
-			"key2": errors.New("error"), // change
+			// no change (as errors ignored)
+			"key2": errors.New("error"), // error occurred -> no change should be triggered
 		},
 	}
 	expected := [][]*change.Change{
@@ -110,7 +120,11 @@ func TestWatcher_Versioning(t *testing.T) {
 			change.New(config.SourceRedis, "key3", "val3.2", 2),
 		},
 		{
-			change.New(config.SourceRedis, "key2", "val2.1", 3),
+			change.New(config.SourceRedis, "key1", "", 2),
+		},
+		{
+			change.New(config.SourceRedis, "key2", "", 3),
+			change.New(config.SourceRedis, "key3", "", 3),
 		},
 	}
 
@@ -192,14 +206,14 @@ func (c *clientStub) Get(_ context.Context, key string) *redis.StringCmd {
 	c.internalGetCalls++
 	defer c.rollInternalRedisState()
 	if len(c.keyToCmd) == 0 {
-		return redis.NewStringResult("", errors.New("error"))
+		return redis.NewStringResult("", redis.Nil)
 	}
 	shifted := c.keyToCmd[0]
 	if v, ok := shifted[key]; ok {
 		return v
 	}
 
-	return nil
+	return redis.NewStringResult("", redis.Nil)
 
 }
 
