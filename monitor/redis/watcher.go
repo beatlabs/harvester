@@ -71,23 +71,25 @@ func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
 }
 
 func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
-	values := make([]string, len(w.keys))
+	values := make([]interface{}, len(w.keys))
 	for i, key := range w.keys {
-		value, err := w.client.Get(ctx, key).Result()
+		v, err := w.client.Get(ctx, key).Result()
 		if err != nil {
-			log.Errorf("failed to GET key %v: %v", key, err)
+			log.Errorf("failed to Get value for key %s: %s", key, err)
 			return
 		}
-		values[i] = value
+		values[i] = v
 	}
+
 	changes := make([]*change.Change, 0, len(w.keys))
 
 	for i, key := range w.keys {
-		if values[i] == "" {
+		if values[i] == nil {
 			continue
 		}
 
-		hash := w.hash(values[i])
+		value := values[i].(string)
+		hash := w.hash(value)
 		if hash == w.hashes[i] {
 			continue
 		}
@@ -95,12 +97,13 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 		w.versions[i]++
 		w.hashes[i] = hash
 
-		changes = append(changes, change.New(config.SourceRedis, key, values[i], w.versions[i]))
+		changes = append(changes, change.New(config.SourceRedis, key, value, w.versions[i]))
 	}
 
 	if len(changes) == 0 {
 		return
 	}
+
 	ch <- changes
 }
 
