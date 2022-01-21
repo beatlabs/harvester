@@ -70,10 +70,6 @@ func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
 	}
 }
 
-func toPtr(s string) *string {
-	return &s
-}
-
 func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 	values := make([]*string, len(w.keys))
 	for i, key := range w.keys {
@@ -88,7 +84,8 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 			}
 			continue
 		}
-		values[i] = toPtr(strCmd.Val())
+		val := strCmd.Val()
+		values[i] = &val
 	}
 
 	changes := make([]*change.Change, 0, len(w.keys))
