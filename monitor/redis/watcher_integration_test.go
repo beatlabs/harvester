@@ -71,13 +71,12 @@ func TestWatch(t *testing.T) {
 		// Initial values
 		change.New(config.SourceRedis, key1, val1, 1),
 		change.New(config.SourceRedis, key2, val1, 1),
-		change.New(config.SourceRedis, key3, "", 1),
 		// First update
 		change.New(config.SourceRedis, key2, val2, 2),
-		change.New(config.SourceRedis, key3, val1, 2),
+		change.New(config.SourceRedis, key3, val1, 1),
 		// Second update
 		change.New(config.SourceRedis, key2, val1, 3),
-		change.New(config.SourceRedis, key3, val3, 3),
+		change.New(config.SourceRedis, key3, val3, 2),
 	}
 
 	assert.Equal(t, expected, found)

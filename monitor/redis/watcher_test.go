@@ -86,26 +86,27 @@ func TestWatcher_Versioning(t *testing.T) {
 			"key3": "val3.2", // change
 		},
 		{
-			// whole watch does not trigger change
+			// whole watch does not trigger change (but errors will be logged as != redis.Nil)
 			"key1": errors.New("error key1"), // error occurred -> no change should be triggered
 			"key2": errors.New("error key2"), // error occurred -> no change should be triggered
 			"key3": errors.New("error key3"), // error occurred -> no change should be triggered
 		},
 		{
-			// watch triggers change only in key1 ("")
+			// watch does not trigger change or log because key1 watch will lead to redis.Nil
 			"key2": "val2.2", // no change from previous
 			"key3": "val3.2", // no change from previous
 		},
 		{
-			// all subscribed keys deleted -> should trigger update to "" for key2 and key3 (as key1 was already "")
+			// all subscribed keys deleted -> do not trigger change or log because redis.Nil is ignored
 			"key4": "val4.1", // no change -> not subscribed to this key
 		},
 		{
-			// no change in key1, key2 and key3 -> should not trigger update
+			// all subscribed keys deleted -> do not trigger change or log because redis.Nil is ignored
 			"key4": "val4.2", // no change -> not subscribed to this key
 		},
 		{
-			// no change (as errors ignored)
+			// all subscribed keys deleted -> do not trigger change but triggers
+			// log because error is different than redis.Nil is ignored
 			"key2": errors.New("error"), // error occurred -> no change should be triggered
 		},
 	}
@@ -118,13 +119,6 @@ func TestWatcher_Versioning(t *testing.T) {
 		{
 			change.New(config.SourceRedis, "key2", "val2.2", 2),
 			change.New(config.SourceRedis, "key3", "val3.2", 2),
-		},
-		{
-			change.New(config.SourceRedis, "key1", "", 2),
-		},
-		{
-			change.New(config.SourceRedis, "key2", "", 3),
-			change.New(config.SourceRedis, "key3", "", 3),
 		},
 	}
 
@@ -190,7 +184,11 @@ func (c *clientStub) AppendMockValues(values map[string]interface{}) *clientStub
 			mockResp[k] = redis.NewStringResult(s, nil)
 			continue
 		}
-		mockResp[k] = redis.NewStringResult("", errors.New("Error"))
+		if e, ok := v.(error); ok {
+			mockResp[k] = redis.NewStringResult("", e)
+			continue
+		}
+		mockResp[k] = redis.NewStringResult("", errors.New("Unknown Error"))
 	}
 
 	if c.keyToCmd == nil {

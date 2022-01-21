@@ -82,10 +82,10 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 			log.Errorf("failed to get value for key %s: nil strCmd", key)
 			continue
 		}
-		// notice: if the key is not found we default to the same behavior as if
-		// the key was found with an empty value string
-		if strCmd.Err() != nil && strCmd.Err() != redis.Nil {
-			log.Errorf("failed to get value for key %s: %s", key, strCmd.Err())
+		if strCmd.Err() != nil {
+			if strCmd.Err() != redis.Nil {
+				log.Errorf("failed to get value for key %s: %s", key, strCmd.Err())
+			}
 			continue
 		}
 		values[i] = toPtr(strCmd.Val())
