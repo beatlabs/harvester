@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
@@ -67,9 +68,19 @@ func TestWatch(t *testing.T) {
 			assert.True(t, cng.Version() > 0)
 		}
 	}
-	// test that after cancelling context channel is closed (program would hang otherwise)
+	// test that after cancelling context channel is closed (with timeout of 1s)
 	cnl()
-	for range ch {
+	tickerStats := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case _, opened := <-ch:
+			if !opened {
+				// success (channel closed before timeout)
+				return
+			}
+		case <-tickerStats.C:
+			assert.Fail(t, "channel should have been closed")
+		}
 	}
 }
 

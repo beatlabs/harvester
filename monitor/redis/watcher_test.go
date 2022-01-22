@@ -69,10 +69,20 @@ func TestWatcher_Watch(t *testing.T) {
 				assert.Nil(t, ch)
 			} else {
 				assert.NoError(t, err)
-				// by cancelling the context the channel will be closed and the
-				// for loop will exit
+				// by cancelling the context the channel should close, if it's
+				// not closed within the timeout of 1 second the test will fail
 				tt.args.cancel()
-				for range ch {
+				tickerStats := time.NewTicker(1 * time.Second)
+				for {
+					select {
+					case _, opened := <-ch:
+						if !opened {
+							// success (channel closed before timeout)
+							return
+						}
+					case <-tickerStats.C:
+						assert.Fail(t, "channel should have been closed")
+					}
 				}
 			}
 		})
