@@ -72,8 +72,7 @@ func TestWatcher_Watch(t *testing.T) {
 				// by cancelling the context the channel will be closed and the
 				// for loop will exit
 				tt.args.cancel()
-				for e := range ch {
-					assert.Fail(t, "unexpected event", e)
+				for range ch {
 				}
 			}
 		})
@@ -154,6 +153,7 @@ func TestWatcher_Versioning(t *testing.T) {
 	found := make([][]change.Change, 0)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 		for cc := range ch {
@@ -218,7 +218,6 @@ func (c *clientStub) Get(_ context.Context, key string) *redis.StringCmd {
 	if v, ok := shifted[key]; ok {
 		return v
 	}
-
 	return redis.NewStringResult("", redis.Nil)
 
 }
