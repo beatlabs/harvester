@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/beatlabs/harvester/change"
@@ -41,7 +42,6 @@ type Watcher struct {
 	cl    *api.Client
 	dc    string
 	token string
-	pp    []*watch.Plan
 	ii    []Item
 }
 
@@ -67,47 +67,68 @@ func New(addr, dc, token string, timeout time.Duration, ii ...Item) (*Watcher, e
 }
 
 // Watch key and prefixes for changes.
-func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
+func (w *Watcher) Watch(ctx context.Context) (<-chan []change.Change, error) {
 	if ctx == nil {
-		return errors.New("context is nil")
+		return nil, errors.New("context is nil")
 	}
-	if ch == nil {
-		return errors.New("change channel is nil")
-	}
-	for _, i := range w.ii {
-		var pl *watch.Plan
-		var err error
-		switch i.tp {
-		case "key":
-			pl, err = w.createKeyPlanWithPrefix(i.key, i.prefix, ch)
-		case "keyprefix":
-			pl, err = w.createKeyPrefixPlan(i.key, ch)
-		}
+	// out channel is injected in every plan handler to communicate back the
+	// changes. It can only be closed when all the plan watchers are done
+	out := make(chan []change.Change, len(w.ii))
+	plans := make([]*watch.Plan, 0, len(w.ii))
+	for _, item := range w.ii {
+		pl, err := w.createPlanForItem(item, out)
 		if err != nil {
-			return err
+			close(out)
+			return nil, err
 		}
-		w.pp = append(w.pp, pl)
-		go func(tp, key string) {
-			err := pl.RunWithClientAndHclog(w.cl, log.ConsulLogger())
-			if err != nil {
-				log.Errorf("plan %s of type %s failed: %v", tp, key, err)
-			} else {
-				log.Debugf("plan %s of type %s is running", tp, key)
-			}
-		}(i.tp, i.key)
+		plans = append(plans, pl)
 	}
+
 	go func() {
-		<-ctx.Done()
-		for _, pl := range w.pp {
-			pl.Stop()
-		}
-		log.Debugf("all watch plans have been stopped")
+		dispatchWatcherPlansAndWaitCancellation(ctx, w, plans, out)
 	}()
 
-	return nil
+	return out, nil
 }
 
-func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
+func dispatchWatcherPlansAndWaitCancellation(ctx context.Context, w *Watcher, plans []*watch.Plan, out chan []change.Change) {
+	// dispatch the plans
+	wg := sync.WaitGroup{}
+	wg.Add(len(plans))
+	for i, pl := range plans {
+		item := w.ii[i]
+		go func(tp, key string, plan *watch.Plan) {
+			err := plan.RunWithClientAndHclog(w.cl, log.ConsulLogger())
+			if err != nil {
+				log.Errorf("plan %s of type %s failed: %v", key, tp, err)
+			} else {
+				log.Debugf("plan %s of type %s is running", key, tp)
+			}
+			wg.Done()
+		}(item.tp, item.key, pl)
+	}
+	// wait for cancellation signal
+	<-ctx.Done()
+	for _, pl := range plans {
+		pl.Stop()
+	}
+	// wait for all plans to stop to close channel (plans write to chanel)
+	wg.Wait()
+	close(out)
+	log.Debugf("all watch plans have been stopped")
+}
+
+func (w *Watcher) createPlanForItem(i Item, out chan []change.Change) (*watch.Plan, error) {
+	switch i.tp {
+	case "key":
+		return w.createKeyPlanWithPrefix(i.key, i.prefix, out)
+	case "keyprefix":
+		return w.createKeyPrefixPlan(i.key, out)
+	}
+	return nil, errors.New("unknown item type")
+}
+
+func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []change.Change) (*watch.Plan, error) {
 	pl, err := w.getPlan("key", path.Join(prefix, key))
 	if err != nil {
 		return nil, err
@@ -120,14 +141,17 @@ func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []*chang
 		if !ok {
 			log.Errorf("data is not kv pair: %v", data)
 		} else {
-			ch <- []*change.Change{change.New(config.SourceConsul, key, string(pair.Value), pair.ModifyIndex)}
+			cg := change.New(config.SourceConsul, key, string(pair.Value), pair.ModifyIndex)
+			if cg != nil {
+				ch <- []change.Change{*cg}
+			}
 		}
 	}
 	log.Debugf("plan for key %s created", key)
 	return pl, nil
 }
 
-func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
+func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []change.Change) (*watch.Plan, error) {
 	pl, err := w.getPlan("keyprefix", keyPrefix)
 	if err != nil {
 		return nil, err
@@ -140,9 +164,12 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 		if !ok {
 			log.Errorf("data is not kv pairs: %v", data)
 		} else {
-			cc := make([]*change.Change, len(pp))
+			cc := make([]change.Change, 0, len(pp))
 			for i := 0; i < len(pp); i++ {
-				cc[i] = change.New(config.SourceConsul, pp[i].Key, string(pp[i].Value), pp[i].ModifyIndex)
+				cg := change.New(config.SourceConsul, pp[i].Key, string(pp[i].Value), pp[i].ModifyIndex)
+				if cg != nil {
+					cc = append(cc, *cg)
+				}
 			}
 			ch <- cc
 		}

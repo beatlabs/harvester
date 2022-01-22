@@ -54,7 +54,9 @@ func TestMonitor_Monitor_Error(t *testing.T) {
 	watchers := []Watcher{&testWatcher{}, &testWatcher{err: true}}
 	mon, err := New(cfg, watchers...)
 	require.NoError(t, err)
-	err = mon.Monitor(context.Background())
+	ctx, cnl := context.WithCancel(context.Background())
+	defer cnl()
+	err = mon.Monitor(ctx)
 	assert.Error(t, err)
 }
 
@@ -90,20 +92,29 @@ type testWatcher struct {
 	err bool
 }
 
-func (tw *testWatcher) Watch(_ context.Context, ch chan<- []*change.Change) error {
+func (tw *testWatcher) Watch(ctx context.Context) (<-chan []change.Change, error) {
 	if tw.err {
-		return errors.New("TEST")
+		return nil, errors.New("TEST")
 	}
-	ch <- []*change.Change{
-		change.New(config.SourceConsul, "/config/age", "25", 1),
-		change.New(config.SourceConsul, "/config/balance", "111.11", 1),
-		change.New(config.SourceConsul, "/config/has-job", "false", 1),
-		change.New(config.SourceEnv, "/config/has-job", "false", 1),
-		change.New(config.SourceConsul, "/config/has-job1", "false", 1),
-		change.New(config.SourceConsul, "/config/has-job", "false", 0),
-		change.New(config.SourceConsul, "/config/has-job", "XXX", 2),
-		change.New(config.SourceConsul, "/config/work_hours", (6 * time.Hour).String(), 2),
-		change.New(config.SourceRedis, "/config/non_work_hours", (7 * time.Hour).String(), 2),
+	ch := make(chan []change.Change)
+	toValue := func(c *change.Change) change.Change {
+		return *c
 	}
-	return nil
+	go func() {
+		ch <- []change.Change{
+			toValue(change.New(config.SourceConsul, "/config/age", "25", 1)),
+			toValue(change.New(config.SourceConsul, "/config/balance", "111.11", 1)),
+			toValue(change.New(config.SourceConsul, "/config/has-job", "false", 1)),
+			toValue(change.New(config.SourceEnv, "/config/has-job", "false", 1)),
+			toValue(change.New(config.SourceConsul, "/config/has-job1", "false", 1)),
+			toValue(change.New(config.SourceConsul, "/config/has-job", "false", 0)),
+			toValue(change.New(config.SourceConsul, "/config/has-job", "XXX", 2)),
+			toValue(change.New(config.SourceConsul, "/config/work_hours", (6 * time.Hour).String(), 2)),
+			toValue(change.New(config.SourceRedis, "/config/non_work_hours", (7 * time.Hour).String(), 2)),
+		}
+		<-ctx.Done()
+		close(ch)
+	}()
+
+	return ch, nil
 }

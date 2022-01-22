@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/beatlabs/harvester/change"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,24 +40,44 @@ func TestNew(t *testing.T) {
 }
 
 func TestWatcher_Watch(t *testing.T) {
-	w, err := New("xxx", "", "", 0, Item{})
-	require.NoError(t, err)
 	type args struct {
-		ctx context.Context
-		ch  chan<- []*change.Change
+		ctx    context.Context
+		cancel context.CancelFunc
+	}
+	withCancel := func() args {
+		ctx, cnl := context.WithCancel(context.Background())
+		return args{ctx: ctx, cancel: cnl}
 	}
 	tests := map[string]struct {
 		args    args
+		items   []Item
 		wantErr bool
 	}{
-		"missing context": {args: args{}, wantErr: true},
-		"missing chan":    {args: args{ctx: context.Background()}, wantErr: true},
+		"invalid item (missing type)": {
+			args:    withCancel(),
+			items:   []Item{{}},
+			wantErr: true,
+		},
+		"missing context": {
+			args: args{},
+			items: []Item{
+				{
+					tp:     "key",
+					key:    "test",
+					prefix: "",
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err = w.Watch(tt.args.ctx, tt.args.ch)
+			w, err := New("xxx", "", "", 0, tt.items...)
+			require.NoError(t, err)
+			ch, err := w.Watch(tt.args.ctx)
 			if tt.wantErr {
 				assert.Error(t, err)
+				assert.Nil(t, ch)
 			} else {
 				assert.NoError(t, err)
 			}

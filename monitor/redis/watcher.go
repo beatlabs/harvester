@@ -45,45 +45,55 @@ func New(client redis.UniversalClient, pollInterval time.Duration, keys []string
 }
 
 // Watch keys and changes.
-func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
+func (w *Watcher) Watch(ctx context.Context) (<-chan []change.Change, error) {
 	if ctx == nil {
-		return errors.New("context is nil")
+		return nil, errors.New("context is nil")
 	}
-	if ch == nil {
-		return errors.New("change channel is nil")
-	}
-
-	go w.monitor(ctx, ch)
-	return nil
-}
-
-func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
-	tickerStats := time.NewTicker(w.pollInterval)
-	defer tickerStats.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-tickerStats.C:
-			w.getValues(ctx, ch)
+	ch := make(chan []change.Change)
+	go func(pollInterval time.Duration) {
+		defer close(ch)
+		tickerStats := time.NewTicker(pollInterval)
+		defer tickerStats.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-tickerStats.C:
+				if cgs := w.getValues(ctx); len(cgs) > 0 {
+					ch <- cgs
+				}
+			}
 		}
-	}
+	}(w.pollInterval)
+	return ch, nil
 }
 
-func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
-	values, err := w.client.MGet(ctx, w.keys...).Result()
-	if err != nil {
-		log.Errorf("failed to MGET keys %v: %v", w.keys, err)
-		return
+func (w *Watcher) getValues(ctx context.Context) []change.Change {
+	values := make([]*string, len(w.keys))
+	for i, key := range w.keys {
+		strCmd := w.client.Get(ctx, key)
+		if strCmd == nil {
+			log.Errorf("failed to get value for key %s: nil strCmd", key)
+			continue
+		}
+		if strCmd.Err() != nil {
+			if strCmd.Err() != redis.Nil {
+				log.Errorf("failed to get value for key %s: %s", key, strCmd.Err())
+			}
+			continue
+		}
+		val := strCmd.Val()
+		values[i] = &val
 	}
-	changes := make([]*change.Change, 0, len(w.keys))
+
+	changes := make([]change.Change, 0, len(w.keys))
 
 	for i, key := range w.keys {
 		if values[i] == nil {
 			continue
 		}
 
-		value := values[i].(string)
+		value := *values[i]
 		hash := w.hash(value)
 		if hash == w.hashes[i] {
 			continue
@@ -92,14 +102,17 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 		w.versions[i]++
 		w.hashes[i] = hash
 
-		changes = append(changes, change.New(config.SourceRedis, key, value, w.versions[i]))
+		cg := change.New(config.SourceRedis, key, value, w.versions[i])
+		if cg != nil {
+			changes = append(changes, *cg)
+		}
 	}
 
 	if len(changes) == 0 {
-		return
+		return nil
 	}
 
-	ch <- changes
+	return changes
 }
 
 func (w *Watcher) hash(value string) string {

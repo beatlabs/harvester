@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package consul
@@ -8,7 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/beatlabs/harvester/change"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,13 +42,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestWatch(t *testing.T) {
-	ch := make(chan []*change.Change)
 	w, err := New(addr, "", "", 0, NewKeyItemWithPrefix("key4", "consul/folder"), NewKeyItemWithPrefix("key1", ""), NewPrefixItem("prefix"))
 	require.NoError(t, err)
 	require.NotNil(t, w)
 	ctx, cnl := context.WithCancel(context.Background())
-	defer cnl()
-	err = w.Watch(ctx, ch)
+	ch, err := w.Watch(ctx)
 	require.NoError(t, err)
 
 	for i := 0; i < 2; i++ {
@@ -69,6 +67,10 @@ func TestWatch(t *testing.T) {
 			assert.True(t, cng.Version() > 0)
 		}
 	}
+	// test that after cancelling context channel is closed (program would hang otherwise)
+	cnl()
+	for range ch {
+	}
 }
 
 func cleanup(consul *api.Client) error {
@@ -77,6 +79,10 @@ func cleanup(consul *api.Client) error {
 		return err
 	}
 	_, err = consul.KV().DeleteTree("prefix1", nil)
+	if err != nil {
+		return err
+	}
+	_, err = consul.KV().DeleteTree("consul/folder", nil)
 	if err != nil {
 		return err
 	}

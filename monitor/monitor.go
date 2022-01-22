@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/beatlabs/harvester/config"
@@ -13,7 +14,7 @@ import (
 
 // Watcher interface definition.
 type Watcher interface {
-	Watch(ctx context.Context, ch chan<- []*change.Change) error
+	Watch(ctx context.Context) (<-chan []change.Change, error)
 }
 
 type sourceMap map[config.Source]map[string]*config.Field
@@ -62,21 +63,55 @@ func generateMap(ff []*config.Field) (sourceMap, error) {
 	return mp, nil
 }
 
+// fanIn returns a channel that is the result of multiplexing the items from all
+// the input channels. Output channel will be closed when all input channels are
+// or when the context is done.
+func fanIn(ctx context.Context, cs ...<-chan []change.Change) <-chan []change.Change {
+	var wg sync.WaitGroup
+	out := make(chan []change.Change)
+
+	// Start an output goroutine for each input channel in cs.  output
+	// copies values from c to out until c is closed, then calls wg.Done.
+	output := func(c <-chan []change.Change) {
+		defer wg.Done()
+		for e := range c {
+			select {
+			case <-ctx.Done():
+				return
+			case out <- e:
+			}
+		}
+	}
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go output(c)
+	}
+
+	// Start a goroutine to close out once all the output goroutines are
+	// done.  This must start after the wg.Add call.
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
+}
+
 // Monitor configuration changes by starting watchers per source.
 func (m *Monitor) Monitor(ctx context.Context) error {
-	ch := make(chan []*change.Change)
-	go m.monitor(ctx, ch)
-
+	watcherChans := make([]<-chan []change.Change, 0, len(m.ww))
 	for _, w := range m.ww {
-		err := w.Watch(ctx, ch)
+		c, err := w.Watch(ctx)
 		if err != nil {
 			return err
 		}
+		watcherChans = append(watcherChans, c)
 	}
+	ch := fanIn(ctx, watcherChans...)
+	go m.monitor(ctx, ch)
 	return nil
 }
 
-func (m *Monitor) monitor(ctx context.Context, ch <-chan []*change.Change) {
+func (m *Monitor) monitor(ctx context.Context, ch <-chan []change.Change) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -87,7 +122,7 @@ func (m *Monitor) monitor(ctx context.Context, ch <-chan []*change.Change) {
 	}
 }
 
-func (m *Monitor) applyChange(cc []*change.Change) {
+func (m *Monitor) applyChange(cc []change.Change) {
 	for _, c := range cc {
 		mp, ok := m.mp[c.Source()]
 		if !ok {
