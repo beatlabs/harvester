@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/beatlabs/harvester/change"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -68,9 +69,13 @@ func TestWatch(t *testing.T) {
 			assert.True(t, cng.Version() > 0)
 		}
 	}
-	// test that after cancelling context channel is closed (with timeout of 1s)
+	// after cancelling context channel should close with small delay
 	cnl()
-	tickerStats := time.NewTicker(1 * time.Second)
+	assertClosesWithin(t, ch, 1*time.Second)
+}
+
+func assertClosesWithin(t *testing.T, ch <-chan []change.Change, d time.Duration) {
+	tickerStats := time.NewTicker(d)
 	for {
 		select {
 		case _, opened := <-ch:

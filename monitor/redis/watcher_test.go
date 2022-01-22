@@ -69,21 +69,9 @@ func TestWatcher_Watch(t *testing.T) {
 				assert.Nil(t, ch)
 			} else {
 				assert.NoError(t, err)
-				// by cancelling the context the channel should close, if it's
-				// not closed within the timeout of 1 second the test will fail
+				// after cancelling context channel should close with small delay
 				tt.args.cancel()
-				tickerStats := time.NewTicker(1 * time.Second)
-				for {
-					select {
-					case _, opened := <-ch:
-						if !opened {
-							// success (channel closed before timeout)
-							return
-						}
-					case <-tickerStats.C:
-						assert.Fail(t, "channel should have been closed")
-					}
-				}
+				assertClosesWithin(t, ch, 1*time.Second)
 			}
 		})
 	}
@@ -236,5 +224,20 @@ func (c *clientStub) rollInternalRedisState() {
 	// replace redis virtual state every len(watchedKeys) calls to Get
 	if len(c.keyToCmd) > 0 && (c.internalGetCalls)%len(c.watchedKeys) == 0 {
 		c.keyToCmd = c.keyToCmd[1:]
+	}
+}
+
+func assertClosesWithin(t *testing.T, ch <-chan []change.Change, d time.Duration) {
+	tickerStats := time.NewTicker(d)
+	for {
+		select {
+		case _, opened := <-ch:
+			if !opened {
+				// success (channel closed before timeout)
+				return
+			}
+		case <-tickerStats.C:
+			assert.Fail(t, "channel should have been closed")
+		}
 	}
 }
