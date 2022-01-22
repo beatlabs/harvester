@@ -16,47 +16,32 @@ func TestChange(t *testing.T) {
 }
 
 func BenchmarkChangeValueSlice200Bytes(b *testing.B) {
-	ch := make(chan []Change)
-	benchChangeSliceAndChannelSend(200, ch, b)
-	close(ch)
+	benchChangeSliceAndChannelSend(200, b)
 }
 func BenchmarkChangePointerSlice200Bytes(b *testing.B) {
-	ch := make(chan []*Change)
-	benchChangePointerSliceAndChannelSend(200, ch, b)
-	close(ch)
+	benchChangePointerSliceAndChannelSend(200, b)
 }
 func BenchmarkChangeValueSlice1Kb(b *testing.B) {
-	ch := make(chan []Change)
-	benchChangeSliceAndChannelSend(1000, ch, b)
-	close(ch)
+	benchChangeSliceAndChannelSend(1000, b)
 }
 func BenchmarkChangePointerSlice1Kb(b *testing.B) {
-	ch := make(chan []*Change)
-	benchChangePointerSliceAndChannelSend(1000, ch, b)
-	close(ch)
+	benchChangePointerSliceAndChannelSend(1000, b)
 }
 func BenchmarkChangeValueSlice10Kb(b *testing.B) {
-	ch := make(chan []Change)
-	benchChangeSliceAndChannelSend(10000, ch, b)
-	close(ch)
+	benchChangeSliceAndChannelSend(10000, b)
 }
 func BenchmarkChangePointerSlice10Kb(b *testing.B) {
-	ch := make(chan []*Change)
-	benchChangePointerSliceAndChannelSend(10000, ch, b)
-	close(ch)
+	benchChangePointerSliceAndChannelSend(10000, b)
 }
 func BenchmarkChangeValueSlice100Kb(b *testing.B) {
-	ch := make(chan []Change)
-	benchChangeSliceAndChannelSend(100000, ch, b)
-	close(ch)
+	benchChangeSliceAndChannelSend(100000, b)
 }
 func BenchmarkChangePointerSlice100Kb(b *testing.B) {
-	ch := make(chan []*Change)
-	benchChangePointerSliceAndChannelSend(100000, ch, b)
-	close(ch)
+	benchChangePointerSliceAndChannelSend(100000, b)
 }
 
-func benchChangeSliceAndChannelSend(sizeInBytes uint32, c chan []Change, b *testing.B) {
+func benchChangeSliceAndChannelSend(sizeInBytes uint32, b *testing.B) {
+	c := make(chan []Change)
 	for n := 0; n < b.N; n++ {
 		changeSlice := make([]Change, 100)
 		for i := 0; i < 100; i++ {
@@ -72,9 +57,11 @@ func benchChangeSliceAndChannelSend(sizeInBytes uint32, c chan []Change, b *test
 		}()
 		<-c
 	}
+	close(c)
 }
 
-func benchChangePointerSliceAndChannelSend(sizeInBytes uint32, c chan []*Change, b *testing.B) {
+func benchChangePointerSliceAndChannelSend(sizeInBytes uint32, b *testing.B) {
+	c := make(chan []*Change)
 	for n := 0; n < b.N; n++ {
 		changeSlice := make([]*Change, 100)
 		for i := 0; i < 100; i++ {
@@ -90,4 +77,5 @@ func benchChangePointerSliceAndChannelSend(sizeInBytes uint32, c chan []*Change,
 		}()
 		<-c
 	}
+	close(c)
 }
