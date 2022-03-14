@@ -164,7 +164,6 @@ func TestWithConsulFolderPrefixMonitor(t *testing.T) {
 			assert.Equal(t, test.ExpectedKeyLocation, filepath.Join(builder.monitorConsulCfg.folderPrefix, "key1"))
 		})
 	}
-
 }
 
 func TestCreate_NoConsulOrRedis(t *testing.T) {

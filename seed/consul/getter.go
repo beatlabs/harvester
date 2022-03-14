@@ -15,7 +15,7 @@ type Getter struct {
 	token string
 }
 
-// New constructor. Timeout is set to 60s when 0 is provided
+// New constructor. Timeout is set to 60s when 0 is provided.
 func New(addr, dc, token string, timeout time.Duration) (*Getter, error) {
 	if addr == "" {
 		return nil, errors.New("address is empty")
