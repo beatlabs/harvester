@@ -57,13 +57,17 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, ch
 				return nil, err
 			}
 			ff = append(ff, nested...)
+		case typeInvalid:
 		}
 	}
 	return ff, nil
 }
 
 func (p *parser) createField(prefix string, f reflect.StructField, val reflect.Value, chNotify chan<- ChangeNotification) (*Field, error) {
-	fld := newField(prefix, f, val, chNotify)
+	fld, err := newField(prefix, f, val, chNotify)
+	if err != nil {
+		return nil, err
+	}
 
 	value, ok := fld.Sources()[SourceConsul]
 	if ok {

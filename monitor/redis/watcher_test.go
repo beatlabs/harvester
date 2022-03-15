@@ -212,7 +212,6 @@ func (c *clientStub) Get(_ context.Context, key string) *redis.StringCmd {
 	}
 
 	return redis.NewStringResult("", redis.Nil)
-
 }
 
 func (c *clientStub) rollInternalRedisState() {

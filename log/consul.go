@@ -30,6 +30,7 @@ func (l consul) Log(level hclog.Level, msg string, args ...interface{}) {
 		warnf(msg, args)
 	case hclog.Error:
 		errorf(msg, args)
+	case hclog.Off:
 	}
 }
 
