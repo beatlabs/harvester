@@ -7,5 +7,5 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/hashicorp/go-hclog v1.2.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 )
