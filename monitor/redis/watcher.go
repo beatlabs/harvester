@@ -3,7 +3,7 @@ package redis
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"errors"
 	"time"
@@ -77,7 +77,7 @@ func (w *Watcher) getValues(ctx context.Context) []change.Change {
 			continue
 		}
 		if strCmd.Err() != nil {
-			if strCmd.Err() != redis.Nil {
+			if !errors.Is(strCmd.Err(), redis.Nil) {
 				log.Errorf("failed to get value for key %s: %s", key, strCmd.Err())
 			}
 			continue
@@ -116,6 +116,6 @@ func (w *Watcher) getValues(ctx context.Context) []change.Change {
 }
 
 func (w *Watcher) hash(value string) string {
-	hash := md5.Sum([]byte(value))
+	hash := md5.Sum([]byte(value)) // nolint:gosec
 	return hex.EncodeToString(hash[:])
 }

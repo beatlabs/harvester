@@ -163,7 +163,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			// the parsing won't stop, and we make sure we try to parse every flag passed when running the command.
 			for _, arg := range os.Args[1:] {
 				if err := flagSet.Parse([]string{arg}); err != nil {
-					// Simply log errors that can happen, such as parsing unexpected flags. We want this to be silent
+					// Simply log errors that can happen, such as parsing unexpected flags. We want this to be silent,
 					// and we won't want to stop the execution.
 					log.Errorf("could not parse flagSet: %v", err)
 				}

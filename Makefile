@@ -24,10 +24,10 @@ fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
 lint: fmtcheck
-	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.28.1 golangci-lint run --enable golint,gofmt,unparam,goconst,prealloc,stylecheck,unconvert --exclude-use-default=false --deadline=5m  --build-tags integration
+	$(DOCKER) run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.44.2 golangci-lint -v run
 
 deeplint: fmtcheck
-	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.28.1 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
+	$(DOCKER) run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.44.2 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
 
 deps:
 	docker container inspect harvester-consul > /dev/null 2>&1 || docker run -d --rm -p 8500:8500 -p 8600:8600/udp --name=harvester-consul consul:1.4.3 agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0  -http-port 8500 -log-level=err

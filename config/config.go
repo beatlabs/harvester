@@ -58,12 +58,17 @@ type Field struct {
 }
 
 // newField constructor.
-func newField(prefix string, fld reflect.StructField, val reflect.Value, chNotify chan<- ChangeNotification) *Field {
+func newField(prefix string, fld reflect.StructField, val reflect.Value, chNotify chan<- ChangeNotification) (*Field, error) {
+	sf, ok := val.Addr().Interface().(CfgType)
+	if !ok {
+		return nil, errors.New("failed to type assert to CfgType")
+	}
+
 	f := &Field{
 		name:        prefix + fld.Name,
 		tp:          fld.Type.Name(),
 		version:     0,
-		structField: val.Addr().Interface().(CfgType),
+		structField: sf,
 		sources:     make(map[Source]string),
 		chNotify:    chNotify,
 	}
@@ -75,7 +80,7 @@ func newField(prefix string, fld reflect.StructField, val reflect.Value, chNotif
 		}
 	}
 
-	return f
+	return f, nil
 }
 
 // Name getter.
