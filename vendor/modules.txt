@@ -45,12 +45,12 @@ github.com/mitchellh/go-homedir
 github.com/mitchellh/mapstructure
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/stretchr/testify v1.7.1
+# github.com/stretchr/testify v1.7.2
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
-# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+# gopkg.in/yaml.v3 v3.0.1
 gopkg.in/yaml.v3
