@@ -3,6 +3,7 @@ package sync
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -28,6 +29,20 @@ func (b *Bool) Set(value bool) {
 	b.rw.Lock()
 	defer b.rw.Unlock()
 	b.value = value
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (b *Bool) MarshalJSON() ([]byte, error) {
+	b.rw.RLock()
+	defer b.rw.RUnlock()
+	return json.Marshal(b.value)
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (b *Bool) UnmarshalJSON(d []byte) error {
+	b.rw.RLock()
+	defer b.rw.RUnlock()
+	return json.Unmarshal(d, &b.value)
 }
 
 // String returns string representation of value.
@@ -70,6 +85,20 @@ func (i *Int64) Set(value int64) {
 	i.value = value
 }
 
+// MarshalJSON returns the JSON encoding of the value.
+func (i *Int64) MarshalJSON() ([]byte, error) {
+	i.rw.RLock()
+	defer i.rw.RUnlock()
+	return json.Marshal(i.value)
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (i *Int64) UnmarshalJSON(d []byte) error {
+	i.rw.RLock()
+	defer i.rw.RUnlock()
+	return json.Unmarshal(d, &i.value)
+}
+
 // String returns string representation of value.
 func (i *Int64) String() string {
 	i.rw.RLock()
@@ -105,6 +134,20 @@ func (f *Float64) Set(value float64) {
 	f.rw.Lock()
 	defer f.rw.Unlock()
 	f.value = value
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (f *Float64) MarshalJSON() ([]byte, error) {
+	f.rw.RLock()
+	defer f.rw.RUnlock()
+	return json.Marshal(f.value)
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (f *Float64) UnmarshalJSON(d []byte) error {
+	f.rw.RLock()
+	defer f.rw.RUnlock()
+	return json.Unmarshal(d, &f.value)
 }
 
 // String returns string representation of value.
@@ -144,6 +187,20 @@ func (s *String) Set(value string) {
 	s.value = value
 }
 
+// MarshalJSON returns the JSON encoding of the value.
+func (s *String) MarshalJSON() ([]byte, error) {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Marshal(s.value)
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (s *String) UnmarshalJSON(d []byte) error {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Unmarshal(d, &s.value)
+}
+
 // String returns string representation of value.
 func (s *String) String() string {
 	s.rw.RLock()
@@ -175,6 +232,20 @@ func (s *TimeDuration) Set(value time.Duration) {
 	s.rw.Lock()
 	defer s.rw.Unlock()
 	s.value = value
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (s *TimeDuration) MarshalJSON() ([]byte, error) {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Marshal(s.value)
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (s *TimeDuration) UnmarshalJSON(d []byte) error {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Unmarshal(d, &s.value)
 }
 
 // String returns string representation of value.
@@ -214,6 +285,18 @@ func (s *Secret) Set(value string) {
 	s.value = value
 }
 
+// MarshalJSON returns the JSON encoding of the value.
+func (s *Secret) MarshalJSON() (out []byte, err error) {
+	return json.Marshal(s.String())
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (s *Secret) UnmarshalJSON(d []byte) error {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Unmarshal(d, &s.value)
+}
+
 // String returns obfuscated string representation of value.
 func (s *Secret) String() string {
 	return "***"
@@ -245,7 +328,21 @@ func (s *StringMap) Set(value map[string]string) {
 	s.value = value
 }
 
-// String returns a string representation of the value.
+// MarshalJSON returns the JSON encoding of the value.
+func (s *StringMap) MarshalJSON() ([]byte, error) {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Marshal(s.value)
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (s *StringMap) UnmarshalJSON(d []byte) error {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Unmarshal(d, &s.value)
+}
+
+// String returns a string representation of the value..
 func (s *StringMap) String() string {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
