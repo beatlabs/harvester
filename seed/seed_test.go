@@ -124,7 +124,7 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 			seeder := New()
 			cfg, err := config.New(tC.inputConfig, nil)
 			require.NoError(t, err)
-			err = seeder.Seed(cfg)
+			err = seeder.Seed(cfg, false)
 
 			if tC.expectedErr != nil {
 				assert.EqualError(t, err, tC.expectedErr.Error())
@@ -152,7 +152,7 @@ func TestSeeder_Seed(t *testing.T) {
 		goodCfg, err := config.New(&c, nil)
 		require.NoError(t, err)
 
-		err = New(*consulParamSuccess, *redisParamSuccess).Seed(goodCfg)
+		err = New(*consulParamSuccess, *redisParamSuccess).Seed(goodCfg, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
@@ -172,7 +172,7 @@ func TestSeeder_Seed(t *testing.T) {
 		consulParamError, err := NewParam(config.SourceConsul, &stubGetter{err: true})
 		require.NoError(t, err)
 
-		err = New(*consulParamError, *redisParamSuccess).Seed(goodCfg)
+		err = New(*consulParamError, *redisParamSuccess).Seed(goodCfg, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
@@ -192,7 +192,7 @@ func TestSeeder_Seed(t *testing.T) {
 		redisParamFailure, err := NewParam(config.SourceRedis, &stubGetter{err: true})
 		require.NoError(t, err)
 
-		err = New(*consulParamSuccess, *redisParamFailure).Seed(goodCfg)
+		err = New(*consulParamSuccess, *redisParamFailure).Seed(goodCfg, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
@@ -209,7 +209,7 @@ func TestSeeder_Seed(t *testing.T) {
 		fileNotExistCfg, err := config.New(c, nil)
 		require.NoError(t, err)
 
-		err = New().Seed(fileNotExistCfg)
+		err = New().Seed(fileNotExistCfg, false)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(20), c.Age.Get())
@@ -220,7 +220,7 @@ func TestSeeder_Seed(t *testing.T) {
 		goodCfg, err := config.New(&c, nil)
 		require.NoError(t, err)
 
-		err = New().Seed(goodCfg)
+		err = New().Seed(goodCfg, false)
 
 		assert.Error(t, err)
 	})
@@ -229,7 +229,7 @@ func TestSeeder_Seed(t *testing.T) {
 		missingCfg, err := config.New(&testMissingValue{}, nil)
 		require.NoError(t, err)
 
-		err = New().Seed(missingCfg)
+		err = New().Seed(missingCfg, false)
 
 		assert.Error(t, err)
 	})
@@ -238,7 +238,7 @@ func TestSeeder_Seed(t *testing.T) {
 		invalidIntCfg, err := config.New(&testInvalidInt{}, nil)
 		require.NoError(t, err)
 
-		err = New().Seed(invalidIntCfg)
+		err = New().Seed(invalidIntCfg, false)
 
 		assert.Error(t, err)
 	})
@@ -247,7 +247,7 @@ func TestSeeder_Seed(t *testing.T) {
 		invalidFloatCfg, err := config.New(&testInvalidFloat{}, nil)
 		require.NoError(t, err)
 
-		err = New().Seed(invalidFloatCfg)
+		err = New().Seed(invalidFloatCfg, false)
 
 		assert.Error(t, err)
 	})
@@ -256,7 +256,7 @@ func TestSeeder_Seed(t *testing.T) {
 		invalidBoolCfg, err := config.New(&testInvalidBool{}, nil)
 		require.NoError(t, err)
 
-		err = New().Seed(invalidBoolCfg)
+		err = New().Seed(invalidBoolCfg, false)
 
 		assert.Error(t, err)
 	})
@@ -265,7 +265,7 @@ func TestSeeder_Seed(t *testing.T) {
 		invalidFileIntCfg, err := config.New(&testInvalidFileInt{}, nil)
 		require.NoError(t, err)
 
-		err = New().Seed(invalidFileIntCfg)
+		err = New().Seed(invalidFileIntCfg, false)
 
 		assert.Error(t, err)
 	})

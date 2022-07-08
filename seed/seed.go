@@ -47,7 +47,7 @@ func New(pp ...Param) *Seeder {
 }
 
 // Seed the provided config with values for their sources.
-func (s *Seeder) Seed(cfg *config.Config) error {
+func (s *Seeder) Seed(cfg *config.Config, bestEffort bool) error {
 	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
 	flagSet := flag.NewFlagSet("Harvester flags", flag.ContinueOnError)
 	type flagInfo struct {
@@ -74,6 +74,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			if ok {
 				err := f.Set(val, 0)
 				if err != nil {
+					if bestEffort {
+						log.Debugf("%s", err)
+						continue
+					}
 					return err
 				}
 				log.Debugf("env var value %v applied on field %s", f, f.Name())
@@ -100,6 +104,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			} else {
 				err := f.Set(string(body), 0)
 				if err != nil {
+					if bestEffort {
+						log.Debugf("%s", err)
+						continue
+					}
 					return err
 				}
 				log.Debugf("file based var value %v applied on field %s", f, f.Name())
@@ -110,6 +118,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		if ok {
 			gtr, ok := s.getters[config.SourceConsul]
 			if !ok {
+				if bestEffort {
+					log.Debugf("consul getter not found")
+					continue
+				}
 				return errors.New("consul getter required")
 			}
 			value, version, err := gtr.Get(key)
@@ -123,6 +135,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			}
 			err = f.Set(*value, version)
 			if err != nil {
+				if bestEffort {
+					log.Debugf("%s", err)
+					continue
+				}
 				return err
 			}
 			log.Debugf("consul value %v applied on field %s", f, f.Name())
@@ -133,6 +149,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		if ok {
 			gtr, ok := s.getters[config.SourceRedis]
 			if !ok {
+				if bestEffort {
+					log.Debugf("redis getter not found")
+					continue
+				}
 				return errors.New("redis getter required")
 			}
 			value, version, err := gtr.Get(key)
@@ -195,6 +215,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		if !seeded {
 			_, err := sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name()))
 			if err != nil {
+				if bestEffort {
+					log.Debugf("%s", err)
+					continue
+				}
 				return err
 			}
 		}

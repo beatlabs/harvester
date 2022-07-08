@@ -18,7 +18,7 @@ import (
 
 // Seeder interface for seeding initial values of the configuration.
 type Seeder interface {
-	Seed(cfg *config.Config) error
+	Seed(cfg *config.Config, bestEffort bool) error
 }
 
 // Monitor defines a interface for monitoring configuration changes from various sources.
@@ -39,7 +39,7 @@ type harvester struct {
 
 // Harvest take the configuration object, initializes it and monitors for changes.
 func (h *harvester) Harvest(ctx context.Context) error {
-	err := h.seeder.Seed(h.cfg)
+	err := h.seeder.Seed(h.cfg, false)
 	if err != nil {
 		return err
 	}
