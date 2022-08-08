@@ -86,14 +86,20 @@ func (b *Builder) WithNotification(chNotify chan<- config.ChangeNotification) *B
 
 // WithConsulSeed enables support for seeding values with consul.
 func (b *Builder) WithConsulSeed(addr, dataCenter, token string, timeout time.Duration) *Builder {
+	return b.WithConsulSeedWithPrefix(addr, dataCenter, token, "", timeout)
+}
+
+// WithConsulSeedWithPrefix enables support for seeding values with consul including a folder prefix.
+func (b *Builder) WithConsulSeedWithPrefix(addr, dataCenter, token, folderPrefix string, timeout time.Duration) *Builder {
 	if b.err != nil {
 		return b
 	}
 	b.seedConsulCfg = &consulConfig{
-		addr:       addr,
-		dataCenter: dataCenter,
-		token:      token,
-		timeout:    timeout,
+		addr:         addr,
+		dataCenter:   dataCenter,
+		token:        token,
+		folderPrefix: folderPrefix,
+		timeout:      timeout,
 	}
 	return b
 }
@@ -202,7 +208,7 @@ func (b *Builder) setupConsulSeeding() (*seed.Param, error) {
 		return nil, nil
 	}
 
-	getter, err := seedconsul.New(b.seedConsulCfg.addr, b.seedConsulCfg.dataCenter, b.seedConsulCfg.token,
+	getter, err := seedconsul.NewWithFolderPrefix(b.seedConsulCfg.addr, b.seedConsulCfg.dataCenter, b.seedConsulCfg.token, b.seedConsulCfg.folderPrefix,
 		b.seedConsulCfg.timeout)
 	if err != nil {
 		return nil, err
