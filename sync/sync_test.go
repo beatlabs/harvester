@@ -273,3 +273,57 @@ func TestStringMap_UnmarshalJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]string{"a": "b"}, b.Get())
 }
+
+func TestStringSlice(t *testing.T) {
+	var sl StringSlice
+	ch := make(chan struct{})
+	go func() {
+		sl.Set([]string{"value1", "value2"})
+		ch <- struct{}{}
+	}()
+	<-ch
+	assert.Equal(t, []string{"value1", "value2"}, sl.Get())
+	assert.Equal(t, "value1,value2", sl.String())
+
+	d, err := sl.MarshalJSON()
+	assert.NoError(t, err)
+	assert.Equal(t, `["value1","value2"]`, string(d))
+}
+
+func TestStringSlice_SetString(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		result      []string
+		throwsError bool
+	}{
+		{"empty", "", []string{}, false},
+		{"empty with spaces", "   ", []string{}, false},
+		{"single item", "value", []string{"value"}, false},
+		{"multiple items", "value1,value2", []string{"value1", "value2"}, false},
+		{"multiple items with spaces", "  value1 ,  value2 ", []string{"value1", "value2"}, false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sm := StringSlice{}
+
+			err := sm.SetString(test.input)
+			if test.throwsError {
+				assert.Error(t, err)
+			}
+
+			assert.Equal(t, test.result, sm.Get())
+		})
+	}
+}
+
+func TestStringSlice_UnmarshalJSON(t *testing.T) {
+	var b StringSlice
+	err := b.UnmarshalJSON([]byte(`wrong`))
+	assert.Error(t, err)
+	assert.Equal(t, []string(nil), b.Get())
+
+	err = b.UnmarshalJSON([]byte(`["a", "b"]`))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, b.Get())
+}
