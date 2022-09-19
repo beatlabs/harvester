@@ -335,14 +335,14 @@ func (s *StringMap) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.value)
 }
 
-// MarshalJSON returns the JSON encoding of the value.
+// UnmarshalJSON returns the JSON encoding of the value.
 func (s *StringMap) UnmarshalJSON(d []byte) error {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
 	return json.Unmarshal(d, &s.value)
 }
 
-// String returns a string representation of the value..
+// String returns a string representation of the value.
 func (s *StringMap) String() string {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
@@ -371,5 +371,60 @@ func (s *StringMap) SetString(val string) error {
 		dict[key] = value
 	}
 	s.Set(dict)
+	return nil
+}
+
+// StringSlice is a []string type with concurrent access support.
+type StringSlice struct {
+	rw    sync.RWMutex
+	value []string
+}
+
+// Get returns the internal value.
+func (s *StringSlice) Get() []string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.value
+}
+
+// Set a value.
+func (s *StringSlice) Set(value []string) {
+	s.rw.Lock()
+	defer s.rw.Unlock()
+	s.value = value
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (s *StringSlice) MarshalJSON() ([]byte, error) {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Marshal(s.value)
+}
+
+// UnmarshalJSON returns the JSON encoding of the value.
+func (s *StringSlice) UnmarshalJSON(d []byte) error {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return json.Unmarshal(d, &s.value)
+}
+
+// String returns a string representation of the value.
+func (s *StringSlice) String() string {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return strings.Join(s.value, ",")
+}
+
+// SetString parses and sets a value from string type.
+func (s *StringSlice) SetString(val string) error {
+	slice := make([]string, 0)
+	if val == "" || strings.TrimSpace(val) == "" {
+		s.Set(slice)
+		return nil
+	}
+	for _, item := range strings.Split(val, ",") {
+		slice = append(slice, strings.TrimSpace(item))
+	}
+	s.Set(slice)
 	return nil
 }
