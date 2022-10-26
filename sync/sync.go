@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -305,6 +306,67 @@ func (s *Secret) String() string {
 // SetString parses and sets a value from string type.
 func (s *Secret) SetString(val string) error {
 	s.Set(val)
+	return nil
+}
+
+type Regexp struct {
+	rw    sync.RWMutex
+	value *regexp.Regexp
+}
+
+// Get returns the internal value.
+func (r *Regexp) Get() *regexp.Regexp {
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+	return r.value
+}
+
+// Set a value.
+func (r *Regexp) Set(value *regexp.Regexp) {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+	r.value = value
+}
+
+// MarshalJSON returns the JSON encoding of the value.
+func (r *Regexp) MarshalJSON() ([]byte, error) {
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+	return json.Marshal(r.value.String())
+}
+
+// UnmarshalJSON returns the JSON encoding of the value.
+func (r *Regexp) UnmarshalJSON(d []byte) error {
+	var str string
+	err := json.Unmarshal(d, &str)
+	if err != nil {
+		fmt.Println("json unmarshal")
+		return err
+	}
+	regex, err := regexp.Compile(str)
+	if err != nil {
+		fmt.Println("regex compile")
+		return err
+	}
+	r.Set(regex)
+	return nil
+}
+
+// String returns a string representation of the value.
+func (r *Regexp) String() string {
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+	return r.value.String()
+}
+
+//
+// SetString parses and sets a value from string type.
+func (r *Regexp) SetString(val string) error {
+	compiled, err := regexp.Compile(val)
+	if err != nil {
+		return err
+	}
+	r.Set(compiled)
 	return nil
 }
 
