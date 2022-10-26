@@ -47,6 +47,7 @@ The fields have to be one of the types that the sync package supports in order t
 - sync.TimeDuration, allows for concurrent time.duration manipulation.
 - sync.Regexp, allows for concurrent *regexp.Regexp manipulation.
 - sync.StringMap, allows for concurrent map[string]string manipulation.
+- sync.StringSlice, allows for concurrent []string manipulation.
 
 For sensitive configuration (passwords, tokens, etc.) that shouldn't be printed in log, you can use the `Secret` flavor of `sync` types. If one of these is selected, then at harvester log instead of the real value the text `***` will be displayed.
 

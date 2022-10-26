@@ -39,7 +39,7 @@ func (b *Bool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(b.value)
 }
 
-// MarshalJSON returns the JSON encoding of the value.
+// UnmarshalJSON returns the JSON encoding of the value.
 func (b *Bool) UnmarshalJSON(d []byte) error {
 	b.rw.RLock()
 	defer b.rw.RUnlock()
@@ -93,7 +93,7 @@ func (i *Int64) MarshalJSON() ([]byte, error) {
 	return json.Marshal(i.value)
 }
 
-// MarshalJSON returns the JSON encoding of the value.
+// UnmarshalJSON returns the JSON encoding of the value.
 func (i *Int64) UnmarshalJSON(d []byte) error {
 	i.rw.RLock()
 	defer i.rw.RUnlock()
@@ -144,7 +144,7 @@ func (f *Float64) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.value)
 }
 
-// MarshalJSON returns the JSON encoding of the value.
+// UnmarshalJSON returns the JSON encoding of the value.
 func (f *Float64) UnmarshalJSON(d []byte) error {
 	f.rw.RLock()
 	defer f.rw.RUnlock()
@@ -195,7 +195,7 @@ func (s *String) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.value)
 }
 
-// MarshalJSON returns the JSON encoding of the value.
+// UnmarshalJSON returns the JSON encoding of the value.
 func (s *String) UnmarshalJSON(d []byte) error {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
@@ -242,7 +242,7 @@ func (s *TimeDuration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.value)
 }
 
-// MarshalJSON returns the JSON encoding of the value.
+// UnmarshalJSON returns the JSON encoding of the value.
 func (s *TimeDuration) UnmarshalJSON(d []byte) error {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
@@ -291,7 +291,7 @@ func (s *Secret) MarshalJSON() (out []byte, err error) {
 	return json.Marshal(s.String())
 }
 
-// MarshalJSON returns the JSON encoding of the value.
+// UnmarshalJSON returns the JSON encoding of the value.
 func (s *Secret) UnmarshalJSON(d []byte) error {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
