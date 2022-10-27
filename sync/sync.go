@@ -330,9 +330,7 @@ func (r *Regexp) Set(value *regexp.Regexp) {
 
 // MarshalJSON returns the JSON encoding of the value.
 func (r *Regexp) MarshalJSON() ([]byte, error) {
-	r.rw.RLock()
-	defer r.rw.RUnlock()
-	return json.Marshal(r.value.String())
+	return json.Marshal(r.String())
 }
 
 // UnmarshalJSON returns the JSON encoding of the value.
@@ -354,9 +352,11 @@ func (r *Regexp) UnmarshalJSON(d []byte) error {
 
 // String returns a string representation of the value.
 func (r *Regexp) String() string {
-	r.rw.RLock()
-	defer r.rw.RUnlock()
-	return r.value.String()
+	regex := r.Get()
+	if regex == nil {
+		return ""
+	}
+	return regex.String()
 }
 
 //
