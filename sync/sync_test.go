@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -205,6 +206,65 @@ func TestTimeDuration_UnmarshalJSON(t *testing.T) {
 	err = b.UnmarshalJSON([]byte(`1`))
 	assert.NoError(t, err)
 	assert.Equal(t, time.Duration(1), b.Get())
+}
+
+func TestRegexp(t *testing.T) {
+	regex := regexp.MustCompile(".*")
+
+	var r Regexp
+	ch := make(chan struct{})
+	go func() {
+		r.Set(regex)
+		ch <- struct{}{}
+	}()
+	<-ch
+	assert.Equal(t, regex, r.Get())
+	assert.Equal(t, regex.String(), r.String())
+
+	d, err := r.MarshalJSON()
+	assert.NoError(t, err)
+	assert.Equal(t, `".*"`, string(d))
+}
+
+func TestRegexp_UnmarshalJSON(t *testing.T) {
+	var r Regexp
+	err := r.UnmarshalJSON([]byte(`invalid json`))
+	assert.Error(t, err)
+	assert.Nil(t, r.Get())
+
+	// Invalid regex:
+	err = r.UnmarshalJSON([]byte(`"[a-z]++"`))
+	assert.Error(t, err)
+	assert.Nil(t, r.Get())
+
+	err = r.UnmarshalJSON([]byte(`"[a-z0-7]+"`))
+	assert.NoError(t, err)
+	assert.Equal(t, regexp.MustCompile("[a-z0-7]+"), r.Get())
+}
+
+func TestRegexp_SetString(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		result      *regexp.Regexp
+		throwsError bool
+	}{
+		{"empty", "", regexp.MustCompile(""), false},
+		{"simple regex", ".*", regexp.MustCompile(".*"), false},
+		{"invalid regex", "[0-9]++", nil, true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sr := Regexp{}
+
+			err := sr.SetString(test.input)
+			if test.throwsError {
+				assert.Error(t, err)
+			}
+
+			assert.Equal(t, test.result, sr.Get())
+		})
+	}
 }
 
 func TestStringMap(t *testing.T) {
