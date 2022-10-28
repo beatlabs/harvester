@@ -267,6 +267,18 @@ func TestRegexp_SetString(t *testing.T) {
 	}
 }
 
+func TestRegexp_String(t *testing.T) {
+	sr := Regexp{}
+	assert.Equal(t, "", sr.String())
+}
+
+func TestRegexp_MarshalJSON(t *testing.T) {
+	sr := Regexp{}
+	json, err := sr.MarshalJSON()
+	assert.Equal(t, []byte(`""`), json)
+	assert.NoError(t, err)
+}
+
 func TestStringMap(t *testing.T) {
 	var sm StringMap
 	ch := make(chan struct{})
