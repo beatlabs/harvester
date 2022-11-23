@@ -359,7 +359,6 @@ func (r *Regexp) String() string {
 	return regex.String()
 }
 
-//
 // SetString parses and sets a value from string type.
 func (r *Regexp) SetString(val string) error {
 	compiled, err := regexp.Compile(val)
