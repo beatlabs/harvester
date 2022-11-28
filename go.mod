@@ -6,7 +6,7 @@ require (
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/btree v1.0.0 // indirect
-	github.com/hashicorp/consul/api v1.16.0
+	github.com/hashicorp/consul/api v1.17.0
 	github.com/hashicorp/go-hclog v1.3.1
 	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
