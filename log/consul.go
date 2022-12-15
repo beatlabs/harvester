@@ -15,8 +15,7 @@ func ConsulLogger() hclog.Logger {
 	return consulLog
 }
 
-type consul struct {
-}
+type consul struct{}
 
 func (l consul) Log(level hclog.Level, msg string, args ...interface{}) {
 	switch level {
