@@ -104,3 +104,7 @@ func (l consul) StandardLogger(_ *hclog.StandardLoggerOptions) *log.Logger {
 func (l consul) StandardWriter(_ *hclog.StandardLoggerOptions) io.Writer {
 	return os.Stderr
 }
+
+func (l consul) GetLevel() hclog.Level {
+	return hclog.NoLevel
+}
