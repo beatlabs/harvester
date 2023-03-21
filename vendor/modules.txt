@@ -21,7 +21,7 @@ github.com/go-redis/redis/v8/internal/rand
 github.com/go-redis/redis/v8/internal/util
 # github.com/google/btree v1.0.0
 ## explicit
-# github.com/hashicorp/consul/api v1.18.0
+# github.com/hashicorp/consul/api v1.20.0
 ## explicit
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
@@ -53,7 +53,7 @@ github.com/mitchellh/go-homedir
 github.com/mitchellh/mapstructure
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/stretchr/testify v1.8.1
+# github.com/stretchr/testify v1.8.2
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
