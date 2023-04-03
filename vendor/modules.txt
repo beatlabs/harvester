@@ -27,7 +27,7 @@ github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
 # github.com/hashicorp/go-cleanhttp v0.5.1
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-hclog v1.4.0
+# github.com/hashicorp/go-hclog v1.5.0
 ## explicit
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-immutable-radix v1.3.0
