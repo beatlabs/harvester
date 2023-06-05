@@ -1,16 +1,20 @@
 # github.com/armon/go-metrics v0.3.10
-## explicit
+## explicit; go 1.12
 github.com/armon/go-metrics
 # github.com/cespare/xxhash/v2 v2.1.2
+## explicit; go 1.11
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
+## explicit
 github.com/davecgh/go-spew/spew
 # github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f
+## explicit
 github.com/dgryski/go-rendezvous
 # github.com/fatih/color v1.13.0
+## explicit; go 1.13
 github.com/fatih/color
 # github.com/go-redis/redis/v8 v8.11.5
-## explicit
+## explicit; go 1.17
 github.com/go-redis/redis/v8
 github.com/go-redis/redis/v8/internal
 github.com/go-redis/redis/v8/internal/hashtag
@@ -22,13 +26,14 @@ github.com/go-redis/redis/v8/internal/util
 # github.com/google/btree v1.0.0
 ## explicit
 # github.com/hashicorp/consul/api v1.21.0
-## explicit
+## explicit; go 1.19
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
 # github.com/hashicorp/go-cleanhttp v0.5.1
+## explicit
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-hclog v1.5.0
-## explicit
+## explicit; go 1.13
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-immutable-radix v1.3.0
 ## explicit
@@ -36,29 +41,39 @@ github.com/hashicorp/go-immutable-radix
 # github.com/hashicorp/go-msgpack v0.5.5
 ## explicit
 # github.com/hashicorp/go-multierror v1.1.1
-## explicit
+## explicit; go 1.13
 # github.com/hashicorp/go-rootcerts v1.0.2
+## explicit; go 1.12
 github.com/hashicorp/go-rootcerts
 # github.com/hashicorp/golang-lru v0.5.4
+## explicit; go 1.12
 github.com/hashicorp/golang-lru/simplelru
 # github.com/hashicorp/serf v0.10.1
+## explicit; go 1.12
 github.com/hashicorp/serf/coordinate
 # github.com/mattn/go-colorable v0.1.12
+## explicit; go 1.13
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.14
+## explicit; go 1.12
 github.com/mattn/go-isatty
 # github.com/mitchellh/go-homedir v1.1.0
+## explicit
 github.com/mitchellh/go-homedir
 # github.com/mitchellh/mapstructure v1.4.1
+## explicit; go 1.14
 github.com/mitchellh/mapstructure
 # github.com/pmezard/go-difflib v1.0.0
+## explicit
 github.com/pmezard/go-difflib/difflib
 # github.com/stretchr/testify v1.8.4
-## explicit
+## explicit; go 1.20
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10
+## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # gopkg.in/yaml.v3 v3.0.1
+## explicit
 gopkg.in/yaml.v3
