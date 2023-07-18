@@ -25,7 +25,7 @@ type options struct {
 // OptionFunc is used to configure harvester in an optional manner.
 type OptionFunc func(opts *options) error
 
-// WithConsulSeedWithPrefix
+// WithConsulSeedWithPrefix set's up seeder to use prefixes.
 func WithConsulSeedWithPrefix(addr, dataCenter, token, folderPrefix string, timeout time.Duration) OptionFunc {
 	return func(opts *options) error {
 		getter, err := seedconsul.NewWithFolderPrefix(addr, dataCenter, token, folderPrefix, timeout)
@@ -44,7 +44,7 @@ func WithConsulSeedWithPrefix(addr, dataCenter, token, folderPrefix string, time
 	}
 }
 
-// WithConsulSeed
+// WithConsulSeed set's up a seeder.
 func WithConsulSeed(addr, dataCenter, token string, timeout time.Duration) OptionFunc {
 	return WithConsulSeedWithPrefix(addr, dataCenter, token, "", timeout)
 }
@@ -109,7 +109,7 @@ func WithRedisMonitor(client redis.UniversalClient, pollInterval time.Duration) 
 		}
 		wtc, err := redismon.New(client, pollInterval, items)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		opts.monitorParams = append(opts.monitorParams, wtc)
