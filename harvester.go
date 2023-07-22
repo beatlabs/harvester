@@ -63,10 +63,14 @@ func New(cfg interface{}, ch chan<- config.ChangeNotification, oo ...OptionFunc)
 
 	sd := seed.New(opt.seedParams...)
 
-	mon, err := monitor.New(opt.cfg, opt.monitorParams...)
-	if err != nil {
-		return nil, err
+	var mon *monitor.Monitor
+
+	if len(opt.monitorParams) != 0 {
+		mon, err = monitor.New(opt.cfg, opt.monitorParams...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return &harvester{seeder: sd, monitor: mon}, nil
+	return &harvester{cfg: hCfg, seeder: sd, monitor: mon}, nil
 }

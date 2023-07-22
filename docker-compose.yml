@@ -7,7 +7,7 @@ networks:
 services:
   consul:
     container_name: harvester_consul_dev
-    image: consul:1.8.0
+    image: consul:1.15
     networks:
       - consul-network
     ports:
