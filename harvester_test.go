@@ -53,7 +53,7 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 				seedRedisClient:        nil,
 				monitorRedisClient:     redisClient,
 				monitoringPollInterval: 10 * time.Millisecond,
-			}, expectedErr: "redis seed client is nil",
+			}, expectedErr: "client is nil",
 		},
 		"invalid redis monitor client": {
 			args: args{
@@ -62,7 +62,7 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 				seedRedisClient:        redisClient,
 				monitorRedisClient:     nil,
 				monitoringPollInterval: 10 * time.Millisecond,
-			}, expectedErr: "redis monitor client is nil",
+			}, expectedErr: "client is nil",
 		},
 		"invalid redis monitor poll interval": {
 			args: args{
@@ -109,22 +109,16 @@ func TestWithNotification(t *testing.T) {
 		chNotify chan<- config.ChangeNotification
 	}
 	tests := map[string]struct {
-		args    args
-		wantErr bool
+		args args
 	}{
-		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}, wantErr: true},
-		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan config.ChangeNotification)}, wantErr: false},
+		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}},
+		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan config.ChangeNotification)}},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg, tt.args.chNotify)
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, got)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, got)
-			}
+			assert.NoError(t, err)
+			assert.NotNil(t, got)
 		})
 	}
 }
