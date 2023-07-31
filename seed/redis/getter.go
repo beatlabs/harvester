@@ -22,7 +22,7 @@ func New(client redis.UniversalClient) (*Getter, error) {
 }
 
 // Get value by key.
-func (g Getter) Get(key string) (*string, uint64, error) {
+func (g *Getter) Get(key string) (*string, uint64, error) {
 	val, err := g.client.Get(context.Background(), key).Result()
 	if err != nil {
 		return nil, 0, err
