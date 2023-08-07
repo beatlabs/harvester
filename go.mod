@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/hashicorp/consul/api v1.23.0
+	github.com/hashicorp/consul/api v1.24.0
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/stretchr/testify v1.8.4
 )
