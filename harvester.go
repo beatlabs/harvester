@@ -3,10 +3,10 @@ package harvester
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/beatlabs/harvester/config"
-	"github.com/beatlabs/harvester/log"
 	"github.com/beatlabs/harvester/monitor"
 	"github.com/beatlabs/harvester/monitor/consul"
 	redismon "github.com/beatlabs/harvester/monitor/redis"
@@ -266,7 +266,7 @@ func (b *Builder) setupConsulMonitoring(cfg *config.Config) (*consul.Watcher, er
 		if !ok {
 			continue
 		}
-		log.Debugf(`automatically monitoring consul key "%s"`, consulKey)
+		slog.Debug("automatically monitoring consul", "key", consulKey)
 		items = append(items, consul.NewKeyItemWithPrefix(consulKey, b.monitorConsulCfg.folderPrefix))
 	}
 	return consul.New(b.monitorConsulCfg.addr, b.monitorConsulCfg.dataCenter, b.monitorConsulCfg.token,
@@ -283,7 +283,7 @@ func (b *Builder) setupRedisMonitoring(cfg *config.Config) (*redismon.Watcher, e
 		if !ok {
 			continue
 		}
-		log.Debugf(`automatically monitoring redis key "%s"`, redisKey)
+		slog.Debug("automatically monitoring redis", "key", redisKey)
 		items = append(items, redisKey)
 	}
 	return redismon.New(b.monitorRedisClient, b.monitorRedisPollInterval, items)
