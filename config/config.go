@@ -4,9 +4,8 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"reflect"
-
-	"github.com/beatlabs/harvester/log"
 )
 
 // Source definition.
@@ -106,12 +105,12 @@ func (f *Field) String() string {
 // Set the value of the field.
 func (f *Field) Set(value string, version uint64) error {
 	if version != 0 && version < f.version {
-		log.Errorf("version %d is older than the field's %q (version %d)", version, f.name, f.version)
+		slog.Error("version is older than the field's", "field", f.name, "old", f.version, "new", version)
 		return nil
 	}
 
 	if version != 0 && version == f.version {
-		log.Debugf("version %d is the same as field's %q", version, f.name)
+		slog.Debug("version is the same as field", "field", f.name, "version", version)
 		return nil
 	}
 
@@ -122,7 +121,7 @@ func (f *Field) Set(value string, version uint64) error {
 	}
 
 	f.version = version
-	log.Debugf("field %q updated with value %q, version: %d", f.name, f, version)
+	slog.Debug("field updated", "field", f.name, "version", version)
 	f.sendNotification(prevValue, value)
 	return nil
 }

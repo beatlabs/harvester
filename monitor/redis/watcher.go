@@ -6,11 +6,11 @@ import (
 	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/beatlabs/harvester/config"
-	"github.com/beatlabs/harvester/log"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -75,12 +75,12 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 	for i, key := range w.keys {
 		strCmd := w.client.Get(ctx, key)
 		if strCmd == nil {
-			log.Errorf("failed to get value for key %s: nil strCmd", key)
+			slog.Error("failed to get value", "key", key, "err", "nil strCmd")
 			continue
 		}
 		if strCmd.Err() != nil {
 			if !errors.Is(strCmd.Err(), redis.Nil) {
-				log.Errorf("failed to get value for key %s: %s", key, strCmd.Err())
+				slog.Error("failed to get value", "key", key, "err", strCmd.Err())
 			}
 			continue
 		}
