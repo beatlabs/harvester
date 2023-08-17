@@ -4,9 +4,8 @@
 package harvester
 
 import (
-	"bytes"
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -50,29 +49,31 @@ func TestMain(m *testing.M) {
 	config.Address = addr
 	c, err := api.NewClient(config)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	csl = c.KV()
 
 	err = cleanup()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	err = setup()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	ret := m.Run()
 	err = cleanup()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	os.Exit(ret)
 }
 
 func Test_harvester_Harvest(t *testing.T) {
-	buf := bytes.NewBuffer(make([]byte, 0))
-	log.SetOutput(buf)
 	cfg := testConfigWithSecret{}
 	h, err := New(&cfg).
 		WithConsulSeed(addr, "", "", 0).
