@@ -23,7 +23,6 @@ func main() {
 
 	err := os.Setenv("ENV_CACHE_RETENTION_SECONDS", "86400")
 	if err != nil {
-
 		slog.Error("failed to set env var", "err", err)
 		os.Exit(1)
 	}
