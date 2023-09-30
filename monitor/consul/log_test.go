@@ -18,6 +18,18 @@ func Test_clog(t *testing.T) {
 	var b bytes.Buffer
 	slog.SetDefault(slog.New(slog.NewTextHandler(&b, nil)))
 
+	logger.Log(hclog.Off, "Name: %s", "One")
+
+	assert.Empty(t, b.String())
+
+	b.Reset()
+
+	logger.Log(hclog.NoLevel, "Name: %s", "One")
+
+	assert.Empty(t, b.String())
+
+	b.Reset()
+
 	logger.Log(hclog.Trace, "Name: %s", "One")
 
 	assert.Empty(t, b.String())

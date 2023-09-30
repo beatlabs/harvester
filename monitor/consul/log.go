@@ -18,7 +18,7 @@ var _ hclog.Logger = logger
 
 func (l clog) Log(level hclog.Level, msg string, args ...interface{}) {
 	switch level {
-	case hclog.NoLevel:
+	case hclog.NoLevel, hclog.Off:
 	case hclog.Trace:
 		l.Trace(msg, args...)
 	case hclog.Debug:
@@ -29,8 +29,6 @@ func (l clog) Log(level hclog.Level, msg string, args ...interface{}) {
 		l.Warn(msg, args...)
 	case hclog.Error:
 		l.Error(msg, args...)
-
-	case hclog.Off:
 	}
 }
 
