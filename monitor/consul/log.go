@@ -14,13 +14,19 @@ var logger = &clog{}
 
 type clog struct{}
 
+var _ hclog.Logger = logger
+
 func (l clog) Log(level hclog.Level, msg string, args ...interface{}) {
 	switch level {
 	case hclog.NoLevel:
-	case hclog.Trace, hclog.Debug:
+	case hclog.Trace:
+		l.Trace(msg, args...)
+	case hclog.Debug:
 		l.Debug(msg, args...)
-	case hclog.Info, hclog.Warn:
+	case hclog.Info:
 		l.Info(msg, args...)
+	case hclog.Warn:
+		l.Warn(msg, args...)
 	case hclog.Error:
 		l.Error(msg, args...)
 
@@ -41,7 +47,7 @@ func (l clog) Info(msg string, args ...interface{}) {
 }
 
 func (l clog) Warn(msg string, args ...interface{}) {
-	slog.Info(fmt.Sprintf(msg, args...))
+	slog.Warn(fmt.Sprintf(msg, args...))
 }
 
 func (l clog) Error(msg string, args ...interface{}) {
