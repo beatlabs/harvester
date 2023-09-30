@@ -4,12 +4,12 @@ package consul
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"path"
 	"time"
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/beatlabs/harvester/config"
-	"github.com/beatlabs/harvester/log"
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
 )
@@ -88,11 +88,11 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		}
 		w.pp = append(w.pp, pl)
 		go func(tp, key string) {
-			err := pl.RunWithClientAndHclog(w.cl, log.ConsulLogger())
+			err := pl.RunWithClientAndHclog(w.cl, logger)
 			if err != nil {
-				log.Errorf("plan %s of type %s failed: %v", tp, key, err)
+				slog.Error("plan failed", "plan", tp, "type", key, "err", err)
 			} else {
-				log.Debugf("plan %s of type %s is running", tp, key)
+				slog.Debug("plan running", "plan", tp, "type", key)
 			}
 		}(i.tp, i.key)
 	}
@@ -101,7 +101,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		for _, pl := range w.pp {
 			pl.Stop()
 		}
-		log.Debugf("all watch plans have been stopped")
+		slog.Debug("all watch plans have been stopped")
 	}()
 
 	return nil
@@ -118,12 +118,12 @@ func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []*chang
 		}
 		pair, ok := data.(*api.KVPair)
 		if !ok {
-			log.Errorf("data is not kv pair: %v", data)
+			slog.Error("data is not a kv pair", "data", data)
 		} else {
 			ch <- []*change.Change{change.New(config.SourceConsul, key, string(pair.Value), pair.ModifyIndex)}
 		}
 	}
-	log.Debugf("plan for key %s created", key)
+	slog.Debug("plan created", "key", key)
 	return pl, nil
 }
 
@@ -138,7 +138,7 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 		}
 		pp, ok := data.(api.KVPairs)
 		if !ok {
-			log.Errorf("data is not kv pairs: %v", data)
+			slog.Error("data is not a kv pairs", "data", data)
 		} else {
 			cc := make([]*change.Change, len(pp))
 			for i := 0; i < len(pp); i++ {
@@ -147,7 +147,7 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 			ch <- cc
 		}
 	}
-	log.Debugf("plan for keyprefix %s created", keyPrefix)
+	slog.Debug("plan created", "keyPrefix", keyPrefix)
 	return pl, nil
 }
 

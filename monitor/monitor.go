@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/beatlabs/harvester/config"
-	"github.com/beatlabs/harvester/log"
 )
 
 // Watcher interface definition.
@@ -91,19 +91,19 @@ func (m *Monitor) applyChange(cc []*change.Change) {
 	for _, c := range cc {
 		mp, ok := m.mp[c.Source()]
 		if !ok {
-			log.Debugf("source %s not found", c.Source())
+			slog.Debug("source not found", "source", c.Source())
 			continue
 		}
 		fld, ok := mp[c.Key()]
 		if !ok {
-			log.Debugf("key %s not found", c.Key())
+			slog.Debug("key not found", "key", c.Key())
 			continue
 		}
 
 		err := fld.Set(c.Value(), c.Version())
 		if err != nil {
-			log.Errorf("failed to set value %s of type %s on field %s from source %s: %v",
-				c.Value(), fld.Type(), fld.Name(), c.Source(), err)
+			slog.Error("failed to set value", "value", c.Value(), "type", fld.Type(), "name", fld.Name(),
+				"source", c.Source(), "err", err)
 			continue
 		}
 	}

@@ -5,12 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/beatlabs/harvester/config"
-	"github.com/beatlabs/harvester/log"
 )
 
 // Getter interface for fetching a value for a specific key.
@@ -65,7 +65,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			if err != nil {
 				return err
 			}
-			log.Debugf("seed value %v applied on field %s", f, f.Name())
+			slog.Debug("seed applied", "value", f, "name", f.Name())
 			seedMap[f] = true
 		}
 		key, ok := ss[config.SourceEnv]
@@ -76,13 +76,13 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				if err != nil {
 					return err
 				}
-				log.Debugf("env var value %v applied on field %s", f, f.Name())
+				slog.Debug("env var applied", "value", f, "name", f.Name())
 				seedMap[f] = true
 			} else {
 				if seedMap[f] {
-					log.Debugf("env var %s did not exist for field %s", key, f.Name())
+					slog.Debug("env var did not exist", "key", key, "name", f.Name())
 				} else {
-					log.Debugf("env var %s did not exist for field %s and no seed value provided", key, f.Name())
+					slog.Debug("env var did not exist and no seed value provided", "key", key, "name", f.Name())
 				}
 			}
 		}
@@ -94,15 +94,16 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		}
 		key, ok = ss[config.SourceFile]
 		if ok {
-			body, err := ioutil.ReadFile(key)
+			body, err := os.ReadFile(key)
 			if err != nil {
-				log.Errorf("failed to read file %s for field %s: %v", key, f.Name(), err)
+				slog.Error("failed to read file", "file", key, "name", f.Name(), "err", err)
 			} else {
 				err := f.Set(string(body), 0)
 				if err != nil {
 					return err
 				}
-				log.Debugf("file based var value %v applied on field %s", f, f.Name())
+
+				slog.Debug("file based var applied", "value", f, "field", f.Name())
 				seedMap[f] = true
 			}
 		}
@@ -114,18 +115,18 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			}
 			value, version, err := gtr.Get(key)
 			if err != nil {
-				log.Errorf("failed to get consul key %s for field %s: %v", key, f.Name(), err)
+				slog.Error("failed to get consul", "key", key, "field", f.Name(), "err", err)
 				continue
 			}
 			if value == nil {
-				log.Debugf("consul key %s did not exist for field %s", key, f.Name())
+				slog.Error("consul key does not exist", "key", key, "field", f.Name())
 				continue
 			}
 			err = f.Set(*value, version)
 			if err != nil {
 				return err
 			}
-			log.Debugf("consul value %v applied on field %s", f, f.Name())
+			slog.Debug("consul value applied", "value", f, "field", f.Name())
 			seedMap[f] = true
 		}
 
@@ -137,18 +138,18 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			}
 			value, version, err := gtr.Get(key)
 			if err != nil {
-				log.Errorf("failed to get redis key %s for field %s: %v", key, f.Name(), err)
+				slog.Error("failed to get redis", "key", key, "field", f.Name(), "err", err)
 				continue
 			}
 			if value == nil {
-				log.Debugf("redis key %s did not exist for field %s", key, f.Name())
+				slog.Error("redis key does not exist", "key", key, "field", f.Name())
 				continue
 			}
 			err = f.Set(*value, version)
 			if err != nil {
 				return err
 			}
-			log.Debugf("redis value %v applied on field %s", f, f.Name())
+			slog.Debug("redis value applied", "value", f, "field", f.Name())
 			seedMap[f] = true
 		}
 	}
@@ -157,7 +158,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		if !flagSet.Parsed() {
 			// Set the flagSet output to something that will not be displayed, otherwise in case of an error
 			// it will display the usage, which we don't want.
-			flagSet.SetOutput(ioutil.Discard)
+			flagSet.SetOutput(io.Discard)
 
 			// Try to parse each flag independently so that if we encounter any unexpected flag (maybe used elsewhere),
 			// the parsing won't stop, and we make sure we try to parse every flag passed when running the command.
@@ -165,7 +166,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				if err := flagSet.Parse([]string{arg}); err != nil {
 					// Simply log errors that can happen, such as parsing unexpected flags. We want this to be silent,
 					// and we won't want to stop the execution.
-					log.Errorf("could not parse flagSet: %v", err)
+					slog.Error("could not parse flagSet", "err", err)
 				}
 			}
 		}
@@ -182,10 +183,10 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 				if err != nil {
 					return err
 				}
-				log.Debugf("flag value %v applied on field %s", flagInfo.field, flagInfo.field.Name())
+				slog.Debug("flag value applied", "value", flagInfo.field, "field", flagInfo.field.Name())
 				seedMap[flagInfo.field] = true
 			} else {
-				log.Debugf("flag var %s did not exist for field %s", flagInfo.key, flagInfo.field.Name())
+				slog.Debug("flag var did not exist", "key", flagInfo.key, "field", flagInfo.field.Name())
 			}
 		}
 	}

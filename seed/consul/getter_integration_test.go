@@ -4,7 +4,7 @@
 package consul
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -22,20 +22,24 @@ func TestMain(m *testing.M) {
 	config.Address = addr
 	consul, err := api.NewClient(config)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	err = cleanup(consul)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	err = setup(consul)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	ret := m.Run()
 	err = cleanup(consul)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 	os.Exit(ret)
 }
