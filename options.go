@@ -14,8 +14,6 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// TODO: Add some logging!!!
-
 type options struct {
 	cfg           *config.Config
 	seedParams    []seed.Param
