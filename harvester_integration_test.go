@@ -75,12 +75,11 @@ func TestMain(m *testing.M) {
 
 func Test_harvester_Harvest(t *testing.T) {
 	cfg := testConfigWithSecret{}
-	h, err := New(&cfg).
-		WithConsulSeed(addr, "", "", 0).
-		WithConsulMonitor(addr, "", "", 0).
-		WithRedisSeed(redisClient).
-		WithRedisMonitor(redisClient, 10*time.Millisecond).
-		Create()
+	h, err := New(&cfg, nil,
+		WithConsulSeed(addr, "", "", 0),
+		WithConsulMonitor(addr, "", "", 0),
+		WithRedisSeed(redisClient),
+		WithRedisMonitor(redisClient, 10*time.Millisecond))
 	require.NoError(t, err)
 
 	ctx, cnl := context.WithCancel(context.Background())

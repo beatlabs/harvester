@@ -67,10 +67,12 @@ func main() {
 
 	redisClient := createRedisClient()
 
-	h, err := harvester.New(&cfg).
-		WithConsulSeed(consulAddress, consulDC, consulToken, 0).WithConsulMonitor(consulAddress, consulDC, consulToken, 0).
-		WithRedisSeed(redisClient).WithRedisMonitor(redisClient, 200*time.Millisecond).
-		WithNotification(chNotify).Create()
+	h, err := harvester.New(&cfg, chNotify,
+		harvester.WithConsulSeed(consulAddress, consulDC, consulToken, 0),
+		harvester.WithConsulMonitor(consulAddress, consulDC, consulToken, 0),
+		harvester.WithRedisSeed(redisClient),
+		harvester.WithRedisMonitor(redisClient, 200*time.Millisecond),
+	)
 	if err != nil {
 		log.Fatalf("failed to create harvester: %v", err)
 	}

@@ -2,7 +2,6 @@ package harvester
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -54,7 +53,7 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 				seedRedisClient:        nil,
 				monitorRedisClient:     redisClient,
 				monitoringPollInterval: 10 * time.Millisecond,
-			}, expectedErr: "redis seed client is nil",
+			}, expectedErr: "client is nil",
 		},
 		"invalid redis monitor client": {
 			args: args{
@@ -63,7 +62,7 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 				seedRedisClient:        redisClient,
 				monitorRedisClient:     nil,
 				monitoringPollInterval: 10 * time.Millisecond,
-			}, expectedErr: "redis monitor client is nil",
+			}, expectedErr: "client is nil",
 		},
 		"invalid redis monitor poll interval": {
 			args: args{
@@ -86,13 +85,13 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := New(tt.args.cfg).
-				WithConsulSeed(tt.args.consulAddress, "", "", 0).
-				WithConsulMonitor(tt.args.consulAddress, "", "", 0).
-				WithConsulFolderPrefixMonitor(tt.args.consulAddress, "", "", "", 0).
-				WithRedisSeed(tt.args.seedRedisClient).
-				WithRedisMonitor(tt.args.monitorRedisClient, tt.args.monitoringPollInterval).
-				Create()
+			got, err := New(tt.args.cfg, nil,
+				WithConsulSeed(tt.args.consulAddress, "", "", 0),
+				WithConsulMonitor(tt.args.consulAddress, "", "", 0),
+				WithConsulFolderPrefixMonitor(tt.args.consulAddress, "", "", "", 0),
+				WithRedisSeed(tt.args.seedRedisClient),
+				WithRedisMonitor(tt.args.monitorRedisClient, tt.args.monitoringPollInterval))
+
 			if tt.expectedErr != "" {
 				assert.EqualError(t, err, tt.expectedErr)
 				assert.Nil(t, got)
@@ -110,65 +109,23 @@ func TestWithNotification(t *testing.T) {
 		chNotify chan<- config.ChangeNotification
 	}
 	tests := map[string]struct {
-		args    args
-		wantErr bool
+		args args
 	}{
-		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}, wantErr: true},
-		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan config.ChangeNotification)}, wantErr: false},
+		"nil notify channel": {args: args{cfg: &testConfig{}, chNotify: nil}},
+		"success":            {args: args{cfg: &testConfig{}, chNotify: make(chan config.ChangeNotification)}},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := New(tt.args.cfg).WithNotification(tt.args.chNotify).Create()
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, got)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, got)
-			}
-		})
-	}
-}
-
-func TestWithConsulFolderPrefixMonitor(t *testing.T) {
-	tests := []struct {
-		Name                string
-		InputFolderPrefix   string
-		ExpectedKeyLocation string
-	}{
-		{
-			Name:                "Setup Consul with folder prefix",
-			InputFolderPrefix:   "folder/prefix",
-			ExpectedKeyLocation: "folder/prefix/key1",
-		},
-		{
-			Name:                "Setup Consul with empty folder prefix",
-			ExpectedKeyLocation: "key1",
-		},
-		{
-			Name:                "Setup Consul with folder prefix trailing /",
-			InputFolderPrefix:   "folder/prefix/",
-			ExpectedKeyLocation: "folder/prefix/key1",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			builder := New(testConfig{})
-			builder.WithConsulFolderPrefixMonitor("addr", "data-center", "token", test.InputFolderPrefix, time.Second*42)
-
-			assert.Equal(t, "addr", builder.monitorConsulCfg.addr)
-			assert.Equal(t, "data-center", builder.monitorConsulCfg.dataCenter)
-			assert.Equal(t, "token", builder.monitorConsulCfg.token)
-			assert.Equal(t, time.Second*42, builder.monitorConsulCfg.timeout)
-			assert.Equal(t, test.ExpectedKeyLocation, filepath.Join(builder.monitorConsulCfg.folderPrefix, "key1"))
+			got, err := New(tt.args.cfg, tt.args.chNotify)
+			assert.NoError(t, err)
+			assert.NotNil(t, got)
 		})
 	}
 }
 
 func TestCreate_NoConsulOrRedis(t *testing.T) {
 	cfg := &testConfigNoConsul{}
-	got, err := New(cfg).Create()
+	got, err := New(cfg, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, got)
 	ctx, cnl := context.WithCancel(context.Background())
@@ -185,7 +142,7 @@ func TestCreate_NoConsulOrRedis(t *testing.T) {
 
 func TestCreate_SeedError(t *testing.T) {
 	cfg := &testConfigSeedError{}
-	got, err := New(cfg).Create()
+	got, err := New(cfg, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, got)
 	ctx, cnl := context.WithCancel(context.Background())
