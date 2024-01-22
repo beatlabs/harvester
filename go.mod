@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/hashicorp/consul/api v1.26.1
+	github.com/hashicorp/consul/api v1.27.0
 	github.com/hashicorp/go-hclog v1.6.2
 	github.com/stretchr/testify v1.8.4
 )
@@ -28,6 +28,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
