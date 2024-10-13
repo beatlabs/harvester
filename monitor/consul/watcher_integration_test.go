@@ -71,7 +71,7 @@ func TestWatch(t *testing.T) {
 			default:
 				assert.Fail(t, "key invalid", cng.Key())
 			}
-			assert.True(t, cng.Version() > 0)
+			assert.Positive(t, cng.Version())
 		}
 	}
 }

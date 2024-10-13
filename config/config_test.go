@@ -35,9 +35,9 @@ func TestField_Set(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err := tt.field.Set(tt.args.value, tt.args.version)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -64,10 +64,10 @@ func TestNew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg, nil)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, got)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, got)
 				assert.Len(t, got.Fields, 7)
 				assertField(t, got.Fields[0], "Name", "String",
@@ -102,40 +102,40 @@ func TestConfig_Set(t *testing.T) {
 	cfg, err := New(&c, chNotify)
 	require.NoError(t, err)
 	err = cfg.Fields[0].Set("John Doe", 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	change := <-chNotify
 	assert.Equal(t, "field [Name] of type [String] changed from [] to [John Doe]", change.String())
 	err = cfg.Fields[1].Set("18", 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [Age] of type [Int64] changed from [0] to [18]", change.String())
 	err = cfg.Fields[2].Set("99.9", 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [Balance] of type [Float64] changed from [0.000000] to [99.9]", change.String())
 	err = cfg.Fields[3].Set("true", 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [HasJob] of type [Bool] changed from [false] to [true]", change.String())
 	err = cfg.Fields[4].Set("6000", 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [PositionSalary] of type [Int64] changed from [0] to [6000]", change.String())
 	err = cfg.Fields[5].Set("baz", 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [LevelOneLevelTwoDeepField] of type [String] changed from [] to [baz]", change.String())
 	err = cfg.Fields[6].Set("true", 1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [IsAdult] of type [Bool] changed from [false] to [true]", change.String())
 	assert.Equal(t, "John Doe", c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
-	assert.Equal(t, 99.9, c.Balance.Get())
-	assert.Equal(t, true, c.HasJob.Get())
+	assert.InDelta(t, 99.9, c.Balance.Get(), 0.01)
+	assert.True(t, c.HasJob.Get())
 	assert.Equal(t, int64(6000), c.Position.Salary.Get())
 	assert.Equal(t, "baz", c.LevelOne.LevelTwo.DeepField.Get())
-	assert.Equal(t, true, c.IsAdult.Get())
+	assert.True(t, c.IsAdult.Get())
 }
 
 type testNestedConfig struct {

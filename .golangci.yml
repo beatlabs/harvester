@@ -1,11 +1,7 @@
 run:
-  concurrency: 4
   timeout: 5m
   issues-exit-code: 1
   tests: true
-
-  skip-dirs:
-    - vendor
 
   modules-download-mode: vendor
 
@@ -15,9 +11,6 @@ run:
 
 # output configuration options
 output:
-  # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
-  format: colored-line-number
-
   # print lines of code with issue, default is true
   print-issued-lines: true
 
@@ -29,15 +22,16 @@ output:
 linters:
   disable-all: true
   enable:
-    - golint
     - gofmt
-    - gosec
+    - gosimple
     - unparam
     - goconst
     - prealloc
     - stylecheck
     - unconvert
+    - unused
     - staticcheck
+    - ineffassign
     - gosec
     - tparallel
     - whitespace
@@ -48,17 +42,45 @@ linters:
     - errname
     - govet
     - predeclared
+    - nestif
     - exhaustive
     - tenv
     - gofumpt
     - forcetypeassert
     - nilerr
     - errcheck
-    # - promlinter this is a very nice linter, but it will most probably break things...
-    # - nestif
+    - bodyclose
+    - goimports
+    - durationcheck
+    - errchkjson
+    - sloglint
+    - dupword
+    - noctx
+    - makezero
+    - nilnil
+    - reassign
+    - sloglint
+    - spancheck
+    - testifylint
+    - wastedassign
+    - rowserrcheck
+    - sqlclosecheck
+    - goprintffuncname
+    - testableexamples
+    - wastedassign
+    - nonamedreturns
+    - perfsprint
+    - dogsled
+    - protogetter
+    - usestdlibvars
+    - testableexamples
   fast: false
 
 issues:
+  exclude-dirs:
+    - vendor
+  max-same-issues: 10
+
   exclude-rules:
     # Exclude some staticcheck messages
     - linters:

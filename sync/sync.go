@@ -104,7 +104,7 @@ func (i *Int64) UnmarshalJSON(d []byte) error {
 func (i *Int64) String() string {
 	i.rw.RLock()
 	defer i.rw.RUnlock()
-	return fmt.Sprintf("%d", i.value)
+	return strconv.FormatInt(i.value, 10)
 }
 
 // SetString parses and sets a value from string type.
@@ -287,7 +287,7 @@ func (s *Secret) Set(value string) {
 }
 
 // MarshalJSON returns the JSON encoding of the value.
-func (s *Secret) MarshalJSON() (out []byte, err error) {
+func (s *Secret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.String())
 }
 

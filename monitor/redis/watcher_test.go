@@ -33,10 +33,10 @@ func TestNew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.client, tt.args.pollInterval, tt.args.keys)
 			if tt.expectedErr != "" {
-				assert.EqualError(t, err, tt.expectedErr)
+				require.EqualError(t, err, tt.expectedErr)
 				assert.Nil(t, got)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, got)
 			}
 		})
@@ -61,9 +61,9 @@ func TestWatcher_Watch(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err = w.Watch(tt.args.ctx, tt.args.ch)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -135,7 +135,7 @@ func TestWatcher_Versioning(t *testing.T) {
 
 	ch := make(chan []*change.Change, 10)
 	err = w.Watch(ctx, ch)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// time for completing all the polling for the different states
 	time.Sleep(100 * time.Millisecond)

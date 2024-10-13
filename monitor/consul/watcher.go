@@ -112,7 +112,7 @@ func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []*chang
 	if err != nil {
 		return nil, err
 	}
-	pl.Handler = func(idx uint64, data interface{}) {
+	pl.Handler = func(_ uint64, data interface{}) {
 		if data == nil {
 			return
 		}
@@ -132,7 +132,7 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 	if err != nil {
 		return nil, err
 	}
-	pl.Handler = func(idx uint64, data interface{}) {
+	pl.Handler = func(_ uint64, data interface{}) {
 		if data == nil {
 			return
 		}

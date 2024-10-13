@@ -25,7 +25,7 @@ func TestGetter_Get(t *testing.T) {
 	gtr, err := New(client)
 	require.NoError(t, err)
 	got, _, err := gtr.Get(key)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, val, *got)
 
 	delResult, err := client.Del(context.Background(), key).Result()
