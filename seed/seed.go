@@ -68,25 +68,13 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			slog.Debug("seed applied", "value", f, "name", f.Name())
 			seedMap[f] = true
 		}
-		key, ok := ss[config.SourceEnv]
-		if ok { //nolint:nestif
-			val, ok := os.LookupEnv(key)
-			if ok {
-				err := f.Set(val, 0)
-				if err != nil {
-					return err
-				}
-				slog.Debug("env var applied", "value", f, "name", f.Name())
-				seedMap[f] = true
-			} else {
-				if seedMap[f] {
-					slog.Debug("env var did not exist", "key", key, "name", f.Name())
-				} else {
-					slog.Debug("env var did not exist and no seed value provided", "key", key, "name", f.Name())
-				}
-			}
+
+		err := processEnvField(f, seedMap)
+		if err != nil {
+			return err
 		}
-		key, ok = ss[config.SourceFlag]
+
+		key, ok := ss[config.SourceFlag]
 		if ok {
 			var val string
 			flagSet.StringVar(&val, key, "", "")
@@ -203,5 +191,32 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 	if sb.Len() > 0 {
 		return errors.New(sb.String())
 	}
+	return nil
+}
+
+func processEnvField(f *config.Field, seedMap map[*config.Field]bool) error {
+	key, ok := f.Sources()[config.SourceEnv]
+	if !ok {
+		return nil
+	}
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		slog.Debug("env var did not exist", "key", key, "name", f.Name())
+
+		// if seedMap[f] {
+		// 	slog.Debug("env var did not exist", "key", key, "name", f.Name())
+		// } else {
+		// 	slog.Debug("env var did not exist and no seed value provided", "key", key, "name", f.Name())
+		// }
+
+		return nil
+	}
+
+	err := f.Set(val, 0)
+	if err != nil {
+		return err
+	}
+	slog.Debug("env var applied", "value", f, "name", f.Name())
+	seedMap[f] = true
 	return nil
 }
