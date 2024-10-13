@@ -1,5 +1,4 @@
 VERSION?="0.0.1"
-DOCKER = docker
 
 default: test
 
@@ -21,10 +20,10 @@ fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
 lint: fmtcheck
-	$(DOCKER) run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.61.0 golangci-lint -v run
+	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.61.0 golangci-lint -v run
 
 deeplint: fmtcheck
-	$(DOCKER) run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.61.0 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
+	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.61.0 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
 
 deps-start:
 	docker compose up -d
@@ -32,7 +31,7 @@ deps-start:
 deps-stop:
 	docker compose down
 
-ci: fmtcheck lint deps
+ci: fmtcheck
 	go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
 	
 # disallow any parallelism (-j) for Make. This is necessary since some

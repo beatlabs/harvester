@@ -4,7 +4,23 @@ on:
     branches:
       - master
   pull_request:
+
 jobs:
+  lint:
+    name: Lint and fmt check
+    runs-on: self-hosted
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Linting and fmt check
+        run: make lint
+        
   build:
     name: CI
     runs-on: ubuntu-latest
