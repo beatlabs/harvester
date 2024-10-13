@@ -46,6 +46,8 @@ func New(pp ...Param) *Seeder {
 	return &Seeder{getters: gg}
 }
 
+type fieldMap map[*config.Field]bool
+
 type flagInfo struct {
 	key   string
 	field *config.Field
@@ -54,19 +56,19 @@ type flagInfo struct {
 
 // Seed the provided config with values for their sources.
 func (s *Seeder) Seed(cfg *config.Config) error {
-	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
+	seeded := make(fieldMap, len(cfg.Fields))
 	flagSet := flag.NewFlagSet("Harvester flags", flag.ContinueOnError)
 
 	var flagInfos []*flagInfo
 	for _, f := range cfg.Fields {
-		seedMap[f] = false
+		seeded[f] = false
 
-		err := processSeedField(f, seedMap)
+		err := processSeedField(f, seeded)
 		if err != nil {
 			return err
 		}
 
-		err = processEnvField(f, seedMap)
+		err = processEnvField(f, seeded)
 		if err != nil {
 			return err
 		}
@@ -76,31 +78,31 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			flagInfos = append(flagInfos, fi)
 		}
 
-		err = processFileField(f, seedMap)
+		err = processFileField(f, seeded)
 		if err != nil {
 			return err
 		}
 
-		err = s.processConsulField(f, seedMap)
+		err = s.processConsulField(f, seeded)
 		if err != nil {
 			return err
 		}
 
-		err = s.processRedisField(f, seedMap)
+		err = s.processRedisField(f, seeded)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := processFlags(flagInfos, flagSet, seedMap)
+	err := processFlags(flagInfos, flagSet, seeded)
 	if err != nil {
 		return err
 	}
 
-	return evaluateSeedMap(seedMap)
+	return evaluateSeedMap(seeded)
 }
 
-func processSeedField(f *config.Field, seedMap map[*config.Field]bool) error {
+func processSeedField(f *config.Field, seedMap fieldMap) error {
 	val, ok := f.Sources()[config.SourceSeed]
 	if !ok {
 		return nil
@@ -114,7 +116,7 @@ func processSeedField(f *config.Field, seedMap map[*config.Field]bool) error {
 	return nil
 }
 
-func processEnvField(f *config.Field, seedMap map[*config.Field]bool) error {
+func processEnvField(f *config.Field, seedMap fieldMap) error {
 	key, ok := f.Sources()[config.SourceEnv]
 	if !ok {
 		return nil
@@ -138,7 +140,7 @@ func processEnvField(f *config.Field, seedMap map[*config.Field]bool) error {
 	return nil
 }
 
-func processFileField(f *config.Field, seedMap map[*config.Field]bool) error {
+func processFileField(f *config.Field, seedMap fieldMap) error {
 	key, ok := f.Sources()[config.SourceFile]
 	if !ok {
 		return nil
@@ -160,7 +162,7 @@ func processFileField(f *config.Field, seedMap map[*config.Field]bool) error {
 	return nil
 }
 
-func (s *Seeder) processConsulField(f *config.Field, seedMap map[*config.Field]bool) error {
+func (s *Seeder) processConsulField(f *config.Field, seedMap fieldMap) error {
 	key, ok := f.Sources()[config.SourceConsul]
 	if !ok {
 		return nil
@@ -187,7 +189,7 @@ func (s *Seeder) processConsulField(f *config.Field, seedMap map[*config.Field]b
 	return nil
 }
 
-func (s *Seeder) processRedisField(f *config.Field, seedMap map[*config.Field]bool) error {
+func (s *Seeder) processRedisField(f *config.Field, seedMap fieldMap) error {
 	key, ok := f.Sources()[config.SourceRedis]
 	if !ok {
 		return nil
@@ -224,7 +226,7 @@ func processFlagField(f *config.Field, flagSet *flag.FlagSet) (*flagInfo, bool) 
 	return &flagInfo{key, f, &val}, true
 }
 
-func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap map[*config.Field]bool) error {
+func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap fieldMap) error {
 	if len(infos) == 0 {
 		return nil
 	}
@@ -267,7 +269,7 @@ func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap map[*config.
 	return nil
 }
 
-func evaluateSeedMap(seedMap map[*config.Field]bool) error {
+func evaluateSeedMap(seedMap fieldMap) error {
 	sb := strings.Builder{}
 	for f, seeded := range seedMap {
 		if !seeded {
