@@ -86,50 +86,14 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			return err
 		}
 
-		key, ok = ss[config.SourceConsul]
-		if ok {
-			gtr, ok := s.getters[config.SourceConsul]
-			if !ok {
-				return errors.New("consul getter required")
-			}
-			value, version, err := gtr.Get(key)
-			if err != nil {
-				slog.Error("failed to get consul", "key", key, "field", f.Name(), "err", err)
-				continue
-			}
-			if value == nil {
-				slog.Error("consul key does not exist", "key", key, "field", f.Name())
-				continue
-			}
-			err = f.Set(*value, version)
-			if err != nil {
-				return err
-			}
-			slog.Debug("consul value applied", "value", f, "field", f.Name())
-			seedMap[f] = true
+		err = s.processConsulField(f, seedMap)
+		if err != nil {
+			return err
 		}
 
-		key, ok = ss[config.SourceRedis]
-		if ok {
-			gtr, ok := s.getters[config.SourceRedis]
-			if !ok {
-				return errors.New("redis getter required")
-			}
-			value, version, err := gtr.Get(key)
-			if err != nil {
-				slog.Error("failed to get redis", "key", key, "field", f.Name(), "err", err)
-				continue
-			}
-			if value == nil {
-				slog.Error("redis key does not exist", "key", key, "field", f.Name())
-				continue
-			}
-			err = f.Set(*value, version)
-			if err != nil {
-				return err
-			}
-			slog.Debug("redis value applied", "value", f, "field", f.Name())
-			seedMap[f] = true
+		err = s.processRedisField(f, seedMap)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -227,6 +191,60 @@ func processFileField(f *config.Field, seedMap map[*config.Field]bool) error {
 	}
 
 	slog.Debug("file based var applied", "value", f, "field", f.Name())
+	seedMap[f] = true
+	return nil
+}
+
+func (s *Seeder) processConsulField(f *config.Field, seedMap map[*config.Field]bool) error {
+	key, ok := f.Sources()[config.SourceConsul]
+	if !ok {
+		return nil
+	}
+	gtr, ok := s.getters[config.SourceConsul]
+	if !ok {
+		return errors.New("consul getter required")
+	}
+	value, version, err := gtr.Get(key)
+	if err != nil {
+		slog.Error("failed to get consul", "key", key, "field", f.Name(), "err", err)
+		return nil
+	}
+	if value == nil {
+		slog.Error("consul key does not exist", "key", key, "field", f.Name())
+		return nil
+	}
+	err = f.Set(*value, version)
+	if err != nil {
+		return err
+	}
+	slog.Debug("consul value applied", "value", f, "field", f.Name())
+	seedMap[f] = true
+	return nil
+}
+
+func (s *Seeder) processRedisField(f *config.Field, seedMap map[*config.Field]bool) error {
+	key, ok := f.Sources()[config.SourceRedis]
+	if !ok {
+		return nil
+	}
+	gtr, ok := s.getters[config.SourceRedis]
+	if !ok {
+		return errors.New("redis getter required")
+	}
+	value, version, err := gtr.Get(key)
+	if err != nil {
+		slog.Error("failed to get redis", "key", key, "field", f.Name(), "err", err)
+		return nil
+	}
+	if value == nil {
+		slog.Error("redis key does not exist", "key", key, "field", f.Name())
+		return nil
+	}
+	err = f.Set(*value, version)
+	if err != nil {
+		return err
+	}
+	slog.Debug("redis value applied", "value", f, "field", f.Name())
 	seedMap[f] = true
 	return nil
 }
