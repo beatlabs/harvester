@@ -46,15 +46,17 @@ func New(pp ...Param) *Seeder {
 	return &Seeder{getters: gg}
 }
 
+type flagInfo struct {
+	key   string
+	field *config.Field
+	value *string
+}
+
 // Seed the provided config with values for their sources.
 func (s *Seeder) Seed(cfg *config.Config) error {
 	seedMap := make(map[*config.Field]bool, len(cfg.Fields))
 	flagSet := flag.NewFlagSet("Harvester flags", flag.ContinueOnError)
-	type flagInfo struct {
-		key   string
-		field *config.Field
-		value *string
-	}
+
 	var flagInfos []*flagInfo
 	for _, f := range cfg.Fields {
 		seedMap[f] = false
@@ -69,11 +71,9 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			return err
 		}
 
-		key, ok := f.Sources()[config.SourceFlag]
+		fi, ok := processFlagField(f, flagSet)
 		if ok {
-			var val string
-			flagSet.StringVar(&val, key, "", "")
-			flagInfos = append(flagInfos, &flagInfo{key, f, &val})
+			flagInfos = append(flagInfos, fi)
 		}
 
 		err = processFileField(f, seedMap)
@@ -92,41 +92,9 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		}
 	}
 
-	if len(flagInfos) > 0 { //nolint:nestif
-		if !flagSet.Parsed() {
-			// Set the flagSet output to something that will not be displayed, otherwise in case of an error
-			// it will display the usage, which we don't want.
-			flagSet.SetOutput(io.Discard)
-
-			// Try to parse each flag independently so that if we encounter any unexpected flag (maybe used elsewhere),
-			// the parsing won't stop, and we make sure we try to parse every flag passed when running the command.
-			for _, arg := range os.Args[1:] {
-				if err := flagSet.Parse([]string{arg}); err != nil {
-					// Simply log errors that can happen, such as parsing unexpected flags. We want this to be silent,
-					// and we won't want to stop the execution.
-					slog.Error("could not parse flagSet", "err", err)
-				}
-			}
-		}
-		for _, flagInfo := range flagInfos {
-			hasFlag := false
-			flagSet.Visit(func(f *flag.Flag) {
-				if f.Name == flagInfo.key {
-					hasFlag = true
-					return
-				}
-			})
-			if hasFlag && flagInfo.value != nil {
-				err := flagInfo.field.Set(*flagInfo.value, 0)
-				if err != nil {
-					return err
-				}
-				slog.Debug("flag value applied", "value", flagInfo.field, "field", flagInfo.field.Name())
-				seedMap[flagInfo.field] = true
-			} else {
-				slog.Debug("flag var did not exist", "key", flagInfo.key, "field", flagInfo.field.Name())
-			}
-		}
+	err := processFlags(flagInfos, flagSet, seedMap)
+	if err != nil {
+		return err
 	}
 
 	sb := strings.Builder{}
@@ -255,5 +223,58 @@ func (s *Seeder) processRedisField(f *config.Field, seedMap map[*config.Field]bo
 	}
 	slog.Debug("redis value applied", "value", f, "field", f.Name())
 	seedMap[f] = true
+	return nil
+}
+
+func processFlagField(f *config.Field, flagSet *flag.FlagSet) (*flagInfo, bool) {
+	key, ok := f.Sources()[config.SourceFlag]
+	if !ok {
+		return nil, false
+	}
+	var val string
+	flagSet.StringVar(&val, key, "", "")
+	return &flagInfo{key, f, &val}, true
+}
+
+func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap map[*config.Field]bool) error {
+	if len(infos) == 0 {
+		return nil
+	}
+
+	if !flagSet.Parsed() {
+		// Set the flagSet output to something that will not be displayed, otherwise in case of an error
+		// it will display the usage, which we don't want.
+		flagSet.SetOutput(io.Discard)
+
+		// Try to parse each flag independently so that if we encounter any unexpected flag (maybe used elsewhere),
+		// the parsing won't stop, and we make sure we try to parse every flag passed when running the command.
+		for _, arg := range os.Args[1:] {
+			if err := flagSet.Parse([]string{arg}); err != nil {
+				// Simply log errors that can happen, such as parsing unexpected flags. We want this to be silent,
+				// and we won't want to stop the execution.
+				slog.Error("could not parse flagSet", "err", err)
+			}
+		}
+	}
+
+	for _, info := range infos {
+		hasFlag := false
+		flagSet.Visit(func(f *flag.Flag) {
+			if f.Name == info.key {
+				hasFlag = true
+				return
+			}
+		})
+		if hasFlag && info.value != nil {
+			err := info.field.Set(*info.value, 0)
+			if err != nil {
+				return err
+			}
+			slog.Debug("flag value applied", "value", info.field, "field", info.field.Name())
+			seedMap[info.field] = true
+		} else {
+			slog.Debug("flag var did not exist", "key", info.key, "field", info.field.Name())
+		}
+	}
 	return nil
 }
