@@ -28,10 +28,10 @@ func TestNewParam(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got, err := NewParam(tt.args.src, tt.args.getter)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, got)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, got)
 			}
 		})
@@ -127,9 +127,9 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 			err = seeder.Seed(cfg)
 
 			if tC.expectedErr != nil {
-				assert.EqualError(t, err, tC.expectedErr.Error())
+				require.EqualError(t, err, tC.expectedErr.Error())
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				actualAge := tC.inputConfig.GetAge()
 				assert.Equal(t, tC.expectedAge, actualAge.Get())
 			}
@@ -138,8 +138,8 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 }
 
 func TestSeeder_Seed(t *testing.T) {
-	require.NoError(t, os.Setenv("ENV_AGE", "25"))
-	require.NoError(t, os.Setenv("ENV_WORK_HOURS", "9h"))
+	t.Setenv("ENV_AGE", "25")
+	t.Setenv("ENV_WORK_HOURS", "9h")
 
 	consulParamSuccess, err := NewParam(config.SourceConsul, &stubGetter{})
 	require.NoError(t, err)
@@ -154,14 +154,14 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New(*consulParamSuccess, *redisParamSuccess).Seed(goodCfg)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
 		assert.Equal(t, int64(25), c.Age.Get())
-		assert.Equal(t, 99.9, c.Balance.Get())
+		assert.InDelta(t, 99.9, c.Balance.Get(), 0.01)
 		assert.True(t, c.HasJob.Get())
 		assert.Equal(t, "foobar", c.About.Get())
 		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
-		assert.Equal(t, true, c.IsAdult.Get())
+		assert.True(t, c.IsAdult.Get())
 	})
 
 	t.Run("consul error, success", func(t *testing.T) {
@@ -174,14 +174,14 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New(*consulParamError, *redisParamSuccess).Seed(goodCfg)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
 		assert.Equal(t, int64(25), c.Age.Get())
-		assert.Equal(t, 99.9, c.Balance.Get())
+		assert.InDelta(t, 99.9, c.Balance.Get(), 0.1)
 		assert.True(t, c.HasJob.Get())
 		assert.Equal(t, "foobar", c.About.Get())
 		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
-		assert.Equal(t, true, c.IsAdult.Get())
+		assert.True(t, c.IsAdult.Get())
 	})
 
 	t.Run("redis error, success", func(t *testing.T) {
@@ -194,14 +194,14 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New(*consulParamSuccess, *redisParamFailure).Seed(goodCfg)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "John Doe", c.Name.Get())
 		assert.Equal(t, int64(25), c.Age.Get())
-		assert.Equal(t, 99.9, c.Balance.Get())
+		assert.InDelta(t, 99.9, c.Balance.Get(), 0.01)
 		assert.True(t, c.HasJob.Get())
 		assert.Equal(t, "foobar", c.About.Get())
 		assert.Equal(t, 9*time.Hour, c.WorkHours.Get())
-		assert.Equal(t, false, c.IsAdult.Get())
+		assert.False(t, c.IsAdult.Get())
 	})
 
 	t.Run("file not exists, success", func(t *testing.T) {
@@ -211,7 +211,7 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New().Seed(fileNotExistCfg)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(20), c.Age.Get())
 	})
 
@@ -222,7 +222,7 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New().Seed(goodCfg)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("consul missing value, failure", func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New().Seed(missingCfg)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("invalid int, failure", func(t *testing.T) {
@@ -240,7 +240,7 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New().Seed(invalidIntCfg)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("invalid float, failure", func(t *testing.T) {
@@ -249,7 +249,7 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New().Seed(invalidFloatCfg)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("invalid bool, failure", func(t *testing.T) {
@@ -258,7 +258,7 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New().Seed(invalidBoolCfg)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("invalid file int, failure", func(t *testing.T) {
@@ -267,7 +267,7 @@ func TestSeeder_Seed(t *testing.T) {
 
 		err = New().Seed(invalidFileIntCfg)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 

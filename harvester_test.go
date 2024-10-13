@@ -9,6 +9,7 @@ import (
 	"github.com/beatlabs/harvester/sync"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -93,10 +94,10 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 				WithRedisMonitor(tt.args.monitorRedisClient, tt.args.monitoringPollInterval))
 
 			if tt.expectedErr != "" {
-				assert.EqualError(t, err, tt.expectedErr)
+				require.EqualError(t, err, tt.expectedErr)
 				assert.Nil(t, got)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, got)
 			}
 		})
@@ -117,7 +118,7 @@ func TestWithNotification(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg, tt.args.chNotify)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, got)
 		})
 	}
@@ -126,16 +127,15 @@ func TestWithNotification(t *testing.T) {
 func TestCreate_NoConsulOrRedis(t *testing.T) {
 	cfg := &testConfigNoConsul{}
 	got, err := New(cfg, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, got)
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
-	err = got.Harvest(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, got.Harvest(ctx))
 	assert.Equal(t, "John Doe", cfg.Name.Get())
 	assert.Equal(t, int64(18), cfg.Age.Get())
-	assert.Equal(t, 99.9, cfg.Balance.Get())
-	assert.Equal(t, true, cfg.HasJob.Get())
+	assert.InDelta(t, 99.9, cfg.Balance.Get(), 0.01)
+	assert.True(t, cfg.HasJob.Get())
 	assert.Equal(t, int64(8000), cfg.Position.Salary.Get())
 	assert.Equal(t, int64(24), cfg.Position.Place.RoomNumber.Get())
 }
@@ -143,19 +143,19 @@ func TestCreate_NoConsulOrRedis(t *testing.T) {
 func TestCreate_SeedError(t *testing.T) {
 	cfg := &testConfigSeedError{}
 	got, err := New(cfg, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, got)
 	ctx, cnl := context.WithCancel(context.Background())
 	defer cnl()
 	err = got.Harvest(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 type testConfig struct {
 	Name    sync.String       `seed:"John Doe" consul:"harvester1/name"`
-	Age     sync.Int64        `seed:"18"  consul:"harvester/age"`
-	Balance sync.Float64      `seed:"99.9"  consul:"harvester/balance"`
-	HasJob  sync.Bool         `seed:"true"  consul:"harvester/has-job"`
+	Age     sync.Int64        `seed:"18" consul:"harvester/age"`
+	Balance sync.Float64      `seed:"99.9" consul:"harvester/balance"`
+	HasJob  sync.Bool         `seed:"true" consul:"harvester/has-job"`
 	FunTime sync.TimeDuration `seed:"1s" consul:"harvester/fun-time"`
 	IsAdult sync.Bool         `seed:"false" redis:"is-adult"`
 }

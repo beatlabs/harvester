@@ -1,12 +1,13 @@
 package sync
 
 import (
-	"fmt"
 	"regexp"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBool(t *testing.T) {
@@ -21,25 +22,25 @@ func TestBool(t *testing.T) {
 	assert.Equal(t, "true", b.String())
 
 	d, err := b.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "true", string(d))
 }
 
 func TestBool_SetString(t *testing.T) {
 	var b Bool
-	assert.Error(t, b.SetString("wrong"))
-	assert.NoError(t, b.SetString("true"))
+	require.Error(t, b.SetString("wrong"))
+	require.NoError(t, b.SetString("true"))
 	assert.True(t, b.Get())
 }
 
 func TestBool_UnmarshalJSON(t *testing.T) {
 	var b Bool
 	err := b.UnmarshalJSON([]byte("wrong"))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.False(t, b.Get())
 
 	err = b.UnmarshalJSON([]byte("true"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, b.Get())
 }
 
@@ -55,25 +56,25 @@ func TestInt64(t *testing.T) {
 	assert.Equal(t, "10", i.String())
 
 	d, err := i.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "10", string(d))
 }
 
 func TestInt64_SetString(t *testing.T) {
 	var i Int64
-	assert.Error(t, i.SetString("wrong"))
-	assert.NoError(t, i.SetString("10"))
+	require.Error(t, i.SetString("wrong"))
+	require.NoError(t, i.SetString("10"))
 	assert.Equal(t, int64(10), i.Get())
 }
 
 func TestInt64_UnmarshalJSON(t *testing.T) {
 	var b Int64
 	err := b.UnmarshalJSON([]byte("123.544")) // this is wrong
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, int64(0), b.Get())
 
 	err = b.UnmarshalJSON([]byte("123"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(123), b.Get())
 }
 
@@ -85,30 +86,30 @@ func TestFloat64(t *testing.T) {
 		ch <- struct{}{}
 	}()
 	<-ch
-	assert.Equal(t, 1.23, f.Get())
+	assert.InDelta(t, 1.23, f.Get(), 0.01)
 	assert.Equal(t, "1.230000", f.String())
 
 	d, err := f.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1.23", string(d))
 }
 
 func TestFloat64_UnmarshalJSON(t *testing.T) {
 	var b Float64
 	err := b.UnmarshalJSON([]byte("wrong"))
-	assert.Error(t, err)
-	assert.Equal(t, float64(0), b.Get())
+	require.Error(t, err)
+	assert.InDelta(t, float64(0), b.Get(), 0.01)
 
 	err = b.UnmarshalJSON([]byte("123.321"))
-	assert.NoError(t, err)
-	assert.Equal(t, float64(123.321), b.Get())
+	require.NoError(t, err)
+	assert.InDelta(t, float64(123.321), b.Get(), 0.01)
 }
 
 func TestFloat64_SetString(t *testing.T) {
 	var f Float64
-	assert.Error(t, f.SetString("wrong"))
-	assert.NoError(t, f.SetString("1.230000"))
-	assert.Equal(t, 1.23, f.Get())
+	require.Error(t, f.SetString("wrong"))
+	require.NoError(t, f.SetString("1.230000"))
+	assert.InDelta(t, 1.23, f.Get(), 0.01)
 }
 
 func TestString(t *testing.T) {
@@ -123,24 +124,24 @@ func TestString(t *testing.T) {
 	assert.Equal(t, "Hello", s.String())
 
 	d, err := s.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"Hello"`, string(d))
 }
 
 func TestString_SetString(t *testing.T) {
 	var s String
-	assert.NoError(t, s.SetString("foo"))
+	require.NoError(t, s.SetString("foo"))
 	assert.Equal(t, "foo", s.Get())
 }
 
 func TestString_UnmarshalJSON(t *testing.T) {
 	var b String
 	err := b.UnmarshalJSON([]byte(`foo`))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "", b.Get())
 
 	err = b.UnmarshalJSON([]byte(`"foo"`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "foo", b.Get())
 }
 
@@ -156,20 +157,20 @@ func TestSecret(t *testing.T) {
 	assert.Equal(t, "***", s.String())
 
 	d, err := s.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `"***"`, string(d))
 }
 
 func TestSecret_SetString(t *testing.T) {
 	var s Secret
-	assert.NoError(t, s.SetString("foo"))
+	require.NoError(t, s.SetString("foo"))
 	assert.Equal(t, "foo", s.Get())
 }
 
 func TestSecret_UnmarshalJSON(t *testing.T) {
 	var b String
 	err := b.UnmarshalJSON([]byte(`"foo"`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "foo", b.Get())
 }
 
@@ -186,25 +187,25 @@ func TestTimeDuration(t *testing.T) {
 	assert.Equal(t, testTime.String(), f.String())
 
 	d, err := f.MarshalJSON()
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%d", testTime.Nanoseconds()), string(d))
+	require.NoError(t, err)
+	assert.Equal(t, strconv.FormatInt(testTime.Nanoseconds(), 10), string(d))
 }
 
 func TestTimeDuration_SetString(t *testing.T) {
 	var f TimeDuration
-	assert.Error(t, f.SetString("kuku"))
-	assert.NoError(t, f.SetString("3s"))
+	require.Error(t, f.SetString("kuku"))
+	require.NoError(t, f.SetString("3s"))
 	assert.Equal(t, 3*time.Second, f.Get())
 }
 
 func TestTimeDuration_UnmarshalJSON(t *testing.T) {
 	var b TimeDuration
 	err := b.UnmarshalJSON([]byte(`foo`))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, time.Duration(0), b.Get())
 
 	err = b.UnmarshalJSON([]byte(`1`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, time.Duration(1), b.Get())
 }
 
@@ -222,23 +223,23 @@ func TestRegexp(t *testing.T) {
 	assert.Equal(t, regex.String(), r.String())
 
 	d, err := r.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `".*"`, string(d))
 }
 
 func TestRegexp_UnmarshalJSON(t *testing.T) {
 	var r Regexp
 	err := r.UnmarshalJSON([]byte(`invalid json`))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, r.Get())
 
 	// Invalid regex:
 	err = r.UnmarshalJSON([]byte(`"[a-z]++"`))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, r.Get())
 
 	err = r.UnmarshalJSON([]byte(`"[a-z0-7]+"`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, regexp.MustCompile("[a-z0-7]+"), r.Get())
 }
 
@@ -259,7 +260,7 @@ func TestRegexp_SetString(t *testing.T) {
 
 			err := sr.SetString(test.input)
 			if test.throwsError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 
 			assert.Equal(t, test.result, sr.Get())
@@ -276,7 +277,7 @@ func TestRegexp_MarshalJSON(t *testing.T) {
 	sr := Regexp{}
 	json, err := sr.MarshalJSON()
 	assert.Equal(t, []byte(`""`), json)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestStringMap(t *testing.T) {
@@ -291,7 +292,7 @@ func TestStringMap(t *testing.T) {
 	assert.Equal(t, "key=\"value\"", sm.String())
 
 	d, err := sm.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `{"key":"value"}`, string(d))
 }
 
@@ -317,7 +318,7 @@ func TestStringMap_SetString(t *testing.T) {
 
 			err := sm.SetString(test.input)
 			if test.throwsError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 
 			assert.Equal(t, test.result, sm.Get())
@@ -328,21 +329,21 @@ func TestStringMap_SetString(t *testing.T) {
 func TestStringMap_SetString_DoesntOverrideValueIfError(t *testing.T) {
 	sm := StringMap{}
 
-	assert.NoError(t, sm.SetString("k1:v1"))
+	require.NoError(t, sm.SetString("k1:v1"))
 	assert.Equal(t, map[string]string{"k1": "v1"}, sm.Get())
 
-	assert.Error(t, sm.SetString("k1:v1,k2:v2,k3"))
+	require.Error(t, sm.SetString("k1:v1,k2:v2,k3"))
 	assert.Equal(t, map[string]string{"k1": "v1"}, sm.Get())
 }
 
 func TestStringMap_UnmarshalJSON(t *testing.T) {
 	var b StringMap
 	err := b.UnmarshalJSON([]byte(`wrong`))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, map[string]string(nil), b.Get())
 
 	err = b.UnmarshalJSON([]byte(`{ "a": "b" }`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, map[string]string{"a": "b"}, b.Get())
 }
 
@@ -358,7 +359,7 @@ func TestStringSlice(t *testing.T) {
 	assert.Equal(t, "value1,value2", sl.String())
 
 	d, err := sl.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `["value1","value2"]`, string(d))
 }
 
@@ -381,7 +382,7 @@ func TestStringSlice_SetString(t *testing.T) {
 
 			err := sm.SetString(test.input)
 			if test.throwsError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 
 			assert.Equal(t, test.result, sm.Get())
@@ -392,10 +393,10 @@ func TestStringSlice_SetString(t *testing.T) {
 func TestStringSlice_UnmarshalJSON(t *testing.T) {
 	var b StringSlice
 	err := b.UnmarshalJSON([]byte(`wrong`))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, []string(nil), b.Get())
 
 	err = b.UnmarshalJSON([]byte(`["a", "b"]`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"a", "b"}, b.Get())
 }

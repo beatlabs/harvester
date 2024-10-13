@@ -65,12 +65,12 @@ func TestGetter_Get(t *testing.T) {
 			require.NoError(t, err)
 			got, version, err := gtr.Get(tt.args.key)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Empty(t, got)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, got)
-				assert.True(t, version >= uint64(0))
+				assert.GreaterOrEqual(t, version, uint64(0))
 			}
 		})
 	}

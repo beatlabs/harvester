@@ -38,10 +38,10 @@ func TestNew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got, err := New(tt.args.cfg, tt.args.ww...)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, got)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, got)
 			}
 		})
@@ -55,7 +55,7 @@ func TestMonitor_Monitor_Error(t *testing.T) {
 	mon, err := New(cfg, watchers...)
 	require.NoError(t, err)
 	err = mon.Monitor(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMonitor_Monitor(t *testing.T) {
@@ -67,12 +67,12 @@ func TestMonitor_Monitor(t *testing.T) {
 	require.NoError(t, err)
 	ctx, cnl := context.WithCancel(context.Background())
 	err = mon.Monitor(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	time.Sleep(100 * time.Millisecond)
 	cnl()
 	assert.Equal(t, int64(25), c.Age.Get())
-	assert.Equal(t, 111.11, c.Balance.Get())
-	assert.Equal(t, false, c.HasJob.Get())
+	assert.InDelta(t, 111.11, c.Balance.Get(), 0.01)
+	assert.False(t, c.HasJob.Get())
 	assert.Equal(t, 6*time.Hour, c.WorkHours.Get())
 	assert.Equal(t, 7*time.Hour, c.NonWorkHours.Get())
 }

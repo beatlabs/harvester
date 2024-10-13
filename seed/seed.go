@@ -69,7 +69,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			seedMap[f] = true
 		}
 		key, ok := ss[config.SourceEnv]
-		if ok {
+		if ok { //nolint:nestif
 			val, ok := os.LookupEnv(key)
 			if ok {
 				err := f.Set(val, 0)
@@ -154,7 +154,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		}
 	}
 
-	if len(flagInfos) > 0 {
+	if len(flagInfos) > 0 { //nolint:nestif
 		if !flagSet.Parsed() {
 			// Set the flagSet output to something that will not be displayed, otherwise in case of an error
 			// it will display the usage, which we don't want.
