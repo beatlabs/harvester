@@ -97,19 +97,7 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 		return err
 	}
 
-	sb := strings.Builder{}
-	for f, seeded := range seedMap {
-		if !seeded {
-			_, err := sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name()))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	if sb.Len() > 0 {
-		return errors.New(sb.String())
-	}
-	return nil
+	return evaluateSeedMap(seedMap)
 }
 
 func processSeedField(f *config.Field, seedMap map[*config.Field]bool) error {
@@ -275,6 +263,22 @@ func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap map[*config.
 		} else {
 			slog.Debug("flag var did not exist", "key", info.key, "field", info.field.Name())
 		}
+	}
+	return nil
+}
+
+func evaluateSeedMap(seedMap map[*config.Field]bool) error {
+	sb := strings.Builder{}
+	for f, seeded := range seedMap {
+		if !seeded {
+			_, err := sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name()))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if sb.Len() > 0 {
+		return errors.New(sb.String())
 	}
 	return nil
 }
