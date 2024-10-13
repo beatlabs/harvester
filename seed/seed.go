@@ -80,21 +80,12 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			flagSet.StringVar(&val, key, "", "")
 			flagInfos = append(flagInfos, &flagInfo{key, f, &val})
 		}
-		key, ok = ss[config.SourceFile]
-		if ok {
-			body, err := os.ReadFile(key)
-			if err != nil {
-				slog.Error("failed to read file", "file", key, "name", f.Name(), "err", err)
-			} else {
-				err := f.Set(string(body), 0)
-				if err != nil {
-					return err
-				}
 
-				slog.Debug("file based var applied", "value", f, "field", f.Name())
-				seedMap[f] = true
-			}
+		err = processFileField(f, seedMap)
+		if err != nil {
+			return err
 		}
+
 		key, ok = ss[config.SourceConsul]
 		if ok {
 			gtr, ok := s.getters[config.SourceConsul]
@@ -201,14 +192,11 @@ func processEnvField(f *config.Field, seedMap map[*config.Field]bool) error {
 	}
 	val, ok := os.LookupEnv(key)
 	if !ok {
-		slog.Debug("env var did not exist", "key", key, "name", f.Name())
-
-		// if seedMap[f] {
-		// 	slog.Debug("env var did not exist", "key", key, "name", f.Name())
-		// } else {
-		// 	slog.Debug("env var did not exist and no seed value provided", "key", key, "name", f.Name())
-		// }
-
+		if seedMap[f] {
+			slog.Debug("env var did not exist", "key", key, "name", f.Name())
+		} else {
+			slog.Debug("env var did not exist and no seed value provided", "key", key, "name", f.Name())
+		}
 		return nil
 	}
 
@@ -217,6 +205,28 @@ func processEnvField(f *config.Field, seedMap map[*config.Field]bool) error {
 		return err
 	}
 	slog.Debug("env var applied", "value", f, "name", f.Name())
+	seedMap[f] = true
+	return nil
+}
+
+func processFileField(f *config.Field, seedMap map[*config.Field]bool) error {
+	key, ok := f.Sources()[config.SourceFile]
+	if !ok {
+		return nil
+	}
+
+	body, err := os.ReadFile(key)
+	if err != nil {
+		slog.Error("failed to read file", "file", key, "name", f.Name(), "err", err)
+		return nil
+	}
+
+	err = f.Set(string(body), 0)
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("file based var applied", "value", f, "field", f.Name())
 	seedMap[f] = true
 	return nil
 }
