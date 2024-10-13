@@ -58,23 +58,18 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 	var flagInfos []*flagInfo
 	for _, f := range cfg.Fields {
 		seedMap[f] = false
-		ss := f.Sources()
-		val, ok := ss[config.SourceSeed]
-		if ok {
-			err := f.Set(val, 0)
-			if err != nil {
-				return err
-			}
-			slog.Debug("seed applied", "value", f, "name", f.Name())
-			seedMap[f] = true
-		}
 
-		err := processEnvField(f, seedMap)
+		err := processSeedField(f, seedMap)
 		if err != nil {
 			return err
 		}
 
-		key, ok := ss[config.SourceFlag]
+		err = processEnvField(f, seedMap)
+		if err != nil {
+			return err
+		}
+
+		key, ok := f.Sources()[config.SourceFlag]
 		if ok {
 			var val string
 			flagSet.StringVar(&val, key, "", "")
@@ -146,6 +141,20 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 	if sb.Len() > 0 {
 		return errors.New(sb.String())
 	}
+	return nil
+}
+
+func processSeedField(f *config.Field, seedMap map[*config.Field]bool) error {
+	val, ok := f.Sources()[config.SourceSeed]
+	if !ok {
+		return nil
+	}
+	err := f.Set(val, 0)
+	if err != nil {
+		return err
+	}
+	slog.Debug("seed applied", "value", f, "name", f.Name())
+	seedMap[f] = true
 	return nil
 }
 
