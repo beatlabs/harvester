@@ -80,9 +80,3 @@ issues:
   exclude-dirs:
     - vendor
   max-same-issues: 10
-
-  exclude-rules:
-    # Exclude some staticcheck messages
-    - linters:
-        - staticcheck
-      text: "SA1019:"
