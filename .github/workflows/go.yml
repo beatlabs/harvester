@@ -44,8 +44,6 @@ jobs:
         with:
           fail_ci_if_error: true # optional (default = false)
           files: ./coverage.txt          
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      
+        
       - name: Stop dependencies
         run: make deps-stop
