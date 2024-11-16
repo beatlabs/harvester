@@ -1,6 +1,6 @@
 services:
   consul:
-    image: bitnami/consul:latest
+    image: docker.io/bitnami/consul:latest
     networks:
       - consul-network
     ports:
@@ -20,7 +20,7 @@ services:
       - CONSUL_AGENT_MODE=server
   
   redis:
-    image: docker.io/bitnami/redis:6.2
+    image: docker.io/bitnami/redis:latest
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     ports:
