@@ -11,7 +11,7 @@ import (
 
 	"github.com/beatlabs/harvester/change"
 	"github.com/beatlabs/harvester/config"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 // Watcher of Redis changes.

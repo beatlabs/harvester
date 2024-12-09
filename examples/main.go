@@ -13,8 +13,8 @@ import (
 	"github.com/beatlabs/harvester"
 	harvesterconfig "github.com/beatlabs/harvester/config"
 	harvestersync "github.com/beatlabs/harvester/sync"
-	"github.com/go-redis/redis/v8"
 	"github.com/hashicorp/consul/api"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
