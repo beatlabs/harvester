@@ -11,7 +11,7 @@ import (
 	"github.com/beatlabs/harvester/seed"
 	seedconsul "github.com/beatlabs/harvester/seed/consul"
 	seedredis "github.com/beatlabs/harvester/seed/redis"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 type options struct {
