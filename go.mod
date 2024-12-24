@@ -3,7 +3,7 @@ module github.com/beatlabs/harvester
 go 1.21
 
 require (
-	github.com/hashicorp/consul/api v1.30.0
+	github.com/hashicorp/consul/api v1.31.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/stretchr/testify v1.10.0
