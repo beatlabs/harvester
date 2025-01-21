@@ -101,24 +101,15 @@ The `Harvester` builder pattern is used to create a `Harvester` instance. The bu
 - Redis monitor, for setting up monitoring from Redis
 
 ```go
-    h, err := New(&cfg).
-                WithConsulSeed("address", "dc", "token").
-                WithConsulMonitor("address", "dc", "token").
-                WithRedisSeed(redisClient).
-                WithRedisMonitor(redisClient, 10*time.Millisecond).
-                Create()
+     h, err := harvester.New(&cfg, chNotify,
+        harvester.WithConsulSeed(consulAddress, consulDC, consulToken, 0),
+        harvester.WithConsulMonitor(consulAddress, consulDC, consulToken, 0),
+        harvester.WithRedisSeed(redisClient),
+        harvester.WithRedisMonitor(redisClient, 200*time.Millisecond),
+    )    
 ```
 
 The above snippet set's up a `Harvester` instance with Consul and Redis seed and monitor.
-
-## Notification support
-
-In order to be able to monitor the changes in the configuration we provide a way to notify when a change is happening via the builder.
-
-```go
-    h, err := harvester.New(&cfg).WithNotification(chNotify).Create()
-    ...
-```
 
 ## Consul
 

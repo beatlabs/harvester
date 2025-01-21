@@ -60,7 +60,7 @@ func main() {
 
 	go func() {
 		for change := range chNotify {
-			log.Printf("notification: " + change.String())
+			log.Printf("notification: %s", change.String())
 		}
 		wg.Done()
 	}()
