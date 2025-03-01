@@ -13,8 +13,8 @@ github.com/dgryski/go-rendezvous
 # github.com/fatih/color v1.18.0
 ## explicit; go 1.17
 github.com/fatih/color
-# github.com/hashicorp/consul/api v1.31.0
-## explicit; go 1.19
+# github.com/hashicorp/consul/api v1.31.2
+## explicit; go 1.22.12
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
 # github.com/hashicorp/errwrap v1.1.0
@@ -64,7 +64,7 @@ github.com/mitchellh/mapstructure
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/redis/go-redis/v9 v9.7.0
+# github.com/redis/go-redis/v9 v9.7.1
 ## explicit; go 1.18
 github.com/redis/go-redis/v9
 github.com/redis/go-redis/v9/internal
