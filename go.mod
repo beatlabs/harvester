@@ -2,10 +2,10 @@ module github.com/beatlabs/harvester
 
 go 1.22.12
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
-	github.com/hashicorp/consul/api v1.31.2
+	github.com/hashicorp/consul/api v1.32.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/stretchr/testify v1.10.0
