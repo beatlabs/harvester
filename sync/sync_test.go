@@ -138,7 +138,7 @@ func TestString_UnmarshalJSON(t *testing.T) {
 	var b String
 	err := b.UnmarshalJSON([]byte(`foo`))
 	require.Error(t, err)
-	assert.Equal(t, "", b.Get())
+	assert.Empty(t, b.Get())
 
 	err = b.UnmarshalJSON([]byte(`"foo"`))
 	require.NoError(t, err)
@@ -270,13 +270,13 @@ func TestRegexp_SetString(t *testing.T) {
 
 func TestRegexp_String(t *testing.T) {
 	sr := Regexp{}
-	assert.Equal(t, "", sr.String())
+	assert.Empty(t, sr.String())
 }
 
 func TestRegexp_MarshalJSON(t *testing.T) {
 	sr := Regexp{}
 	json, err := sr.MarshalJSON()
-	assert.Equal(t, []byte(`""`), json)
+	assert.JSONEq(t, `""`, string(json))
 	require.NoError(t, err)
 }
 
@@ -293,7 +293,7 @@ func TestStringMap(t *testing.T) {
 
 	d, err := sm.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, `{"key":"value"}`, string(d))
+	assert.JSONEq(t, `{"key":"value"}`, string(d))
 }
 
 func TestStringMap_SetString(t *testing.T) {

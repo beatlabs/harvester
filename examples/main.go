@@ -50,7 +50,11 @@ func main() {
 
 	setEnvVarCacheRetention()
 	seedConsulAccessToken("currentaccesstoken")
-	setRedisOpeningBalance(ctx, "1000")
+	err := setRedisOpeningBalance(ctx, "1000")
+	if err != nil {
+		log.Printf("failed to set redis opening balance: %v", err)
+		return
+	}
 
 	cfg := config{}
 
@@ -74,18 +78,24 @@ func main() {
 		harvester.WithRedisMonitor(redisClient, 200*time.Millisecond),
 	)
 	if err != nil {
-		log.Fatalf("failed to create harvester: %v", err)
+		log.Printf("failed to create harvester: %v", err)
+		return
 	}
 
 	err = h.Harvest(ctx)
 	if err != nil {
-		log.Fatalf("failed to harvest configuration: %v", err)
+		log.Printf("failed to harvest configuration: %v", err)
+		return
 	}
 
 	log.Println(cfg.String())
 
 	seedConsulAccessToken("newtaccesstoken")
-	setRedisOpeningBalance(ctx, "2000")
+	err = setRedisOpeningBalance(ctx, "2000")
+	if err != nil {
+		log.Printf("failed to set redis opening balance: %v", err)
+		return
+	}
 
 	time.Sleep(1 * time.Second) // Wait for the data to be updated async...
 

@@ -13,7 +13,7 @@ github.com/dgryski/go-rendezvous
 # github.com/fatih/color v1.18.0
 ## explicit; go 1.17
 github.com/fatih/color
-# github.com/hashicorp/consul/api v1.31.2
+# github.com/hashicorp/consul/api v1.32.0
 ## explicit; go 1.22.12
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
@@ -79,11 +79,11 @@ github.com/redis/go-redis/v9/internal/util
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml
 github.com/stretchr/testify/require
-# golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
-## explicit; go 1.22.0
+# golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
+## explicit; go 1.23.0
 golang.org/x/exp/slices
-# golang.org/x/sys v0.29.0
-## explicit; go 1.18
+# golang.org/x/sys v0.31.0
+## explicit; go 1.23.0
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
