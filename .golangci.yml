@@ -1,82 +1,81 @@
+version: "2"
 run:
-  timeout: 5m
-  issues-exit-code: 1
-  tests: true
-
-  modules-download-mode: vendor
-
-  # list of build tags, all linters use it. Default is empty list
   build-tags:
     - integration
-
-# output configuration options
-output:
-  # print lines of code with issue, default is true
-  print-issued-lines: true
-
-  # print linter name in the end of issue text, default is true
-  print-linter-name: true
-
-  uniq-by-line: false
-
+  modules-download-mode: vendor
+  issues-exit-code: 1
+  tests: true
 linters:
-  disable-all: true
+  default: none
   enable:
-    - gofmt
-    - gosimple
-    - unparam
-    - goconst
-    - prealloc
-    - stylecheck
-    - unconvert
-    - unused
-    - staticcheck
-    - ineffassign
-    - gosec
-    - tparallel
-    - whitespace
-    - revive
-    - godot
-    - errorlint
-    - gocritic
-    - errname
-    - govet
-    - predeclared
-    - nestif
-    - exhaustive
-    - tenv
-    - gofumpt
-    - forcetypeassert
-    - nilerr
-    - errcheck
     - bodyclose
-    - goimports
-    - durationcheck
-    - errchkjson
-    - sloglint
+    - dogsled
     - dupword
-    - noctx
-    - makezero
-    - nilnil
-    - reassign
-    - sloglint
-    - spancheck
-    - testifylint
-    - wastedassign
-    - rowserrcheck
-    - sqlclosecheck
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - goconst
+    - gocritic
+    - godot
     - goprintffuncname
-    - testableexamples
-    - wastedassign
+    - gosec
+    - govet
+    - ineffassign
+    - makezero
+    - nestif
+    - nilerr
+    - nilnil
+    - noctx
     - nonamedreturns
     - perfsprint
-    - dogsled
+    - prealloc
+    - predeclared
     - protogetter
-    - usestdlibvars
+    - reassign
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    # - tagalign
     - testableexamples
-  fast: false
-
+    - testifylint
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - vendor
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-dirs:
-    - vendor
   max-same-issues: 10
+  uniq-by-line: false
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - vendor
+      - third_party$
+      - builtin$
+      - examples$

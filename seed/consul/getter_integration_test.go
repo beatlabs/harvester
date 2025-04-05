@@ -70,7 +70,7 @@ func TestGetter_Get(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, got)
-				assert.GreaterOrEqual(t, version, uint64(0))
+				assert.GreaterOrEqual(t, version, uint64(0)) //nolint:testifylint
 			}
 		})
 	}

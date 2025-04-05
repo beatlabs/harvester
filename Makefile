@@ -27,11 +27,11 @@ fmtcheck:
 
 .PHONY: lint
 lint: fmtcheck
-	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.61.0 golangci-lint -v run
+	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v2.0.2 golangci-lint -v run
 
 .PHONY: deeplint
 deeplint: fmtcheck
-	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.61.0 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
+	docker run --env=GOFLAGS=-mod=vendor --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:v2.0.2 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
 
 .PHONY: deps-start
 deps-start:

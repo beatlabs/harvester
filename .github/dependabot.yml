@@ -15,4 +15,8 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "monthly"
-
+  # Maintain dependencies for Docker Compose
+  - package-ecosystem: "docker-compose" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "monthly"
