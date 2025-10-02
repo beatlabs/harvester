@@ -4,14 +4,14 @@ services:
     networks:
       - consul-network
     ports:
-      - '8300:8300'
-      - '8301:8301'
-      - '8301:8301/udp'
-      - '8500:8500'
-      - '8600:8600'
-      - '8600:8600/udp'
+      - "8300:8300"
+      - "8301:8301"
+      - "8301:8301/udp"
+      - "8500:8500"
+      - "8600:8600"
+      - "8600:8600/udp"
     command: agent -server -ui -bootstrap-expect=1 -client=0.0.0.0 -bind=0.0.0.0
-  
+
   redis:
     image: redis:latest
     ports:
