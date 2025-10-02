@@ -36,7 +36,7 @@ type TxnOps []*TxnOp
 type TxnResult struct {
 	KV      *KVPair
 	Node    *Node
-	Service *AgentService
+	Service *CatalogService
 	Check   *HealthCheck
 }
 
@@ -163,6 +163,13 @@ type CheckTxnOp struct {
 	Verb  CheckOp
 	Check HealthCheck
 }
+
+type CensusOp string
+
+const (
+	CensusPut   CensusOp = "put"
+	CensusPrune CensusOp = "prune"
+)
 
 // Txn is used to apply multiple Consul operations in a single, atomic transaction.
 //
