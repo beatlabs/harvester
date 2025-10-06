@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/hashicorp/consul/api v1.32.4
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/redis/go-redis/v9 v9.12.1
+	github.com/redis/go-redis/v9 v9.14.0
 	github.com/stretchr/testify v1.11.1
 )
 
