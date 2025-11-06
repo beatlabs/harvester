@@ -41,8 +41,8 @@ func (b *Bool) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (b *Bool) UnmarshalJSON(d []byte) error {
-	b.rw.RLock()
-	defer b.rw.RUnlock()
+	b.rw.Lock()
+	defer b.rw.Unlock()
 	return json.Unmarshal(d, &b.value)
 }
 
@@ -95,8 +95,8 @@ func (i *Int64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (i *Int64) UnmarshalJSON(d []byte) error {
-	i.rw.RLock()
-	defer i.rw.RUnlock()
+	i.rw.Lock()
+	defer i.rw.Unlock()
 	return json.Unmarshal(d, &i.value)
 }
 
@@ -146,8 +146,8 @@ func (f *Float64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (f *Float64) UnmarshalJSON(d []byte) error {
-	f.rw.RLock()
-	defer f.rw.RUnlock()
+	f.rw.Lock()
+	defer f.rw.Unlock()
 	return json.Unmarshal(d, &f.value)
 }
 
@@ -197,8 +197,8 @@ func (s *String) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (s *String) UnmarshalJSON(d []byte) error {
-	s.rw.RLock()
-	defer s.rw.RUnlock()
+	s.rw.Lock()
+	defer s.rw.Unlock()
 	return json.Unmarshal(d, &s.value)
 }
 
@@ -244,8 +244,8 @@ func (s *TimeDuration) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (s *TimeDuration) UnmarshalJSON(d []byte) error {
-	s.rw.RLock()
-	defer s.rw.RUnlock()
+	s.rw.Lock()
+	defer s.rw.Unlock()
 	return json.Unmarshal(d, &s.value)
 }
 
@@ -293,8 +293,8 @@ func (s *Secret) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (s *Secret) UnmarshalJSON(d []byte) error {
-	s.rw.RLock()
-	defer s.rw.RUnlock()
+	s.rw.Lock()
+	defer s.rw.Unlock()
 	return json.Unmarshal(d, &s.value)
 }
 
@@ -338,12 +338,10 @@ func (r *Regexp) UnmarshalJSON(d []byte) error {
 	var str string
 	err := json.Unmarshal(d, &str)
 	if err != nil {
-		fmt.Println("json unmarshal")
 		return err
 	}
 	regex, err := regexp.Compile(str)
 	if err != nil {
-		fmt.Println("regex compile")
 		return err
 	}
 	r.Set(regex)
@@ -398,8 +396,8 @@ func (s *StringMap) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (s *StringMap) UnmarshalJSON(d []byte) error {
-	s.rw.RLock()
-	defer s.rw.RUnlock()
+	s.rw.Lock()
+	defer s.rw.Unlock()
 	return json.Unmarshal(d, &s.value)
 }
 
@@ -464,8 +462,8 @@ func (s *StringSlice) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON returns the JSON encoding of the value.
 func (s *StringSlice) UnmarshalJSON(d []byte) error {
-	s.rw.RLock()
-	defer s.rw.RUnlock()
+	s.rw.Lock()
+	defer s.rw.Unlock()
 	return json.Unmarshal(d, &s.value)
 }
 
