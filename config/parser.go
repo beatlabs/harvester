@@ -15,7 +15,7 @@ const (
 )
 
 type parser struct {
-	dups map[Source]string
+	dups map[Source]map[string]bool
 }
 
 func newParser() *parser {
@@ -23,7 +23,7 @@ func newParser() *parser {
 }
 
 func (p *parser) ParseCfg(cfg interface{}, chNotify chan<- ChangeNotification) ([]*Field, error) {
-	p.dups = make(map[Source]string)
+	p.dups = make(map[Source]map[string]bool)
 
 	tp := reflect.TypeOf(cfg)
 	if tp.Kind() != reflect.Ptr {
@@ -85,13 +85,13 @@ func (p *parser) createField(prefix string, f reflect.StructField, val reflect.V
 }
 
 func (p *parser) isKeyValueDuplicate(src Source, value string) bool {
-	v, ok := p.dups[src]
-	if ok {
-		if value == v {
-			return true
-		}
+	if p.dups[src] == nil {
+		p.dups[src] = make(map[string]bool)
 	}
-	p.dups[src] = value
+	if p.dups[src][value] {
+		return true
+	}
+	p.dups[src][value] = true
 	return false
 }
 
