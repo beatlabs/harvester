@@ -338,12 +338,10 @@ func (r *Regexp) UnmarshalJSON(d []byte) error {
 	var str string
 	err := json.Unmarshal(d, &str)
 	if err != nil {
-		fmt.Println("json unmarshal")
 		return err
 	}
 	regex, err := regexp.Compile(str)
 	if err != nil {
-		fmt.Println("regex compile")
 		return err
 	}
 	r.Set(regex)
