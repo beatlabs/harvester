@@ -3,7 +3,7 @@ package redis
 
 import (
 	"context"
-	"crypto/md5" //nolint:gosec
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"log/slog"
@@ -71,31 +71,37 @@ func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
 }
 
 func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
-	values := make([]*string, len(w.keys))
-	for i, key := range w.keys {
-		strCmd := w.client.Get(ctx, key)
-		if strCmd == nil {
-			slog.Error("failed to get value", "key", key, "err", "nil strCmd")
-			continue
-		}
-		if strCmd.Err() != nil {
-			if !errors.Is(strCmd.Err(), redis.Nil) {
-				slog.Error("failed to get value", "key", key, "err", strCmd.Err())
-			}
-			continue
-		}
-		val := strCmd.Val()
-		values[i] = &val
+	// Use MGET to fetch all values in a single round-trip
+	sliceCmd := w.client.MGet(ctx, w.keys...)
+	if sliceCmd == nil {
+		slog.Error("failed to get values", "err", "nil sliceCmd")
+		return
+	}
+	if sliceCmd.Err() != nil {
+		slog.Error("failed to get values", "err", sliceCmd.Err())
+		return
+	}
+
+	results := sliceCmd.Val()
+	if len(results) != len(w.keys) {
+		slog.Error("mget returned unexpected number of results", "expected", len(w.keys), "got", len(results))
+		return
 	}
 
 	changes := make([]*change.Change, 0, len(w.keys))
 
 	for i, key := range w.keys {
-		if values[i] == nil {
+		// MGet returns nil for keys that don't exist
+		if results[i] == nil {
 			continue
 		}
 
-		value := *values[i]
+		value, ok := results[i].(string)
+		if !ok {
+			slog.Error("failed to convert value to string", "key", key, "value", results[i])
+			continue
+		}
+
 		hash := w.hash(value)
 		if hash == w.hashes[i] {
 			continue
@@ -115,6 +121,6 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 }
 
 func (w *Watcher) hash(value string) string {
-	hash := md5.Sum([]byte(value)) // nolint:gosec
+	hash := sha256.Sum256([]byte(value))
 	return hex.EncodeToString(hash[:])
 }

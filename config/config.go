@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"sync"
 )
 
 // Source definition.
@@ -54,6 +55,7 @@ type Field struct {
 	structField CfgType
 	sources     map[Source]string
 	chNotify    chan<- ChangeNotification
+	mu          sync.Mutex // protects version field
 }
 
 // newField constructor.
@@ -104,6 +106,9 @@ func (f *Field) String() string {
 
 // Set the value of the field.
 func (f *Field) Set(value string, version uint64) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	if version != 0 && version < f.version {
 		slog.Error("version is older than the field's", "field", f.name, "old", f.version, "new", version)
 		return nil

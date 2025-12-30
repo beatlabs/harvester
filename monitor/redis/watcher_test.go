@@ -214,9 +214,49 @@ func (c *clientStub) Get(_ context.Context, key string) *redis.StringCmd {
 	return redis.NewStringResult("", redis.Nil)
 }
 
+func (c *clientStub) MGet(_ context.Context, keys ...string) *redis.SliceCmd {
+	c.m.Lock()
+	defer c.m.Unlock()
+	c.internalGetCalls++
+	defer c.rollInternalRedisStateMGet()
+
+	if len(c.keyToCmd) == 0 {
+		// Return slice of nils for all keys
+		results := make([]interface{}, len(keys))
+		return redis.NewSliceResult(results, nil)
+	}
+
+	shifted := c.keyToCmd[0]
+	results := make([]interface{}, len(keys))
+
+	for i, key := range keys {
+		if v, ok := shifted[key]; ok {
+			if v == nil {
+				results[i] = nil
+			} else if v.Err() != nil {
+				// For errors, we skip this key (MGet doesn't return individual errors)
+				results[i] = nil
+			} else {
+				results[i] = v.Val()
+			}
+		} else {
+			results[i] = nil
+		}
+	}
+
+	return redis.NewSliceResult(results, nil)
+}
+
 func (c *clientStub) rollInternalRedisState() {
 	// replace redis virtual state every len(watchedKeys) calls to Get
 	if len(c.keyToCmd) > 0 && (c.internalGetCalls)%len(c.watchedKeys) == 0 {
+		c.keyToCmd = c.keyToCmd[1:]
+	}
+}
+
+func (c *clientStub) rollInternalRedisStateMGet() {
+	// replace redis virtual state after each MGet call (since it gets all keys at once)
+	if len(c.keyToCmd) > 0 {
 		c.keyToCmd = c.keyToCmd[1:]
 	}
 }

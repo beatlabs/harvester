@@ -236,14 +236,44 @@ func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap fieldMap) er
 		// it will display the usage, which we don't want.
 		flagSet.SetOutput(io.Discard)
 
-		// Try to parse each flag independently so that if we encounter any unexpected flag (maybe used elsewhere),
-		// the parsing won't stop, and we make sure we try to parse every flag passed when running the command.
-		for _, arg := range os.Args[1:] {
-			if err := flagSet.Parse([]string{arg}); err != nil {
-				// Simply log errors that can happen, such as parsing unexpected flags. We want this to be silent,
-				// and we won't want to stop the execution.
-				slog.Error("could not parse flagSet", "err", err)
+		// Build a set of flags we care about
+		harvesterFlags := make(map[string]bool)
+		for _, info := range infos {
+			harvesterFlags[info.key] = true
+		}
+
+		// Filter os.Args to only include flags that harvester defines
+		var filteredArgs []string
+		for i := 0; i < len(os.Args[1:]); i++ {
+			arg := os.Args[1:][i]
+			// Check if arg is a flag (starts with -)
+			if len(arg) > 0 && arg[0] == '-' {
+				// Extract flag name (handle -flag=value and -flag value formats)
+				flagName := arg[1:]
+				if flagName[0] == '-' {
+					flagName = flagName[1:] // handle --flag
+				}
+				// Split on = to get the flag name
+				if idx := strings.IndexByte(flagName, '='); idx >= 0 {
+					flagName = flagName[:idx]
+				}
+
+				// Only include flags that harvester cares about
+				if harvesterFlags[flagName] {
+					filteredArgs = append(filteredArgs, arg)
+					// If this flag doesn't use = format and has a value in the next arg, include it
+					if !strings.Contains(arg, "=") && i+1 < len(os.Args[1:]) && len(os.Args[1:][i+1]) > 0 && os.Args[1:][i+1][0] != '-' {
+						i++
+						filteredArgs = append(filteredArgs, os.Args[1:][i])
+					}
+				}
 			}
+		}
+
+		// Parse only the flags we care about
+		if err := flagSet.Parse(filteredArgs); err != nil {
+			// Log parse errors but continue
+			slog.Debug("flag parsing encountered an error", "err", err)
 		}
 	}
 
