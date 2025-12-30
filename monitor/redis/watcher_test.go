@@ -231,12 +231,13 @@ func (c *clientStub) MGet(_ context.Context, keys ...string) *redis.SliceCmd {
 
 	for i, key := range keys {
 		if v, ok := shifted[key]; ok {
-			if v == nil {
+			switch {
+			case v == nil:
 				results[i] = nil
-			} else if v.Err() != nil {
+			case v.Err() != nil:
 				// For errors, we skip this key (MGet doesn't return individual errors)
 				results[i] = nil
-			} else {
+			default:
 				results[i] = v.Val()
 			}
 		} else {

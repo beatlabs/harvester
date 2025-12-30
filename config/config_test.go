@@ -18,21 +18,25 @@ func TestField_Set(t *testing.T) {
 		version uint64
 	}
 	tests := map[string]struct {
-		field   Field
+		field   *Field
 		args    args
 		wantErr bool
 	}{
-		"success String":            {field: *cfg.Fields[0], args: args{value: "John Doe", version: 3}, wantErr: false},
-		"success Int64":             {field: *cfg.Fields[1], args: args{value: "18", version: 1}, wantErr: false},
-		"success Float64":           {field: *cfg.Fields[2], args: args{value: "99.9", version: 1}, wantErr: false},
-		"success Bool":              {field: *cfg.Fields[3], args: args{value: "true", version: 1}, wantErr: false},
-		"failure Int64":             {field: *cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
-		"failure Float64":           {field: *cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
-		"failure Bool":              {field: *cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
-		"warn String version older": {field: *cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: false},
+		"success String":            {field: cfg.Fields[0], args: args{value: "John Doe", version: 3}, wantErr: false},
+		"success Int64":             {field: cfg.Fields[1], args: args{value: "18", version: 1}, wantErr: false},
+		"success Float64":           {field: cfg.Fields[2], args: args{value: "99.9", version: 1}, wantErr: false},
+		"success Bool":              {field: cfg.Fields[3], args: args{value: "true", version: 1}, wantErr: false},
+		"failure Int64":             {field: cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
+		"failure Float64":           {field: cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
+		"failure Bool":              {field: cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
+		"warn String version older": {field: cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: false},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			// for failure test cases we need to set version to 1 because we set it to 2 at the beginning of the test
+			if tt.wantErr {
+				tt.field.version = 0
+			}
 			err := tt.field.Set(tt.args.value, tt.args.version)
 			if tt.wantErr {
 				require.Error(t, err)

@@ -232,49 +232,7 @@ func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap fieldMap) er
 	}
 
 	if !flagSet.Parsed() {
-		// Set the flagSet output to something that will not be displayed, otherwise in case of an error
-		// it will display the usage, which we don't want.
-		flagSet.SetOutput(io.Discard)
-
-		// Build a set of flags we care about
-		harvesterFlags := make(map[string]bool)
-		for _, info := range infos {
-			harvesterFlags[info.key] = true
-		}
-
-		// Filter os.Args to only include flags that harvester defines
-		var filteredArgs []string
-		for i := 0; i < len(os.Args[1:]); i++ {
-			arg := os.Args[1:][i]
-			// Check if arg is a flag (starts with -)
-			if len(arg) > 0 && arg[0] == '-' {
-				// Extract flag name (handle -flag=value and -flag value formats)
-				flagName := arg[1:]
-				if flagName[0] == '-' {
-					flagName = flagName[1:] // handle --flag
-				}
-				// Split on = to get the flag name
-				if idx := strings.IndexByte(flagName, '='); idx >= 0 {
-					flagName = flagName[:idx]
-				}
-
-				// Only include flags that harvester cares about
-				if harvesterFlags[flagName] {
-					filteredArgs = append(filteredArgs, arg)
-					// If this flag doesn't use = format and has a value in the next arg, include it
-					if !strings.Contains(arg, "=") && i+1 < len(os.Args[1:]) && len(os.Args[1:][i+1]) > 0 && os.Args[1:][i+1][0] != '-' {
-						i++
-						filteredArgs = append(filteredArgs, os.Args[1:][i])
-					}
-				}
-			}
-		}
-
-		// Parse only the flags we care about
-		if err := flagSet.Parse(filteredArgs); err != nil {
-			// Log parse errors but continue
-			slog.Debug("flag parsing encountered an error", "err", err)
-		}
+		parseFlags(infos, flagSet)
 	}
 
 	for _, info := range infos {
@@ -297,6 +255,53 @@ func processFlags(infos []*flagInfo, flagSet *flag.FlagSet, seedMap fieldMap) er
 		}
 	}
 	return nil
+}
+
+func parseFlags(infos []*flagInfo, flagSet *flag.FlagSet) {
+	// Set the flagSet output to something that will not be displayed, otherwise in case of an error
+	// it will display the usage, which we don't want.
+	flagSet.SetOutput(io.Discard)
+
+	// Build a set of flags we care about
+	harvesterFlags := make(map[string]bool)
+	for _, info := range infos {
+		harvesterFlags[info.key] = true
+	}
+
+	// Filter os.Args to only include flags that harvester defines
+	var filteredArgs []string
+	for i := 0; i < len(os.Args[1:]); i++ {
+		arg := os.Args[1:][i]
+		if len(arg) == 0 || arg[0] != '-' {
+			continue
+		}
+
+		// Extract flag name (handle -flag=value and -flag value formats)
+		flagName := arg[1:]
+		if flagName[0] == '-' {
+			flagName = flagName[1:] // handle --flag
+		}
+		// Split on = to get the flag name
+		if idx := strings.IndexByte(flagName, '='); idx >= 0 {
+			flagName = flagName[:idx]
+		}
+
+		// Only include flags that harvester cares about
+		if harvesterFlags[flagName] {
+			filteredArgs = append(filteredArgs, arg)
+			// If this flag doesn't use = format and has a value in the next arg, include it
+			if !strings.Contains(arg, "=") && i+1 < len(os.Args[1:]) && len(os.Args[1:][i+1]) > 0 && os.Args[1:][i+1][0] != '-' {
+				i++
+				filteredArgs = append(filteredArgs, os.Args[1:][i])
+			}
+		}
+	}
+
+	// Parse only the flags we care about
+	if err := flagSet.Parse(filteredArgs); err != nil {
+		// Log parse errors but continue
+		slog.Debug("flag parsing encountered an error", "err", err)
+	}
 }
 
 func evaluateSeedMap(seedMap fieldMap) error {
