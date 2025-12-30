@@ -167,7 +167,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 
 	t.Run("MGet returns nil command", func(t *testing.T) {
 		c := &failClientStub{
-			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+			mGetFn: func(_ context.Context, _ ...string) *redis.SliceCmd {
 				return nil
 			},
 		}
@@ -178,7 +178,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 
 	t.Run("MGet returns error", func(t *testing.T) {
 		c := &failClientStub{
-			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+			mGetFn: func(_ context.Context, _ ...string) *redis.SliceCmd {
 				return redis.NewSliceResult(nil, errors.New("boom"))
 			},
 		}
@@ -189,7 +189,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 
 	t.Run("MGet returns unexpected number of results", func(t *testing.T) {
 		c := &failClientStub{
-			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+			mGetFn: func(_ context.Context, _ ...string) *redis.SliceCmd {
 				return redis.NewSliceResult([]interface{}{"val1"}, nil)
 			},
 		}
@@ -200,7 +200,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 
 	t.Run("MGet returns invalid value type", func(t *testing.T) {
 		c := &failClientStub{
-			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+			mGetFn: func(_ context.Context, _ ...string) *redis.SliceCmd {
 				return redis.NewSliceResult([]interface{}{123}, nil)
 			},
 		}
