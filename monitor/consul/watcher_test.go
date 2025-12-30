@@ -65,3 +65,18 @@ func TestWatcher_Watch(t *testing.T) {
 		})
 	}
 }
+
+func TestItems(t *testing.T) {
+	t.Run("NewKeyItem", func(t *testing.T) {
+		item := NewKeyItem("key1")
+		assert.Equal(t, Item{tp: "key", key: "key1"}, item)
+	})
+	t.Run("NewKeyItemWithPrefix", func(t *testing.T) {
+		item := NewKeyItemWithPrefix("key1", "prefix1")
+		assert.Equal(t, Item{tp: "key", key: "key1", prefix: "prefix1"}, item)
+	})
+	t.Run("NewPrefixItem", func(t *testing.T) {
+		item := NewPrefixItem("prefix1")
+		assert.Equal(t, Item{tp: "keyprefix", key: "prefix1"}, item)
+	})
+}

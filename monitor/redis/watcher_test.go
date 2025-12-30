@@ -161,6 +161,67 @@ func TestWatcher_Versioning(t *testing.T) {
 	assert.Equal(t, expected, found)
 }
 
+func TestWatcher_GetValues_EdgeCases(t *testing.T) {
+	ctx := context.Background()
+	ch := make(chan []*change.Change, 1)
+
+	t.Run("MGet returns nil command", func(t *testing.T) {
+		c := &failClientStub{
+			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+				return nil
+			},
+		}
+		w, _ := New(c, time.Second, []string{"key1"})
+		w.getValues(ctx, ch)
+		assert.Empty(t, ch)
+	})
+
+	t.Run("MGet returns error", func(t *testing.T) {
+		c := &failClientStub{
+			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+				return redis.NewSliceResult(nil, errors.New("boom"))
+			},
+		}
+		w, _ := New(c, time.Second, []string{"key1"})
+		w.getValues(ctx, ch)
+		assert.Empty(t, ch)
+	})
+
+	t.Run("MGet returns unexpected number of results", func(t *testing.T) {
+		c := &failClientStub{
+			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+				return redis.NewSliceResult([]interface{}{"val1"}, nil)
+			},
+		}
+		w, _ := New(c, time.Second, []string{"key1", "key2"})
+		w.getValues(ctx, ch)
+		assert.Empty(t, ch)
+	})
+
+	t.Run("MGet returns invalid value type", func(t *testing.T) {
+		c := &failClientStub{
+			mGetFn: func(ctx context.Context, keys ...string) *redis.SliceCmd {
+				return redis.NewSliceResult([]interface{}{123}, nil)
+			},
+		}
+		w, _ := New(c, time.Second, []string{"key1"})
+		w.getValues(ctx, ch)
+		assert.Empty(t, ch)
+	})
+}
+
+type failClientStub struct {
+	*redis.Client
+	mGetFn func(ctx context.Context, keys ...string) *redis.SliceCmd
+}
+
+func (c *failClientStub) MGet(ctx context.Context, keys ...string) *redis.SliceCmd {
+	if c.mGetFn != nil {
+		return c.mGetFn(ctx, keys...)
+	}
+	return nil
+}
+
 type clientStub struct {
 	t *testing.T
 	*redis.Client
