@@ -17,8 +17,8 @@ github.com/fatih/color
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
-# github.com/hashicorp/consul/api v1.33.0
-## explicit; go 1.25.3
+# github.com/hashicorp/consul/api v1.33.2
+## explicit; go 1.25.5
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
 # github.com/hashicorp/errwrap v1.1.0
