@@ -21,8 +21,13 @@ jobs:
         with:
           go-version-file: "go.mod"
 
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
       - name: Linting and fmt check
-        run: make lint
+        run: task lint
 
   build:
     name: CI
@@ -36,11 +41,16 @@ jobs:
         with:
           go-version-file: './go.mod'      
 
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
       - name: Start dependencies
-        run: make deps-start
+        run: task deps-start
 
       - name: Running CI
-        run: make ci
+        run: task ci
 
       - name: Codecov
         uses: codecov/codecov-action@v5
@@ -49,4 +59,4 @@ jobs:
           files: ./coverage.txt          
         
       - name: Stop dependencies
-        run: make deps-stop
+        run: task deps-stop
