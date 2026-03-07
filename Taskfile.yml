@@ -1,0 +1,56 @@
+version: "3"
+
+vars:
+  VERSION: '{{.VERSION | default "0.0.1"}}'
+
+tasks:
+  default:
+    deps: [test]
+
+  test:
+    deps: [fmtcheck]
+    cmds:
+      - go test ./... -cover -race
+
+  testint:
+    deps: [fmtcheck]
+    cmds:
+      - go test ./... -cover -race -tags=integration -count=1
+
+  cover:
+    deps: [fmtcheck]
+    cmds:
+      - go test ./... -coverpkg=./... -coverprofile=cover.out -tags=integration -covermode=atomic
+      - go tool cover -func=cover.out
+      - rm cover.out
+
+  fmt:
+    cmds:
+      - go fmt ./...
+
+  fmtcheck:
+    cmds:
+      - sh -c "'{{.ROOT_DIR}}/scripts/gofmtcheck.sh'"
+
+  lint:
+    deps: [fmtcheck]
+    cmds:
+      - docker run --env=GOFLAGS=-mod=vendor --rm -v {{.ROOT_DIR}}:/app -w /app golangci/golangci-lint:v2.11.1 golangci-lint -v run
+
+  deeplint:
+    deps: [fmtcheck]
+    cmds:
+      - docker run --env=GOFLAGS=-mod=vendor --rm -v {{.ROOT_DIR}}:/app -w /app golangci/golangci-lint:v2.11.1 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
+
+  deps-start:
+    cmds:
+      - docker compose up -d
+
+  deps-stop:
+    cmds:
+      - docker compose down
+
+  ci:
+    deps: [fmtcheck]
+    cmds:
+      - go test ./... -race -cover -tags=integration -coverprofile=coverage.txt -covermode=atomic
