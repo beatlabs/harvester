@@ -308,7 +308,7 @@ func evaluateSeedMap(seedMap fieldMap) error {
 	sb := strings.Builder{}
 	for f, seeded := range seedMap {
 		if !seeded {
-			_, err := sb.WriteString(fmt.Sprintf("field %s not seeded", f.Name()))
+			_, err := fmt.Fprintf(&sb, "field %s not seeded", f.Name())
 			if err != nil {
 				return err
 			}
