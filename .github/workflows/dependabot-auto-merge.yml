@@ -1,15 +1,12 @@
 name: Dependabot Auto-Merge
-
-on:
-  pull_request:
+on: pull_request_target
 
 permissions:
-  contents: write
   pull-requests: write
+  contents: write
 
 jobs:
-  auto-merge:
-    name: Auto-approve and auto-merge
+  dependabot:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
@@ -19,16 +16,19 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
+      # 1. Approve the PR immediately
       - name: Approve PR
         if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # 2. Set the PR to Auto-merge
+      # This tells GitHub: "Merge this ONLY when CI passes"
       - name: Enable auto-merge
         if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
