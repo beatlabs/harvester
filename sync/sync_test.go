@@ -87,7 +87,7 @@ func TestFloat64(t *testing.T) {
 	}()
 	<-ch
 	assert.InDelta(t, 1.23, f.Get(), 0.01)
-	assert.Equal(t, "1.230000", f.String())
+	assert.Equal(t, "1.23", f.String())
 
 	d, err := f.MarshalJSON()
 	require.NoError(t, err)
