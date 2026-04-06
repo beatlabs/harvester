@@ -69,6 +69,11 @@ func (p *parser) createField(prefix string, f reflect.StructField, val reflect.V
 		return nil, err
 	}
 
+	// Duplicate key detection is intentionally limited to Consul and Redis.
+	// For env, flag, and file tags, the Go compiler enforces struct field name
+	// uniqueness, which makes duplicate tag values harmless in practice. For
+	// Consul and Redis, multiple fields could share the same remote key string,
+	// causing silent overwrites at runtime — so we reject duplicates eagerly here.
 	value, ok := fld.Sources()[SourceConsul]
 	if ok {
 		if p.isKeyValueDuplicate(SourceConsul, value) {

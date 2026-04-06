@@ -105,10 +105,15 @@ func (f *Field) String() string {
 }
 
 // Set the value of the field.
+// A version of 0 is the seeding sentinel: it always applies the value and bypasses
+// the version check. All seeding sources (seed tag, env, file, consul, redis, flag)
+// use version 0. Only the monitoring path (consul, redis watchers) supplies a
+// non-zero version, enabling the "reject older/same version" guard below.
 func (f *Field) Set(value string, version uint64) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
+	// version == 0 is the seeding sentinel; skip version guards and always apply.
 	if version != 0 && version < f.version {
 		slog.Error("version is older than the field's", "field", f.name, "old", f.version, "new", version)
 		return nil
