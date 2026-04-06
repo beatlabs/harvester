@@ -305,12 +305,17 @@ func TestStringMap_SetString(t *testing.T) {
 	}{
 		{"empty", "", map[string]string{}, false},
 		{"empty with spaces", "   ", map[string]string{}, false},
-		{"single item", "key:value", map[string]string{"key": "value"}, false},
-		{"single item with route as val", "key:http://thing", map[string]string{"key": "http://thing"}, false},
+		{"single item colon separator", "key:value", map[string]string{"key": "value"}, false},
+		{"single item equals separator", "key=value", map[string]string{"key": "value"}, false},
+		{"single item with url value (colon)", "key:http://thing", map[string]string{"key": "http://thing"}, false},
+		{"single item with url value (equals)", "key=http://thing", map[string]string{"key": "http://thing"}, false},
 		{"key without value", "key", nil, true},
-		{"multiple items", "key1:value,key2:value", map[string]string{"key1": "value", "key2": "value"}, false},
+		{"multiple items colon", "key1:value,key2:value", map[string]string{"key1": "value", "key2": "value"}, false},
+		{"multiple items equals", "key1=value,key2=value", map[string]string{"key1": "value", "key2": "value"}, false},
 		{"multiple items with spaces", " key1 : value , key2 :value ", map[string]string{"key1": "value", "key2": "value"}, false},
-		{"multiple urls", "key1:http://one,key2:https://two", map[string]string{"key1": "http://one", "key2": "https://two"}, false},
+		{"multiple urls colon", "key1:http://one,key2:https://two", map[string]string{"key1": "http://one", "key2": "https://two"}, false},
+		{"multiple urls equals", "key1=http://one,key2=https://two", map[string]string{"key1": "http://one", "key2": "https://two"}, false},
+		{"round-trip equals separator plain values", "key1=value1,key2=value2", map[string]string{"key1": "value1", "key2": "value2"}, false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
