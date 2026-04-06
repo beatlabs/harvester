@@ -77,6 +77,10 @@ func TestMonitor_Monitor(t *testing.T) {
 	assert.Equal(t, 7*time.Hour, c.NonWorkHours.Get())
 }
 
+func TestNoopMonitor_Monitor(t *testing.T) {
+	require.NoError(t, NewNoop().Monitor(context.Background()))
+}
+
 type testConfig struct {
 	Name         sync.String       `seed:"John Doe" env:"ENV_NAME"`
 	Age          sync.Int64        `env:"ENV_AGE" consul:"/config/age"`
