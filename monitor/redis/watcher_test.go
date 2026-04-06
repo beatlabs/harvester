@@ -72,7 +72,7 @@ func TestWatcher_Watch(t *testing.T) {
 func TestWatcher_Versioning(t *testing.T) {
 	watchedKeys := []string{"key1", "key2", "key3"}
 	// each element represent the state of redis server at each subsequent poll
-	redisInternalState := []map[string]interface{}{
+	redisInternalState := []map[string]any{
 		{
 			// watch triggers change in key1, key2 and key3
 			"key1": "val1.1",
@@ -142,10 +142,7 @@ func TestWatcher_Versioning(t *testing.T) {
 
 	found := make([][]*change.Change, 0)
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case cc := <-ch:
@@ -154,7 +151,7 @@ func TestWatcher_Versioning(t *testing.T) {
 				return
 			}
 		}
-	}()
+	})
 	cancel()
 	wg.Wait()
 
@@ -190,7 +187,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 	t.Run("MGet returns unexpected number of results", func(t *testing.T) {
 		c := &failClientStub{
 			mGetFn: func(_ context.Context, _ ...string) *redis.SliceCmd {
-				return redis.NewSliceResult([]interface{}{"val1"}, nil)
+				return redis.NewSliceResult([]any{"val1"}, nil)
 			},
 		}
 		w, _ := New(c, time.Second, []string{"key1", "key2"})
@@ -201,13 +198,63 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 	t.Run("MGet returns invalid value type", func(t *testing.T) {
 		c := &failClientStub{
 			mGetFn: func(_ context.Context, _ ...string) *redis.SliceCmd {
-				return redis.NewSliceResult([]interface{}{123}, nil)
+				return redis.NewSliceResult([]any{123}, nil)
 			},
 		}
 		w, _ := New(c, time.Second, []string{"key1"})
 		w.getValues(ctx, ch)
 		assert.Empty(t, ch)
 	})
+}
+
+func TestWatcher_BackoffInterval(t *testing.T) {
+	w, err := New(&redis.Client{}, time.Second, []string{"key1"})
+	require.NoError(t, err)
+
+	assert.Equal(t, time.Second, w.backoffInterval(0))
+	assert.Equal(t, 2*time.Second, w.backoffInterval(1))
+	assert.Equal(t, 4*time.Second, w.backoffInterval(2))
+	assert.Equal(t, 8*time.Second, w.backoffInterval(3))
+
+	w.pollInterval = 10 * time.Second
+	assert.Equal(t, 20*time.Second, w.backoffInterval(1))
+	assert.Equal(t, 30*time.Second, w.backoffInterval(2))
+	assert.Equal(t, 30*time.Second, w.backoffInterval(3))
+}
+
+func TestWatcher_MonitorBackoffResetsAfterSuccess(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	responses := []*redis.SliceCmd{
+		redis.NewSliceResult(nil, errors.New("boom-1")),
+		redis.NewSliceResult(nil, errors.New("boom-2")),
+		redis.NewSliceResult([]any{nil}, nil),
+	}
+
+	client := &sequenceClientStub{responses: responses}
+	w, err := New(client, time.Second, []string{"key1"})
+	require.NoError(t, err)
+
+	intervals := make([]time.Duration, 0, 4)
+	w.sleep = func(_ context.Context, interval time.Duration) bool {
+		intervals = append(intervals, interval)
+		if len(intervals) == 4 {
+			cancel()
+			return false
+		}
+		return true
+	}
+
+	w.monitor(ctx, make(chan []*change.Change, 1))
+
+	assert.Equal(t, []time.Duration{
+		time.Second,
+		2 * time.Second,
+		4 * time.Second,
+		time.Second,
+	}, intervals)
+	assert.Equal(t, 3, client.calls)
 }
 
 type failClientStub struct {
@@ -222,6 +269,27 @@ func (c *failClientStub) MGet(ctx context.Context, keys ...string) *redis.SliceC
 	return nil
 }
 
+type sequenceClientStub struct {
+	*redis.Client
+	mu        sync.Mutex
+	responses []*redis.SliceCmd
+	calls     int
+}
+
+func (c *sequenceClientStub) MGet(_ context.Context, _ ...string) *redis.SliceCmd {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.calls++
+	if len(c.responses) == 0 {
+		return redis.NewSliceResult(nil, errors.New("unexpected call"))
+	}
+
+	response := c.responses[0]
+	c.responses = c.responses[1:]
+	return response
+}
+
 type clientStub struct {
 	t *testing.T
 	*redis.Client
@@ -232,7 +300,7 @@ type clientStub struct {
 	keyToCmd []map[string]*redis.StringCmd
 }
 
-func (c *clientStub) AppendMockValues(values map[string]interface{}) *clientStub {
+func (c *clientStub) AppendMockValues(values map[string]any) *clientStub {
 	c.m.Lock()
 	defer c.m.Unlock()
 	mockResp := make(map[string]*redis.StringCmd)
@@ -283,12 +351,12 @@ func (c *clientStub) MGet(_ context.Context, keys ...string) *redis.SliceCmd {
 
 	if len(c.keyToCmd) == 0 {
 		// Return slice of nils for all keys
-		results := make([]interface{}, len(keys))
+		results := make([]any, len(keys))
 		return redis.NewSliceResult(results, nil)
 	}
 
 	shifted := c.keyToCmd[0]
-	results := make([]interface{}, len(keys))
+	results := make([]any, len(keys))
 
 	for i, key := range keys {
 		if v, ok := shifted[key]; ok {

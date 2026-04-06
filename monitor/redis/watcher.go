@@ -21,7 +21,10 @@ type Watcher struct {
 	versions     []uint64
 	hashes       []string
 	pollInterval time.Duration
+	sleep        func(context.Context, time.Duration) bool
 }
+
+const maxBackoff = 30 * time.Second
 
 // New watcher.
 func New(client redis.UniversalClient, pollInterval time.Duration, keys []string) (*Watcher, error) {
@@ -41,6 +44,7 @@ func New(client redis.UniversalClient, pollInterval time.Duration, keys []string
 		versions:     make([]uint64, len(keys)),
 		hashes:       make([]string, len(keys)),
 		pollInterval: pollInterval,
+		sleep:        sleepContext,
 	}, nil
 }
 
@@ -58,34 +62,41 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 }
 
 func (w *Watcher) monitor(ctx context.Context, ch chan<- []*change.Change) {
-	tickerStats := time.NewTicker(w.pollInterval)
-	defer tickerStats.Stop()
+	interval := w.pollInterval
+	consecutiveErrors := 0
+
 	for {
-		select {
-		case <-ctx.Done():
+		if !w.sleep(ctx, interval) {
 			return
-		case <-tickerStats.C:
-			w.getValues(ctx, ch)
 		}
+
+		if w.getValues(ctx, ch) {
+			consecutiveErrors = 0
+			interval = w.pollInterval
+			continue
+		}
+
+		consecutiveErrors++
+		interval = w.backoffInterval(consecutiveErrors)
 	}
 }
 
-func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
+func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) bool {
 	// Use MGET to fetch all values in a single round-trip
 	sliceCmd := w.client.MGet(ctx, w.keys...)
 	if sliceCmd == nil {
 		slog.Error("failed to get values", "err", "nil sliceCmd")
-		return
+		return false
 	}
 	if sliceCmd.Err() != nil {
 		slog.Error("failed to get values", "err", sliceCmd.Err())
-		return
+		return false
 	}
 
 	results := sliceCmd.Val()
 	if len(results) != len(w.keys) {
 		slog.Error("mget returned unexpected number of results", "expected", len(w.keys), "got", len(results))
-		return
+		return false
 	}
 
 	changes := make([]*change.Change, 0, len(w.keys))
@@ -114,13 +125,42 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) {
 	}
 
 	if len(changes) == 0 {
-		return
+		return true
 	}
 
 	ch <- changes
+	return true
 }
 
 func (w *Watcher) hash(value string) string {
 	hash := sha256.Sum256([]byte(value))
 	return hex.EncodeToString(hash[:])
+}
+
+func (w *Watcher) backoffInterval(consecutiveErrors int) time.Duration {
+	if consecutiveErrors <= 0 {
+		return w.pollInterval
+	}
+
+	interval := w.pollInterval
+	for range consecutiveErrors {
+		if interval >= maxBackoff/2 {
+			return maxBackoff
+		}
+		interval *= 2
+	}
+
+	return interval
+}
+
+func sleepContext(ctx context.Context, interval time.Duration) bool {
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
 }
