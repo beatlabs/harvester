@@ -32,3 +32,15 @@ func TestGetter_Get(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(1), delResult)
 }
+
+func TestGetter_Get_MissingKey(t *testing.T) {
+	client := redis.NewClient(&redis.Options{})
+
+	gtr, err := New(client)
+	require.NoError(t, err)
+
+	got, version, err := gtr.Get("non-existent-key")
+	require.NoError(t, err)
+	assert.Nil(t, got)
+	assert.Equal(t, uint64(0), version)
+}

@@ -45,7 +45,7 @@ func (s *stubRedisClient) Get(_ context.Context, _ string) *redis.StringCmd {
 	return redis.NewStringResult(s.result, s.err)
 }
 
-func TestGetter_Get(t *testing.T) {
+func TestGetter_Get_Unit(t *testing.T) {
 	sentinel := errors.New("connection refused")
 	tests := map[string]struct {
 		stub    *stubRedisClient
