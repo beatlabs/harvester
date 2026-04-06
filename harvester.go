@@ -36,16 +36,12 @@ func (h *harvester) Harvest(ctx context.Context) error {
 		return err
 	}
 
-	if h.monitor == nil {
-		return nil
-	}
-
 	return h.monitor.Monitor(ctx)
 }
 
 // New constructor with functional options support.
 // Notification channel is optional and can be nil.
-func New(cfg interface{}, ch chan<- config.ChangeNotification, oo ...OptionFunc) (Harvester, error) {
+func New(cfg any, ch chan<- config.ChangeNotification, oo ...OptionFunc) (Harvester, error) {
 	hCfg, err := config.New(cfg, ch)
 	if err != nil {
 		return nil, err
@@ -63,16 +59,13 @@ func New(cfg interface{}, ch chan<- config.ChangeNotification, oo ...OptionFunc)
 	}
 
 	sd := seed.New(opt.seedParams...)
+	var mon Monitor = monitor.NewNoop()
 
-	var mon *monitor.Monitor
-
-	if len(opt.monitorParams) == 0 {
-		return &harvester{cfg: hCfg, seeder: sd, monitor: nil}, nil
-	}
-
-	mon, err = monitor.New(opt.cfg, opt.monitorParams...)
-	if err != nil {
-		return nil, err
+	if len(opt.monitorParams) > 0 {
+		mon, err = monitor.New(opt.cfg, opt.monitorParams...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &harvester{cfg: hCfg, seeder: sd, monitor: mon}, nil

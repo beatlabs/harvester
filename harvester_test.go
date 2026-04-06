@@ -1,7 +1,6 @@
 package harvester
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -19,7 +18,7 @@ const (
 func TestCreateWithConsulAndRedis(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{})
 	type args struct {
-		cfg                    interface{}
+		cfg                    any
 		consulAddress          string
 		seedRedisClient        redis.UniversalClient
 		monitorRedisClient     redis.UniversalClient
@@ -106,7 +105,7 @@ func TestCreateWithConsulAndRedis(t *testing.T) {
 
 func TestWithNotification(t *testing.T) {
 	type args struct {
-		cfg      interface{}
+		cfg      any
 		chNotify chan<- config.ChangeNotification
 	}
 	tests := map[string]struct {
@@ -129,9 +128,10 @@ func TestCreate_NoConsulOrRedis(t *testing.T) {
 	got, err := New(cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, got)
-	ctx, cnl := context.WithCancel(context.Background())
-	defer cnl()
-	require.NoError(t, got.Harvest(ctx))
+	h, ok := got.(*harvester)
+	require.True(t, ok)
+	assert.NotNil(t, h.monitor)
+	require.NoError(t, got.Harvest(t.Context()))
 	assert.Equal(t, "John Doe", cfg.Name.Get())
 	assert.Equal(t, int64(18), cfg.Age.Get())
 	assert.InDelta(t, 99.9, cfg.Balance.Get(), 0.01)
@@ -145,9 +145,7 @@ func TestCreate_SeedError(t *testing.T) {
 	got, err := New(cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, got)
-	ctx, cnl := context.WithCancel(context.Background())
-	defer cnl()
-	err = got.Harvest(ctx)
+	err = got.Harvest(t.Context())
 	require.Error(t, err)
 }
 
