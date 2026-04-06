@@ -115,7 +115,7 @@ func (f *Field) Set(value string, version uint64) error {
 
 	// version == 0 is the seeding sentinel; skip version guards and always apply.
 	if version != 0 && version < f.version {
-		slog.Error("version is older than the field's", "field", f.name, "old", f.version, "new", version)
+		slog.Warn("version is older than the field's", "field", f.name, "old", f.version, "new", version)
 		return nil
 	}
 
