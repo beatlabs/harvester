@@ -16,6 +16,16 @@ type Watcher interface {
 	Watch(ctx context.Context, ch chan<- []*change.Change) error
 }
 
+type noopMonitor struct{}
+
+func NewNoop() noopMonitor {
+	return noopMonitor{}
+}
+
+func (m noopMonitor) Monitor(context.Context) error {
+	return nil
+}
+
 type sourceMap map[config.Source]map[string]*config.Field
 
 // Monitor for configuration changes.
