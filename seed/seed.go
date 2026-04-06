@@ -313,17 +313,11 @@ func parseFlags(infos []*flagInfo, flagSet *flag.FlagSet) {
 }
 
 func evaluateSeedMap(seedMap fieldMap) error {
-	sb := strings.Builder{}
+	var errs []error
 	for f, seeded := range seedMap {
 		if !seeded {
-			_, err := fmt.Fprintf(&sb, "field %s not seeded", f.Name())
-			if err != nil {
-				return err
-			}
+			errs = append(errs, fmt.Errorf("field %s not seeded", f.Name()))
 		}
 	}
-	if sb.Len() > 0 {
-		return errors.New(sb.String())
-	}
-	return nil
+	return errors.Join(errs...)
 }

@@ -282,6 +282,19 @@ func TestSeeder_Seed(t *testing.T) {
 
 		require.Error(t, err)
 	})
+
+	t.Run("multiple unseeded fields, errors separated by newline", func(t *testing.T) {
+		cfg, err := config.New(&testMultipleUnseeded{}, nil)
+		require.NoError(t, err)
+
+		err = New().Seed(cfg)
+
+		require.Error(t, err)
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "field First not seeded")
+		assert.Contains(t, errMsg, "field Second not seeded")
+		assert.Contains(t, errMsg, "\n")
+	})
 }
 
 type testConfig struct {
@@ -305,6 +318,11 @@ type testFileDoesNotExist struct {
 
 type testInvalidInt struct {
 	Age sync.Int64 `seed:"XXX"`
+}
+
+type testMultipleUnseeded struct {
+	First  sync.String `env:"ENV_FIRST_UNSEEDED"`
+	Second sync.String `env:"ENV_SECOND_UNSEEDED"`
 }
 
 type testInvalidFloat struct {
