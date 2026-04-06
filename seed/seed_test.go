@@ -215,6 +215,19 @@ func TestSeeder_Seed(t *testing.T) {
 		assert.Equal(t, int64(20), c.Age.Get())
 	})
 
+	t.Run("empty env var skipped, success", func(t *testing.T) {
+		t.Setenv("ENV_AGE", "")
+
+		c := testConfig{}
+		goodCfg, err := config.New(&c, nil)
+		require.NoError(t, err)
+
+		err = New(*consulParamSuccess, *redisParamSuccess).Seed(goodCfg)
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(18), c.Age.Get())
+	})
+
 	t.Run("consul nil, failure", func(t *testing.T) {
 		c := testConfig{}
 		goodCfg, err := config.New(&c, nil)

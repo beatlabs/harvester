@@ -130,6 +130,14 @@ func processEnvField(f *config.Field, seedMap fieldMap) error {
 		}
 		return nil
 	}
+	if val == "" {
+		if seedMap[f] {
+			slog.Debug("env var was empty", "key", key, "name", f.Name())
+		} else {
+			slog.Debug("env var was empty and no seed value provided", "key", key, "name", f.Name())
+		}
+		return nil
+	}
 
 	err := f.Set(val, 0)
 	if err != nil {
