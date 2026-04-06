@@ -237,7 +237,11 @@ func (s *StringSlice) SetString(val string) error {
 		return nil
 	}
 	for _, item := range strings.Split(val, ",") {
-		slice = append(slice, strings.TrimSpace(item))
+		trimmed := strings.TrimSpace(item)
+		if trimmed == "" {
+			continue
+		}
+		slice = append(slice, trimmed)
 	}
 	s.Set(slice)
 	return nil
