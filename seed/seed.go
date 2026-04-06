@@ -177,7 +177,7 @@ func (s *Seeder) processConsulField(f *config.Field, seedMap fieldMap) error {
 		return nil
 	}
 	if value == nil {
-		slog.Error("consul key does not exist", "key", key, "field", f.Name())
+		slog.Debug("consul key does not exist", "key", key, "field", f.Name())
 		return nil
 	}
 	err = f.Set(*value, version)
@@ -204,7 +204,7 @@ func (s *Seeder) processRedisField(f *config.Field, seedMap fieldMap) error {
 		return nil
 	}
 	if value == nil {
-		slog.Error("redis key does not exist", "key", key, "field", f.Name())
+		slog.Debug("redis key does not exist", "key", key, "field", f.Name())
 		return nil
 	}
 	err = f.Set(*value, version)
