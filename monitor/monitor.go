@@ -16,6 +16,19 @@ type Watcher interface {
 	Watch(ctx context.Context, ch chan<- []*change.Change) error
 }
 
+// NoopMonitor is a no-op monitor that does nothing.
+type NoopMonitor struct{}
+
+// NewNoop creates a no-op monitor.
+func NewNoop() *NoopMonitor {
+	return &NoopMonitor{}
+}
+
+// Monitor does nothing and returns nil.
+func (m *NoopMonitor) Monitor(context.Context) error {
+	return nil
+}
+
 type sourceMap map[config.Source]map[string]*config.Field
 
 // Monitor for configuration changes.

@@ -377,9 +377,12 @@ func TestStringSlice_SetString(t *testing.T) {
 	}{
 		{"empty", "", []string{}, false},
 		{"empty with spaces", "   ", []string{}, false},
+		{"all empty elements", ",,", []string{}, false},
 		{"single item", "value", []string{"value"}, false},
 		{"multiple items", "value1,value2", []string{"value1", "value2"}, false},
 		{"multiple items with spaces", "  value1 ,  value2 ", []string{"value1", "value2"}, false},
+		{"empty elements between commas", "value1,,value2", []string{"value1", "value2"}, false},
+		{"leading and trailing commas", ",value1,value2,", []string{"value1", "value2"}, false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
