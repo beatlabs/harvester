@@ -193,6 +193,9 @@ func (s *StringMap) String() string {
 }
 
 // SetString parses and sets a value from string type.
+// The expected format is `key=value,key=value` where pairs are separated by commas
+// and keys from values by `=`. For backwards compatibility, `:` is also accepted as
+// the key/value separator when `=` is not present in a pair.
 func (s *StringMap) SetString(val string) error {
 	dict := make(map[string]string)
 	if val == "" || strings.TrimSpace(val) == "" {
@@ -200,9 +203,14 @@ func (s *StringMap) SetString(val string) error {
 		return nil
 	}
 	for _, pair := range strings.Split(val, ",") {
-		items := strings.SplitN(pair, ":", 2)
+		var items []string
+		if strings.Contains(pair, "=") {
+			items = strings.SplitN(pair, "=", 2)
+		} else {
+			items = strings.SplitN(pair, ":", 2)
+		}
 		if len(items) != 2 {
-			return fmt.Errorf("map must be formatted as `key:value`, got %q", pair)
+			return fmt.Errorf("map must be formatted as `key=value`, got %q", pair)
 		}
 		key, value := strings.TrimSpace(items[0]), strings.TrimSpace(items[1])
 		dict[key] = value
