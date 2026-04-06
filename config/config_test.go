@@ -116,7 +116,7 @@ func TestConfig_Set(t *testing.T) {
 	err = cfg.Fields[2].Set("99.9", 1)
 	require.NoError(t, err)
 	change = <-chNotify
-	assert.Equal(t, "field [Balance] of type [Float64] changed from [0.000000] to [99.9]", change.String())
+	assert.Equal(t, "field [Balance] of type [Float64] changed from [0] to [99.9]", change.String())
 	err = cfg.Fields[3].Set("true", 1)
 	require.NoError(t, err)
 	change = <-chNotify

@@ -61,7 +61,7 @@ type Float64 struct {
 
 // String returns string representation of value.
 func (f *Float64) String() string {
-	return fmt.Sprintf("%f", f.Get())
+	return strconv.FormatFloat(f.Get(), 'g', -1, 64)
 }
 
 // SetString parses and sets a value from string type.
