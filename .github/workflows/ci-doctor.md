@@ -27,7 +27,6 @@ safe-outputs:
     labels: ["ci", "P1-high"]
     max: 1
     close-older-issues: true
-    skip-if-match: "\\[ci-doctor\\].*open"
   add-comment:
     max: 1
 tools:

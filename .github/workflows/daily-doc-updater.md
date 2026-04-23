@@ -12,8 +12,12 @@ safe-outputs:
     title-prefix: "[docs]"
     labels: ["documentation"]
     max: 1
-    skip-if-match: "\\[docs\\].*open"
-tools: github[repos, pull_requests], bash, edit
+tools:
+  github:
+    toolsets: [repos, pull_requests]
+  bash:
+    - "*"
+  edit:
 imports:
   - shared/mood.md
   - shared/go-ci.md

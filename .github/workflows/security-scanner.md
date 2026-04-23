@@ -10,7 +10,8 @@ permissions:
   contents: read
   issues: read
 tools:
-  github: [issues, repos, dependabot]
+  github:
+    toolsets: [issues, repos, dependabot]
   bash: true
 safe-outputs:
   create-issue:
@@ -18,7 +19,6 @@ safe-outputs:
     labels: ["security", "P1-high"]
     max: 3
     close-older-issues: true
-    skip-if-match: "\\[security\\].*CVE-.*open"
   add-labels:
     max: 2
 imports:

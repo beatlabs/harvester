@@ -4,7 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize]
     paths: ["**.go"]
-tools: github[pull_requests, repos], bash
+tools:
+  github:
+    toolsets: [pull_requests, repos]
+  bash:
+    - "*"
 imports:
   - shared/mood.md
   - shared/go-ci.md
@@ -17,7 +21,6 @@ permissions:
 safe-outputs:
   create-pull-request-review-comment:
     max: 10
-    title-prefix: "[simplify]"
   add-labels:
     max: 1
 ---

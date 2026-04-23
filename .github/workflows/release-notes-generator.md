@@ -5,8 +5,10 @@ on:
     tags:
       - "v*"
 tools:
-  - github[repos, pull_requests, issues]
-  - bash
+  github:
+    toolsets: [repos, pull_requests, issues]
+  bash:
+    - "*"
 imports:
   - shared/mood.md
   - shared/release-notes-template.md
