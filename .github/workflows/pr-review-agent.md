@@ -1,9 +1,14 @@
 ---
 description: On-demand deep PR review triggered by /review slash command.
+command: /review
 on:
-  slash_command:
-    command: /review
-tools: github[pull_requests, repos], bash
+  issue_comment:
+    types: [created]
+tools:
+  github:
+    toolsets: [pull_requests, repos]
+  bash:
+    - "*"
 imports:
   - shared/mood.md
   - shared/go-ci.md
@@ -17,9 +22,7 @@ permissions:
 safe-outputs:
   create-pull-request-review-comment:
     max: 15
-    title-prefix: "[review]"
   add-comment:
-    title-prefix: "[review]"
     max: 1
   add-labels:
     max: 2

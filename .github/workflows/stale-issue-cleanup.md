@@ -8,15 +8,16 @@ permissions:
   issues: read
 safe-outputs:
   add-comment:
-    title-prefix: "[stale]"
     max: 10
   add-labels:
     max: 10
   close-issue:
     max: 5
 tools:
-  - github[issues, labels]
-  - bash
+  github:
+    toolsets: [issues, labels]
+  bash:
+    - "*"
 imports:
   - shared/mood.md
   - shared/issue-triage-go.md

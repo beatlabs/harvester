@@ -10,8 +10,10 @@ permissions:
   pull-requests: read
   issues: read
 tools:
-  - github[pull_requests, issues, repos]
-  - bash
+  github:
+    toolsets: [pull_requests, issues, repos]
+  bash:
+    - "*"
 imports:
   - shared/mood.md
   - shared/go-ci.md

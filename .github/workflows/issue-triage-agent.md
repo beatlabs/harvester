@@ -15,7 +15,6 @@ safe-outputs:
   add-labels:
     max: 4
   add-comment:
-    title-prefix: "[triage]"
     max: 1
   update-issue:
     max: 1
