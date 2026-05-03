@@ -7,9 +7,6 @@ github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f
-## explicit
-github.com/dgryski/go-rendezvous
 # github.com/fatih/color v1.18.0
 ## explicit; go 1.17
 github.com/fatih/color
@@ -63,8 +60,8 @@ github.com/mitchellh/go-homedir
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/redis/go-redis/v9 v9.18.0
-## explicit; go 1.21
+# github.com/redis/go-redis/v9 v9.19.0
+## explicit; go 1.24
 github.com/redis/go-redis/v9
 github.com/redis/go-redis/v9/auth
 github.com/redis/go-redis/v9/internal
