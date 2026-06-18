@@ -41,5 +41,5 @@ func TestExampleHelpersIntegration(t *testing.T) {
 }
 
 func TestMainIntegration(t *testing.T) {
-	main()
+	require.NotPanics(t, main)
 }
