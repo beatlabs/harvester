@@ -30,6 +30,7 @@ func Test_clog(t *testing.T) {
 		assert.Equal(t, "consul", logger.Name())
 		assert.NotNil(t, logger.Named(""))
 		assert.NotNil(t, logger.ResetNamed(""))
+		logger.SetLevel(hclog.Info)
 		assert.NotNil(t, logger.StandardLogger(nil))
 		assert.Equal(t, os.Stderr, logger.StandardWriter(nil))
 		assert.Equal(t, hclog.NoLevel, logger.GetLevel())
