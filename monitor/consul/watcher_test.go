@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/beatlabs/harvester/change"
+	"github.com/beatlabs/harvester/config"
+	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -79,4 +81,59 @@ func TestItems(t *testing.T) {
 		item := NewPrefixItem("prefix1")
 		assert.Equal(t, Item{tp: "keyprefix", key: "prefix1"}, item)
 	})
+}
+
+func TestWatcher_createKeyPlanWithPrefix(t *testing.T) {
+	w, err := New("xxx", "dc", "token", 0, NewKeyItem("key"))
+	require.NoError(t, err)
+
+	ch := make(chan []*change.Change, 1)
+	pl, err := w.createKeyPlanWithPrefix("key", "prefix", ch)
+	require.NoError(t, err)
+	require.NotNil(t, pl)
+
+	pl.Handler(0, nil)
+	assert.Empty(t, ch)
+
+	pl.Handler(0, "not a kv pair")
+	assert.Empty(t, ch)
+
+	pl.Handler(0, &api.KVPair{Key: "prefix/key", Value: []byte("value"), ModifyIndex: 42})
+	require.Len(t, ch, 1)
+	changes := <-ch
+	require.Len(t, changes, 1)
+	assert.Equal(t, config.SourceConsul, changes[0].Source())
+	assert.Equal(t, "key", changes[0].Key())
+	assert.Equal(t, "value", changes[0].Value())
+	assert.Equal(t, uint64(42), changes[0].Version())
+}
+
+func TestWatcher_createKeyPrefixPlan(t *testing.T) {
+	w, err := New("xxx", "dc", "token", 0, NewPrefixItem("prefix"))
+	require.NoError(t, err)
+
+	ch := make(chan []*change.Change, 1)
+	pl, err := w.createKeyPrefixPlan("prefix", ch)
+	require.NoError(t, err)
+	require.NotNil(t, pl)
+
+	pl.Handler(0, nil)
+	assert.Empty(t, ch)
+
+	pl.Handler(0, "not kv pairs")
+	assert.Empty(t, ch)
+
+	pl.Handler(0, api.KVPairs{
+		{Key: "prefix/one", Value: []byte("one"), ModifyIndex: 11},
+		{Key: "prefix/two", Value: []byte("two"), ModifyIndex: 12},
+	})
+	require.Len(t, ch, 1)
+	changes := <-ch
+	require.Len(t, changes, 2)
+	assert.Equal(t, "prefix/one", changes[0].Key())
+	assert.Equal(t, "one", changes[0].Value())
+	assert.Equal(t, uint64(11), changes[0].Version())
+	assert.Equal(t, "prefix/two", changes[1].Key())
+	assert.Equal(t, "two", changes[1].Value())
+	assert.Equal(t, uint64(12), changes[1].Version())
 }
