@@ -4,7 +4,7 @@
 
 Before running the example we have to start the dependencies via:
 
-    task deps-start
+    make deps-start
 
 After that we can run:
 
