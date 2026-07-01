@@ -43,7 +43,7 @@ jobs:
         run: make ci
 
       - name: Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           fail_ci_if_error: true # optional (default = false)
           files: ./coverage.txt          
