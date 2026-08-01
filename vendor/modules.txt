@@ -7,14 +7,14 @@ github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/fatih/color v1.18.0
-## explicit; go 1.17
+# github.com/fatih/color v1.19.0
+## explicit; go 1.25.0
 github.com/fatih/color
 # github.com/go-viper/mapstructure/v2 v2.5.0
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
-# github.com/hashicorp/consul/api v1.34.3
+# github.com/hashicorp/consul/api v1.34.4
 ## explicit; go 1.26
 github.com/hashicorp/consul/api
 github.com/hashicorp/consul/api/watch
@@ -30,8 +30,8 @@ github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-immutable-radix v1.3.1
 ## explicit
 github.com/hashicorp/go-immutable-radix
-# github.com/hashicorp/go-metrics v0.5.4
-## explicit; go 1.12
+# github.com/hashicorp/go-metrics v0.6.0
+## explicit; go 1.25
 github.com/hashicorp/go-metrics
 github.com/hashicorp/go-metrics/compat
 # github.com/hashicorp/go-multierror v1.1.1
@@ -43,14 +43,14 @@ github.com/hashicorp/go-rootcerts
 # github.com/hashicorp/golang-lru v1.0.2
 ## explicit; go 1.12
 github.com/hashicorp/golang-lru/simplelru
-# github.com/hashicorp/serf v0.10.2
-## explicit; go 1.19
+# github.com/hashicorp/serf v0.10.4
+## explicit; go 1.25.0
 github.com/hashicorp/serf/coordinate
-# github.com/mattn/go-colorable v0.1.14
+# github.com/mattn/go-colorable v0.1.15
 ## explicit; go 1.18
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.20
-## explicit; go 1.15
+# github.com/mattn/go-isatty v0.0.22
+## explicit; go 1.21
 github.com/mattn/go-isatty
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
@@ -88,8 +88,8 @@ go.uber.org/atomic
 # golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa
 ## explicit; go 1.25.0
 golang.org/x/exp/slices
-# golang.org/x/sys v0.41.0
-## explicit; go 1.24.0
+# golang.org/x/sys v0.46.0
+## explicit; go 1.25.0
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
