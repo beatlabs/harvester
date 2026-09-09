@@ -26,7 +26,7 @@ deeplint: fmtcheck
 	docker run --env=GOFLAGS=-mod=vendor --rm -v "$(CURDIR)":/app -w /app golangci/golangci-lint:v2.11.1 golangci-lint run --exclude-use-default=false --enable-all -D dupl --build-tags integration
 
 deps-start:
-	docker compose up -d
+	docker compose up -d --wait
 
 deps-stop:
 	docker compose down

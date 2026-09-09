@@ -1,6 +1,6 @@
 services:
   consul:
-    image: hashicorp/consul:latest
+    image: hashicorp/consul:1.20.6
     networks:
       - consul-network
     ports:
@@ -11,11 +11,21 @@ services:
       - "8600:8600"
       - "8600:8600/udp"
     command: agent -server -ui -bootstrap-expect=1 -client=0.0.0.0 -bind=0.0.0.0
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
 
   redis:
-    image: redis:latest
+    image: redis:7.4.2
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
 
 networks:
   consul-network:

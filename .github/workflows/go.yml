@@ -49,4 +49,5 @@ jobs:
           files: ./coverage.txt          
         
       - name: Stop dependencies
+        if: always()
         run: make deps-stop
