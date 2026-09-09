@@ -56,6 +56,11 @@ func New(cfg *config.Config, ww ...Watcher) (*Monitor, error) {
 func generateMap(ff []*config.Field) (sourceMap, error) {
 	mp := make(sourceMap)
 	for _, f := range ff {
+		_, hasConsul := f.Sources()[config.SourceConsul]
+		_, hasRedis := f.Sources()[config.SourceRedis]
+		if hasConsul && hasRedis {
+			return nil, fmt.Errorf("field %s has multiple monitoring sources: %s and %s", f.Name(), config.SourceConsul, config.SourceRedis)
+		}
 		for source, val := range f.Sources() {
 			if source == config.SourceSeed {
 				continue
