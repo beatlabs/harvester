@@ -25,12 +25,23 @@ func newParser() *parser {
 func (p *parser) ParseCfg(cfg interface{}, chNotify chan<- ChangeNotification) ([]*Field, error) {
 	p.dups = make(map[Source]map[string]bool)
 
-	tp := reflect.TypeOf(cfg)
+	value := reflect.ValueOf(cfg)
+	if !value.IsValid() {
+		return nil, errors.New("configuration is nil")
+	}
+
+	tp := value.Type()
 	if tp.Kind() != reflect.Ptr {
 		return nil, errors.New("configuration should be a pointer type")
 	}
+	if value.IsNil() {
+		return nil, errors.New("configuration pointer is nil")
+	}
+	if tp.Elem().Kind() != reflect.Struct {
+		return nil, errors.New("configuration pointer should point to a struct")
+	}
 
-	return p.getFields("", tp.Elem(), reflect.ValueOf(cfg).Elem(), chNotify)
+	return p.getFields("", tp.Elem(), value.Elem(), chNotify)
 }
 
 func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, chNotify chan<- ChangeNotification) ([]*Field, error) {
@@ -38,21 +49,25 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, ch
 
 	for i := 0; i < tp.NumField(); i++ {
 		f := tp.Field(i)
+		fieldValue := val.Field(i)
+		if !fieldValue.IsValid() || !fieldValue.CanAddr() {
+			return nil, fmt.Errorf("field %s is not addressable", f.Name)
+		}
 
-		typ, err := p.getStructFieldType(f, val.Field(i))
+		typ, err := p.getStructFieldType(f, fieldValue)
 		if err != nil {
 			return nil, err
 		}
 
 		switch typ {
 		case typeField:
-			fld, err := p.createField(prefix, f, val.Field(i), chNotify)
+			fld, err := p.createField(prefix, f, fieldValue, chNotify)
 			if err != nil {
 				return nil, err
 			}
 			ff = append(ff, fld)
 		case typeStruct:
-			nested, err := p.getFields(prefix+f.Name, f.Type, val.Field(i), chNotify)
+			nested, err := p.getFields(prefix+f.Name, f.Type, fieldValue, chNotify)
 			if err != nil {
 				return nil, err
 			}
@@ -86,6 +101,12 @@ func (p *parser) createField(prefix string, f reflect.StructField, val reflect.V
 			return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceRedis)
 		}
 	}
+	value, ok = fld.Sources()[SourceFlag]
+	if ok {
+		if p.isKeyValueDuplicate(SourceFlag, value) {
+			return nil, fmt.Errorf("duplicate value %v for source %s", fld, SourceFlag)
+		}
+	}
 	return fld, nil
 }
 
@@ -110,6 +131,9 @@ func (p *parser) getStructFieldType(f reflect.StructField, val reflect.Value) (s
 
 	for _, tag := range sourceTags {
 		if _, ok := f.Tag.Lookup(string(tag)); ok {
+			if !val.Addr().CanInterface() {
+				return typeInvalid, fmt.Errorf("field %s must be exported", f.Name)
+			}
 			if !val.Addr().Type().Implements(cfgType) {
 				return typeInvalid, fmt.Errorf("field %s must implement CfgType interface", f.Name)
 			}

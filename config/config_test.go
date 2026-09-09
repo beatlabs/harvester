@@ -48,6 +48,8 @@ func TestField_Set(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
+	var typedNilConfig *testConfig
+
 	type args struct {
 		cfg interface{}
 	}
@@ -57,9 +59,13 @@ func TestNew(t *testing.T) {
 	}{
 		"success":                         {args: args{cfg: &testConfig{}}, wantErr: false},
 		"cfg is nil":                      {args: args{cfg: nil}, wantErr: true},
+		"cfg is typed nil pointer":        {args: args{cfg: typedNilConfig}, wantErr: true},
 		"cfg is not pointer":              {args: args{cfg: testConfig{}}, wantErr: true},
+		"cfg pointer is not struct":       {args: args{cfg: new(int)}, wantErr: true},
 		"cfg field not supported":         {args: args{cfg: &testInvalidTypeConfig{}}, wantErr: true},
 		"cfg duplicate consul key":        {args: args{cfg: &testDuplicateConfig{}}, wantErr: true},
+		"cfg duplicate flag key":          {args: args{cfg: &testDuplicateFlagConfig{}}, wantErr: true},
+		"cfg unexported tagged field":     {args: args{cfg: &testUnexportedTaggedConfig{}}, wantErr: true},
 		"cfg tagged struct not supported": {args: args{cfg: &testInvalidNestedStructWithTags{}}, wantErr: true},
 		"cfg nested duplicate consul key": {args: args{cfg: &testDuplicateNestedConsulConfig{}}, wantErr: true},
 		"cfg nested duplicate redis key":  {args: args{cfg: &testDuplicateNestedRedisConfig{}}, wantErr: true},
@@ -186,4 +192,13 @@ type testDuplicateConfig struct {
 	Name sync.String `seed:"John Doe" env:"ENV_NAME"`
 	Age1 sync.Int64  `env:"ENV_AGE" consul:"/config/age"`
 	Age2 sync.Int64  `env:"ENV_AGE" consul:"/config/age"`
+}
+
+type testDuplicateFlagConfig struct {
+	First  sync.Int64 `flag:"age"`
+	Second sync.Int64 `flag:"age"`
+}
+
+type testUnexportedTaggedConfig struct {
+	age sync.Int64 `seed:"1"`
 }
