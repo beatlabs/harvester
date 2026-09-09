@@ -2,6 +2,7 @@
 package seed
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,6 +17,11 @@ import (
 // Getter interface for fetching a value for a specific key.
 type Getter interface {
 	Get(key string) (*string, uint64, error)
+}
+
+// ContextGetter optionally supports cancellation while fetching a value.
+type ContextGetter interface {
+	GetContext(context.Context, string) (*string, uint64, error)
 }
 
 // Param parameters for setting a getter for a specific source.
@@ -56,11 +62,25 @@ type flagInfo struct {
 
 // Seed the provided config with values for their sources.
 func (s *Seeder) Seed(cfg *config.Config) error {
+	return s.SeedContext(context.Background(), cfg)
+}
+
+// SeedContext initializes configuration values and propagates cancellation to
+// context-aware getters. Getters that only implement Getter retain the legacy
+// behavior and cannot be interrupted while they are running.
+func (s *Seeder) SeedContext(ctx context.Context, cfg *config.Config) error {
+	if ctx == nil {
+		return errors.New("context is nil")
+	}
+
 	seeded := make(fieldMap, len(cfg.Fields))
 	flagSet := flag.NewFlagSet("Harvester flags", flag.ContinueOnError)
 
 	var flagInfos []*flagInfo
 	for _, f := range cfg.Fields {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		seeded[f] = false
 
 		err := processSeedField(f, seeded)
@@ -83,12 +103,12 @@ func (s *Seeder) Seed(cfg *config.Config) error {
 			return err
 		}
 
-		err = s.processConsulField(f, seeded)
+		err = s.processConsulField(ctx, f, seeded)
 		if err != nil {
 			return err
 		}
 
-		err = s.processRedisField(f, seeded)
+		err = s.processRedisField(ctx, f, seeded)
 		if err != nil {
 			return err
 		}
@@ -170,7 +190,7 @@ func processFileField(f *config.Field, seedMap fieldMap) error {
 	return nil
 }
 
-func (s *Seeder) processConsulField(f *config.Field, seedMap fieldMap) error {
+func (s *Seeder) processConsulField(ctx context.Context, f *config.Field, seedMap fieldMap) error {
 	key, ok := f.Sources()[config.SourceConsul]
 	if !ok {
 		return nil
@@ -179,8 +199,11 @@ func (s *Seeder) processConsulField(f *config.Field, seedMap fieldMap) error {
 	if !ok {
 		return errors.New("consul getter required")
 	}
-	value, version, err := gtr.Get(key)
+	value, version, err := get(ctx, gtr, key)
 	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		slog.Error("failed to get consul", "key", key, "field", f.Name(), "err", err)
 		return nil
 	}
@@ -197,7 +220,7 @@ func (s *Seeder) processConsulField(f *config.Field, seedMap fieldMap) error {
 	return nil
 }
 
-func (s *Seeder) processRedisField(f *config.Field, seedMap fieldMap) error {
+func (s *Seeder) processRedisField(ctx context.Context, f *config.Field, seedMap fieldMap) error {
 	key, ok := f.Sources()[config.SourceRedis]
 	if !ok {
 		return nil
@@ -206,8 +229,11 @@ func (s *Seeder) processRedisField(f *config.Field, seedMap fieldMap) error {
 	if !ok {
 		return errors.New("redis getter required")
 	}
-	value, version, err := gtr.Get(key)
+	value, version, err := get(ctx, gtr, key)
 	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		slog.Error("failed to get redis", "key", key, "field", f.Name(), "err", err)
 		return nil
 	}
@@ -222,6 +248,13 @@ func (s *Seeder) processRedisField(f *config.Field, seedMap fieldMap) error {
 	slog.Debug("redis value applied", "value", f, "field", f.Name())
 	seedMap[f] = true
 	return nil
+}
+
+func get(ctx context.Context, getter Getter, key string) (*string, uint64, error) {
+	if contextGetter, ok := getter.(ContextGetter); ok {
+		return contextGetter.GetContext(ctx, key)
+	}
+	return getter.Get(key)
 }
 
 func processFlagField(f *config.Field, flagSet *flag.FlagSet) (*flagInfo, bool) {

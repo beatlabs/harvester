@@ -2,6 +2,7 @@ package harvester
 
 import (
 	"context"
+	"errors"
 
 	"github.com/beatlabs/harvester/config"
 	"github.com/beatlabs/harvester/monitor"
@@ -11,6 +12,10 @@ import (
 // Seeder interface for seeding initial values of the configuration.
 type Seeder interface {
 	Seed(*config.Config) error
+}
+
+type contextSeeder interface {
+	SeedContext(context.Context, *config.Config) error
 }
 
 // Monitor defines a interface for monitoring configuration changes from various sources.
@@ -31,7 +36,16 @@ type harvester struct {
 
 // Harvest take the configuration object, initializes it and monitors for changes.
 func (h *harvester) Harvest(ctx context.Context) error {
-	err := h.seeder.Seed(h.cfg)
+	if ctx == nil {
+		return errors.New("context is nil")
+	}
+
+	var err error
+	if seeder, ok := h.seeder.(contextSeeder); ok {
+		err = seeder.SeedContext(ctx, h.cfg)
+	} else {
+		err = h.seeder.Seed(h.cfg)
+	}
 	if err != nil {
 		return err
 	}
