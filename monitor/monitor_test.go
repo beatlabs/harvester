@@ -77,7 +77,7 @@ func TestMonitor_Monitor(t *testing.T) {
 	ctx, cnl := context.WithCancel(context.Background())
 	err = mon.Monitor(ctx)
 	require.NoError(t, err)
-	time.Sleep(100 * time.Millisecond)
+	require.Eventually(t, func() bool { return c.Age.Get() == 25 }, time.Second, 10*time.Millisecond)
 	cnl()
 	assert.Equal(t, int64(25), c.Age.Get())
 	assert.InDelta(t, 111.11, c.Balance.Get(), 0.01)

@@ -296,6 +296,21 @@ func TestStringMap(t *testing.T) {
 	assert.JSONEq(t, `{"key":"value"}`, string(d))
 }
 
+func TestStringMap_CopiesValues(t *testing.T) {
+	input := map[string]string{"key": "value"}
+	var sm StringMap
+	sm.Set(input)
+	input["key"] = "changed"
+	assert.Equal(t, "value", sm.Get()["key"])
+
+	got := sm.Get()
+	got["key"] = "changed again"
+	assert.Equal(t, "value", sm.Get()["key"])
+
+	require.Error(t, sm.UnmarshalJSON([]byte(`{"invalid"`)))
+	assert.Equal(t, map[string]string{"key": "value"}, sm.Get())
+}
+
 func TestStringMap_SetString(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -366,6 +381,21 @@ func TestStringSlice(t *testing.T) {
 	d, err := sl.MarshalJSON()
 	require.NoError(t, err)
 	assert.Equal(t, `["value1","value2"]`, string(d))
+}
+
+func TestStringSlice_CopiesValues(t *testing.T) {
+	input := []string{"value"}
+	var sl StringSlice
+	sl.Set(input)
+	input[0] = "changed"
+	assert.Equal(t, []string{"value"}, sl.Get())
+
+	got := sl.Get()
+	got[0] = "changed again"
+	assert.Equal(t, []string{"value"}, sl.Get())
+
+	require.Error(t, sl.UnmarshalJSON([]byte(`["invalid"`)))
+	assert.Equal(t, []string{"value"}, sl.Get())
 }
 
 func TestStringSlice_SetString(t *testing.T) {
