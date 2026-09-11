@@ -5,7 +5,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -180,6 +182,30 @@ type StringMap struct {
 	Value[map[string]string]
 }
 
+// Get returns a copy of the map.
+func (s *StringMap) Get() map[string]string {
+	value := s.Value.Get()
+	if value == nil {
+		return nil
+	}
+	return maps.Clone(value)
+}
+
+// Set stores a copy of the map.
+func (s *StringMap) Set(value map[string]string) {
+	s.Value.Set(maps.Clone(value))
+}
+
+// UnmarshalJSON decodes into a temporary map before replacing the value.
+func (s *StringMap) UnmarshalJSON(data []byte) error {
+	var value map[string]string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	s.Set(value)
+	return nil
+}
+
 // String returns a string representation of the value.
 func (s *StringMap) String() string {
 	m := s.Get()
@@ -222,6 +248,26 @@ func (s *StringMap) SetString(val string) error {
 // StringSlice is a []string type with concurrent access support.
 type StringSlice struct {
 	Value[[]string]
+}
+
+// Get returns a copy of the slice.
+func (s *StringSlice) Get() []string {
+	return slices.Clone(s.Value.Get())
+}
+
+// Set stores a copy of the slice.
+func (s *StringSlice) Set(value []string) {
+	s.Value.Set(slices.Clone(value))
+}
+
+// UnmarshalJSON decodes into a temporary slice before replacing the value.
+func (s *StringSlice) UnmarshalJSON(data []byte) error {
+	var value []string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	s.Set(value)
+	return nil
 }
 
 // String returns a string representation of the value.

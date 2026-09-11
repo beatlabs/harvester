@@ -98,26 +98,22 @@ func Test_harvester_Harvest(t *testing.T) {
 
 	_, err = csl.Put(&api.KVPair{Key: "harvester1/name", Value: []byte("Mr. Anderson")}, nil)
 	require.NoError(t, err)
-	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, "Mr. Anderson", cfg.Name.Get())
+	require.Eventually(t, func() bool { return cfg.Name.Get() == "Mr. Anderson" }, 5*time.Second, 10*time.Millisecond)
 
 	duration, err := time.ParseDuration("5s")
 	require.NoError(t, err)
 	_, err = csl.Put(&api.KVPair{Key: "harvester/fun-time", Value: []byte(duration.String())}, nil)
 	require.NoError(t, err)
-	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, 5*time.Second, cfg.FunTime.Get())
+	require.Eventually(t, func() bool { return cfg.FunTime.Get() == 5*time.Second }, 5*time.Second, 10*time.Millisecond)
 
 	_, err = csl.Put(&api.KVPair{Key: "harvester/foo/bar", Value: []byte("42")}, nil)
 	require.NoError(t, err)
-	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, int64(42), cfg.Foo.Bar.Get())
+	require.Eventually(t, func() bool { return cfg.Foo.Bar.Get() == 42 }, 5*time.Second, 10*time.Millisecond)
 
 	res, err := redisClient.Set(context.Background(), redisWorkTimeKey, "3s", 0).Result()
 	require.NoError(t, err)
 	require.Equal(t, "OK", res)
-	time.Sleep(1000 * time.Millisecond)
-	assert.Equal(t, 3*time.Second, cfg.WorkTime.Get())
+	require.Eventually(t, func() bool { return cfg.WorkTime.Get() == 3*time.Second }, 5*time.Second, 10*time.Millisecond)
 }
 
 func cleanup() error {

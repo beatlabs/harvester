@@ -79,9 +79,9 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		var err error
 		switch i.tp {
 		case "key":
-			pl, err = w.createKeyPlanWithPrefix(i.key, i.prefix, ch)
+			pl, err = w.createKeyPlanWithPrefix(ctx, i.key, i.prefix, ch)
 		case "keyprefix":
-			pl, err = w.createKeyPrefixPlan(i.key, ch)
+			pl, err = w.createKeyPrefixPlan(ctx, i.key, ch)
 		}
 		if err != nil {
 			return err
@@ -107,7 +107,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 	return nil
 }
 
-func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
+func (w *Watcher) createKeyPlanWithPrefix(ctx context.Context, key, prefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
 	pl, err := w.getPlan("key", path.Join(prefix, key))
 	if err != nil {
 		return nil, err
@@ -120,14 +120,17 @@ func (w *Watcher) createKeyPlanWithPrefix(key, prefix string, ch chan<- []*chang
 		if !ok {
 			slog.Error("data is not a kv pair", "data", data)
 		} else {
-			ch <- []*change.Change{change.New(config.SourceConsul, key, string(pair.Value), pair.ModifyIndex)}
+			select {
+			case ch <- []*change.Change{change.New(config.SourceConsul, key, string(pair.Value), pair.ModifyIndex)}:
+			case <-ctx.Done():
+			}
 		}
 	}
 	slog.Debug("plan created", "key", key)
 	return pl, nil
 }
 
-func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
+func (w *Watcher) createKeyPrefixPlan(ctx context.Context, keyPrefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
 	pl, err := w.getPlan("keyprefix", keyPrefix)
 	if err != nil {
 		return nil, err
@@ -144,7 +147,10 @@ func (w *Watcher) createKeyPrefixPlan(keyPrefix string, ch chan<- []*change.Chan
 			for i := 0; i < len(pp); i++ {
 				cc[i] = change.New(config.SourceConsul, pp[i].Key, string(pp[i].Value), pp[i].ModifyIndex)
 			}
-			ch <- cc
+			select {
+			case ch <- cc:
+			case <-ctx.Done():
+			}
 		}
 	}
 	slog.Debug("plan created", "keyPrefix", keyPrefix)
