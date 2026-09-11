@@ -55,7 +55,8 @@ type Field struct {
 	structField CfgType
 	sources     map[Source]string
 	chNotify    chan<- ChangeNotification
-	mu          sync.Mutex // protects version field
+	mu          sync.Mutex // serializes field updates and version checks
+	notifyMu    sync.Mutex // serializes notification delivery
 }
 
 // newField constructor.
@@ -111,7 +112,12 @@ func (f *Field) String() string {
 // non-zero version, enabling the "reject older/same version" guard below.
 func (f *Field) Set(value string, version uint64) error {
 	f.mu.Lock()
-	defer f.mu.Unlock()
+	locked := true
+	defer func() {
+		if locked {
+			f.mu.Unlock()
+		}
+	}()
 
 	// version == 0 is the seeding sentinel; skip version guards and always apply.
 	if version != 0 && version < f.version {
@@ -132,7 +138,10 @@ func (f *Field) Set(value string, version uint64) error {
 
 	f.version = version
 	slog.Debug("field updated", "field", f.name, "version", version)
-	f.sendNotification(prevValue, value)
+	currentValue := f.structField.String()
+	f.mu.Unlock()
+	locked = false
+	f.sendNotification(prevValue, currentValue)
 	return nil
 }
 
@@ -140,6 +149,8 @@ func (f *Field) sendNotification(prev string, current string) {
 	if f.chNotify == nil {
 		return
 	}
+	f.notifyMu.Lock()
+	defer f.notifyMu.Unlock()
 	f.chNotify <- ChangeNotification{
 		Name:     f.name,
 		Type:     f.tp,
