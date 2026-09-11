@@ -59,6 +59,7 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 	// Each test can alter os.Args, so we need to reset it manually with their original value.
 	originalArgs := make([]string, 0, len(os.Args))
 	originalArgs = append(originalArgs, os.Args...)
+	t.Cleanup(func() { os.Args = originalArgs })
 
 	testCases := []struct {
 		desc         string
@@ -115,6 +116,33 @@ func TestSeeder_Seed_Flags(t *testing.T) {
 			extraCliArgs: []string{"-foo=bar"},
 			expectedAge:  42,
 			expectedErr:  nil,
+		},
+		{
+			desc:         "lone dash is ignored",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{"-"},
+			expectedAge:  42,
+			expectedErr:  nil,
+		},
+		{
+			desc:         "double dash stops flag parsing",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{"--", "-age=1337"},
+			expectedAge:  42,
+			expectedErr:  nil,
+		},
+		{
+			desc:         "negative flag value is preserved",
+			inputConfig:  &configWithoutSeedStruct{},
+			extraCliArgs: []string{"-age", "-5"},
+			expectedAge:  -5,
+			expectedErr:  nil,
+		},
+		{
+			desc:         "missing recognized flag value returns an error",
+			inputConfig:  &configWithSeedStruct{},
+			extraCliArgs: []string{"-age"},
+			expectedErr:  errors.New("flag needs an argument: -age"),
 		},
 	}
 	for _, tC := range testCases {
