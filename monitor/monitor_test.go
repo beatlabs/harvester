@@ -69,6 +69,9 @@ func TestMonitor_Monitor(t *testing.T) {
 	err = mon.Monitor(ctx)
 	require.NoError(t, err)
 	time.Sleep(100 * time.Millisecond)
+	// Wait for the last change of the batch: applyChange processes it sequentially,
+	// so every earlier change is applied by then and cnl() cannot drop pending work.
+	require.Eventually(t, func() bool { return c.NonWorkHours.Get() == 7*time.Hour }, time.Second, 10*time.Millisecond)
 	cnl()
 	assert.Equal(t, int64(25), c.Age.Get())
 	assert.InDelta(t, 111.11, c.Balance.Get(), 0.01)
