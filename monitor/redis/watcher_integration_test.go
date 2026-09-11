@@ -53,18 +53,18 @@ func TestWatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// First values update
-	time.Sleep(1 * time.Second)
+	require.Eventually(t, func() bool { return len(ch) >= 1 }, 5*time.Second, 10*time.Millisecond)
 	set(t, client, key1, val1) // Same value
 	set(t, client, key2, val2)
 	set(t, client, key3, val1) // First value for this key
 
 	// Second values update
-	time.Sleep(1 * time.Second)
+	require.Eventually(t, func() bool { return len(ch) >= 2 }, 5*time.Second, 10*time.Millisecond)
 	set(t, client, key1, val1) // Same value
 	set(t, client, key2, val1) // Second value - same as the initial value
 	set(t, client, key3, val3)
 
-	time.Sleep(1 * time.Second)
+	require.Eventually(t, func() bool { return len(ch) >= 3 }, 5*time.Second, 10*time.Millisecond)
 
 	found := transformChangesToSlices(ch)
 	expected := []*change.Change{

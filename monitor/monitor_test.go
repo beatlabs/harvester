@@ -48,6 +48,15 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestNewRejectsMultipleMonitoringSources(t *testing.T) {
+	cfg, err := config.New(&multiSourceConfig{}, nil)
+	require.NoError(t, err)
+
+	mon, err := New(cfg, &testWatcher{})
+	assert.Nil(t, mon)
+	assert.EqualError(t, err, "field Value has multiple monitoring sources: consul and redis")
+}
+
 func TestMonitor_Monitor_Error(t *testing.T) {
 	cfg, err := config.New(&testConfig{}, nil)
 	require.NoError(t, err)
@@ -68,7 +77,6 @@ func TestMonitor_Monitor(t *testing.T) {
 	ctx, cnl := context.WithCancel(context.Background())
 	err = mon.Monitor(ctx)
 	require.NoError(t, err)
-	time.Sleep(100 * time.Millisecond)
 	// Wait for the last change of the batch: applyChange processes it sequentially,
 	// so every earlier change is applied by then and cnl() cannot drop pending work.
 	require.Eventually(t, func() bool { return c.NonWorkHours.Get() == 7*time.Hour }, time.Second, 10*time.Millisecond)
@@ -91,6 +99,10 @@ type testConfig struct {
 	HasJob       sync.Bool         `seed:"true" env:"ENV_HAS_JOB" consul:"/config/has-job"`
 	WorkHours    sync.TimeDuration `seed:"5h" env:"ENV_WORK_HOURS" consul:"/config/work_hours"`
 	NonWorkHours sync.TimeDuration `seed:"5h" env:"ENV_NON_WORK_HOURS" redis:"/config/non_work_hours"`
+}
+
+type multiSourceConfig struct {
+	Value sync.String `consul:"/config/value" redis:"config/value"`
 }
 
 type testWatcher struct {

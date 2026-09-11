@@ -207,6 +207,22 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 	})
 }
 
+func TestWatcher_GetValuesStopsSendingAfterCancellation(t *testing.T) {
+	c := &failClientStub{
+		mGetFn: func(_ context.Context, _ ...string) *redis.SliceCmd {
+			return redis.NewSliceResult([]any{"value"}, nil)
+		},
+	}
+	w, err := New(c, time.Second, []string{"key1"})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	ch := make(chan []*change.Change)
+
+	assert.True(t, w.getValues(ctx, ch))
+}
+
 func TestWatcher_BackoffInterval(t *testing.T) {
 	w, err := New(&redis.Client{}, time.Second, []string{"key1"})
 	require.NoError(t, err)

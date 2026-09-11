@@ -128,7 +128,10 @@ func (w *Watcher) getValues(ctx context.Context, ch chan<- []*change.Change) boo
 		return true
 	}
 
-	ch <- changes
+	select {
+	case ch <- changes:
+	case <-ctx.Done():
+	}
 	return true
 }
 
