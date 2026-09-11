@@ -34,3 +34,21 @@ func TestNew(t *testing.T) {
 		})
 	}
 }
+
+func TestGetter_GetContext_NilContext(t *testing.T) {
+	g := &Getter{}
+	val, version, err := g.GetContext(nil, "any-key") //nolint:staticcheck // asserting the nil-context guard
+	require.EqualError(t, err, "context is nil")
+	assert.Nil(t, val)
+	assert.Equal(t, uint64(0), version)
+}
+
+func TestGetter_Get_Unreachable(t *testing.T) {
+	g, err := New("127.0.0.1:1", "dc", "token", 0)
+	require.NoError(t, err)
+
+	val, version, err := g.Get("any-key")
+	require.Error(t, err)
+	assert.Nil(t, val)
+	assert.Equal(t, uint64(0), version)
+}

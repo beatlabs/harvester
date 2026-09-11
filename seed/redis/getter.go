@@ -24,7 +24,15 @@ func New(client redis.UniversalClient) (*Getter, error) {
 // Get value by key. Returns (nil, 0, nil) when the key does not exist,
 // matching the Getter interface contract.
 func (g *Getter) Get(key string) (*string, uint64, error) {
-	val, err := g.client.Get(context.Background(), key).Result()
+	return g.GetContext(context.Background(), key)
+}
+
+// GetContext gets a value using the supplied context.
+func (g *Getter) GetContext(ctx context.Context, key string) (*string, uint64, error) {
+	if ctx == nil {
+		return nil, 0, errors.New("context is nil")
+	}
+	val, err := g.client.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, 0, nil

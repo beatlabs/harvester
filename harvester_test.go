@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/beatlabs/harvester/config"
+	"github.com/beatlabs/harvester/monitor"
 	"github.com/beatlabs/harvester/sync"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -147,6 +148,27 @@ func TestCreate_SeedError(t *testing.T) {
 	assert.NotNil(t, got)
 	err = got.Harvest(t.Context())
 	require.Error(t, err)
+}
+
+func TestHarvest_NilContext(t *testing.T) {
+	cfg := &testConfigNoConsul{}
+	got, err := New(cfg, nil)
+	require.NoError(t, err)
+	err = got.Harvest(nil) //nolint:staticcheck // asserting the nil-context guard
+	require.EqualError(t, err, "context is nil")
+}
+
+type legacySeeder struct{}
+
+func (legacySeeder) Seed(*config.Config) error { return nil }
+
+func TestHarvest_LegacySeeder(t *testing.T) {
+	cfg := &testConfigNoConsul{}
+	c, err := config.New(cfg, nil)
+	require.NoError(t, err)
+	h := &harvester{cfg: c, seeder: legacySeeder{}, monitor: monitor.NewNoop()}
+	err = h.Harvest(t.Context())
+	require.NoError(t, err)
 }
 
 type testConfig struct {

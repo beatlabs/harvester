@@ -2,6 +2,7 @@
 package consul
 
 import (
+	"context"
 	"errors"
 	"path"
 	"time"
@@ -50,7 +51,16 @@ func NewWithFolderPrefix(addr, dc, token, folderPrefix string, timeout time.Dura
 
 // Get the specific key value from consul.
 func (g *Getter) Get(key string) (*string, uint64, error) {
-	pair, _, err := g.kv.Get(path.Join(g.folderPrefix, key), &api.QueryOptions{Datacenter: g.dc, Token: g.token})
+	return g.GetContext(context.Background(), key)
+}
+
+// GetContext gets a value using the supplied context.
+func (g *Getter) GetContext(ctx context.Context, key string) (*string, uint64, error) {
+	if ctx == nil {
+		return nil, 0, errors.New("context is nil")
+	}
+	options := (&api.QueryOptions{Datacenter: g.dc, Token: g.token}).WithContext(ctx)
+	pair, _, err := g.kv.Get(path.Join(g.folderPrefix, key), options)
 	if err != nil {
 		return nil, 0, err
 	}
