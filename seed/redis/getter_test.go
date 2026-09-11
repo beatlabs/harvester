@@ -81,4 +81,12 @@ func TestGetter_Get_Unit(t *testing.T) {
 	}
 }
 
+func TestGetter_GetContext_NilContext(t *testing.T) {
+	g := &Getter{client: &stubRedisClient{}}
+	val, version, err := g.GetContext(nil, "any-key") //nolint:staticcheck // asserting the nil-context guard
+	require.EqualError(t, err, "context is nil")
+	assert.Nil(t, val)
+	assert.Equal(t, uint64(0), version)
+}
+
 func strPtr(s string) *string { return &s }

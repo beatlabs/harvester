@@ -319,6 +319,60 @@ func TestSeeder_SeedContext_CancelledGetter(t *testing.T) {
 	require.ErrorIs(t, <-done, context.Canceled)
 }
 
+func TestSeeder_SeedContext_NilContext(t *testing.T) {
+	c := testConfig{}
+	cfg, err := config.New(&c, nil)
+	require.NoError(t, err)
+
+	err = New().SeedContext(nil, cfg) //nolint:staticcheck // asserting the nil-context guard
+	require.EqualError(t, err, "context is nil")
+}
+
+func TestSeeder_SeedContext_CancelledBeforeSeeding(t *testing.T) {
+	c := testConfig{}
+	cfg, err := config.New(&c, nil)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	err = New().SeedContext(ctx, cfg)
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestSeeder_SeedContext_RedisCancelledGetter(t *testing.T) {
+	c := testRedisOnly{}
+	cfg, err := config.New(&c, nil)
+	require.NoError(t, err)
+
+	started := make(chan struct{})
+	getter := &blockingGetter{started: started}
+	param, err := NewParam(config.SourceRedis, getter)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() {
+		done <- New(*param).SeedContext(ctx, cfg)
+	}()
+
+	<-started
+	cancel()
+	require.ErrorIs(t, <-done, context.Canceled)
+}
+
+func TestSeeder_SeedContext_LegacyGetter(t *testing.T) {
+	c := testLegacyConsul{}
+	cfg, err := config.New(&c, nil)
+	require.NoError(t, err)
+
+	param, err := NewParam(config.SourceConsul, &stubGetter{})
+	require.NoError(t, err)
+
+	err = New(*param).SeedContext(t.Context(), cfg)
+	require.NoError(t, err)
+}
+
 type testConfig struct {
 	Name      sync.String       `seed:"John Doe"`
 	Age       sync.Int64        `seed:"18" env:"ENV_AGE"`
@@ -357,6 +411,14 @@ type testInvalidBool struct {
 
 type testMissingValue struct {
 	HasJob sync.Bool `consul:"/config/YYY"`
+}
+
+type testRedisOnly struct {
+	IsAdult sync.Bool `redis:"is-adult"`
+}
+
+type testLegacyConsul struct {
+	HasJob sync.Bool `consul:"/config/has-job"`
 }
 
 type stubGetter struct {
