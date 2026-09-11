@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/beatlabs/harvester/sync"
 	"github.com/stretchr/testify/assert"
@@ -146,6 +147,52 @@ func TestConfig_Set(t *testing.T) {
 	assert.Equal(t, int64(6000), c.Position.Salary.Get())
 	assert.Equal(t, "baz", c.LevelOne.LevelTwo.DeepField.Get())
 	assert.True(t, c.IsAdult.Get())
+}
+
+func TestField_SetSecretNotificationRedactsValue(t *testing.T) {
+	c := struct {
+		Token sync.Secret `seed:"initial"`
+	}{}
+	notifications := make(chan ChangeNotification, 1)
+	cfg, err := New(&c, notifications)
+	require.NoError(t, err)
+
+	require.NoError(t, cfg.Fields[0].Set("super-secret", 1))
+	notification := <-notifications
+
+	assert.Equal(t, "***", notification.Previous)
+	assert.Equal(t, "***", notification.Current)
+	assert.NotContains(t, notification.String(), "super-secret")
+}
+
+func TestField_SetDoesNotHoldMutexWhileSendingNotification(t *testing.T) {
+	c := struct {
+		Value sync.String `seed:"initial"`
+	}{}
+	notifications := make(chan ChangeNotification)
+	cfg, err := New(&c, notifications)
+	require.NoError(t, err)
+
+	firstDone := make(chan struct{})
+	go func() {
+		_ = cfg.Fields[0].Set("first", 1)
+		close(firstDone)
+	}()
+	require.Eventually(t, func() bool { return c.Value.Get() == "first" }, time.Second, time.Millisecond)
+
+	secondDone := make(chan struct{})
+	go func() {
+		_ = cfg.Fields[0].Set("second", 2)
+		close(secondDone)
+	}()
+	require.Eventually(t, func() bool { return c.Value.Get() == "second" }, time.Second, time.Millisecond)
+
+	first := <-notifications
+	second := <-notifications
+	assert.Equal(t, "first", first.Current)
+	assert.Equal(t, "second", second.Current)
+	<-firstDone
+	<-secondDone
 }
 
 type testNestedConfig struct {

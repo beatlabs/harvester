@@ -10,8 +10,9 @@ Configuration can be obtained from the following sources:
 - Flag values, are obtained from CLI flags with the form `-flag=value`
 - File internals in local storage. Only text files are supported, don't use it for binary.
 - Consul, which is used to get initial values and to monitor them for changes
+- Redis, which is used to get initial values and to monitor them for changes
 
-The order is applied as it is listed above. Consul seeder and monitor are optional and will be used only if `Harvester` is created with the above components.
+The seeding order is fixed: seed, environment, file, Consul, Redis, then CLI flags. Each later source overrides an earlier value when it provides one. Consul and Redis seeders and monitors are optional and are used only when the corresponding options are supplied.
 
 `Harvester` expects a go structure with tags which defines one or more of the above like the following:
 
@@ -31,11 +32,11 @@ type Config struct {
 The above defines the following fields:
 
 - IndexName, which will be seeded with the value `customers-v1`
-- CacheRetention, which will be seeded with the value `18`, and if exists, overridden with whatever value the env var `ENV_CACHE_RETENTION_SECONDS` holds
-- LogLevel, which will be seeded with the value `DEBUG`, and if exists, overridden with whatever value the flag `loglevel` holds
+- CacheRetention, which will be seeded with the value `18`, and if it exists, overridden with whatever value the env var `ENV_CACHE_RETENTION_SECONDS` holds
+- LogLevel, which will be seeded with the value `DEBUG`, and if it exists, overridden with whatever value the flag `loglevel` holds
 - Sandbox, which will be seeded with the value `true`, and if exists, overridden with whatever value the env var `ENV_SANDBOX` holds and then from Consul if the consul seeder and/or watcher are provided.
 - WorkDuration, which will be seeded with the value `1s`, and if exists, overridden with whatever value the env var `ENV_WORK_DURATION` holds and then from Consul if the consul seeder and/or watcher are provided.
-- OpeningBalance, which will be seeded with the value `0.0`, and if exists, overridden with whatever value the env var `ENV_OPENING_BALANCE` holds and then from Redis if the redis seeder and/or watcher are provided.
+- OpeningBalance, which will be seeded with the value `0.0`, and if it exists, overridden with whatever value the env var `ENV_OPENING_BALANCE` holds and then from Redis if the Redis seeder and/or watcher are provided.
 
 The fields have to be one of the types that the sync package supports in order to allow concurrent read and write to the fields. The following types are supported:
 
@@ -59,6 +60,7 @@ For sensitive configuration (passwords, tokens, etc.) that shouldn't be printed 
 - Apply the value contained in the env var, if present
 - Apply the value contained in the file, if present
 - Apply the value returned from Consul, if present and harvester is setup to seed from consul
+- Apply the value returned from Redis, if present and harvester is setup to seed from Redis
 - Apply the value contained in the CLI flags, if present
 
 Conditions where seeding fails:
@@ -66,19 +68,27 @@ Conditions where seeding fails:
 - If at the end of the seeding phase one or more fields have not been seeded
 - If the seed value is invalid
 
+Errors reading optional sources are logged and the previous source value remains in place. A field still fails seeding when no source successfully provides a value. Context-aware Consul and Redis getters stop when the context passed to `Harvest` is cancelled.
+
 ### Seeder
 
 `Harvester` allows the creation of custom getters which are used by the seeder and implement the following interface:
 
 ```go
 type Getter interface {
-    Get(key string) (string, error)
+    Get(key string) (*string, uint64, error)
 }
 ```
 
-Seed and env tags are supported by default, the Consul getter has to be setup when creating a `Harvester` with the builder.
+Seed, environment, file, and flag tags are supported by default. Consul and Redis getters are configured when creating a `Harvester` with the builder. Custom getters can optionally implement the context-aware form:
 
-## Monitoring phase (Consul only)
+```go
+type ContextGetter interface {
+    GetContext(context.Context, string) (*string, uint64, error)
+}
+```
+
+## Monitoring phase
   
 - Monitor a key and apply if tag key matches (Consul and Redis)
 - Monitor a key-prefix and apply if tag key matches (Consul only)
@@ -89,7 +99,7 @@ Seed and env tags are supported by default, the Consul getter has to be setup wh
 
 - Consul, which supports monitoring for keys and key-prefixes.
 
-This feature have to be setup when creating a `Harvester` with the builder.
+This feature has to be set up when creating a `Harvester` with the builder. Monitoring stops when the context passed to `Harvest` is cancelled. Watchers publish batches of changes to the internal monitor and do not own or close the notification channel supplied to `New`.
 
 ## Builder
 

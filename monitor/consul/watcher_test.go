@@ -88,7 +88,7 @@ func TestWatcher_createKeyPlanWithPrefix(t *testing.T) {
 	require.NoError(t, err)
 
 	ch := make(chan []*change.Change, 1)
-	pl, err := w.createKeyPlanWithPrefix("key", "prefix", ch)
+	pl, err := w.createKeyPlanWithPrefix(context.Background(), "key", "prefix", ch)
 	require.NoError(t, err)
 	require.NotNil(t, pl)
 
@@ -113,7 +113,7 @@ func TestWatcher_createKeyPrefixPlan(t *testing.T) {
 	require.NoError(t, err)
 
 	ch := make(chan []*change.Change, 1)
-	pl, err := w.createKeyPrefixPlan("prefix", ch)
+	pl, err := w.createKeyPrefixPlan(context.Background(), "prefix", ch)
 	require.NoError(t, err)
 	require.NotNil(t, pl)
 
@@ -136,4 +136,25 @@ func TestWatcher_createKeyPrefixPlan(t *testing.T) {
 	assert.Equal(t, "prefix/two", changes[1].Key())
 	assert.Equal(t, "two", changes[1].Value())
 	assert.Equal(t, uint64(12), changes[1].Version())
+}
+
+func TestWatcher_HandlersStopSendingAfterCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	w, err := New("xxx", "dc", "token", 0, NewKeyItem("key"))
+	require.NoError(t, err)
+
+	t.Run("key", func(t *testing.T) {
+		ch := make(chan []*change.Change)
+		pl, err := w.createKeyPlanWithPrefix(ctx, "key", "prefix", ch)
+		require.NoError(t, err)
+		pl.Handler(0, &api.KVPair{Key: "prefix/key", Value: []byte("value"), ModifyIndex: 42})
+	})
+
+	t.Run("prefix", func(t *testing.T) {
+		ch := make(chan []*change.Change)
+		pl, err := w.createKeyPrefixPlan(ctx, "prefix", ch)
+		require.NoError(t, err)
+		pl.Handler(0, api.KVPairs{{Key: "prefix/key", Value: []byte("value"), ModifyIndex: 42}})
+	})
 }
