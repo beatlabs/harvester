@@ -50,9 +50,6 @@ func (p *parser) getFields(prefix string, tp reflect.Type, val reflect.Value, ch
 	for i := 0; i < tp.NumField(); i++ {
 		f := tp.Field(i)
 		fieldValue := val.Field(i)
-		if !fieldValue.IsValid() || !fieldValue.CanAddr() {
-			return nil, fmt.Errorf("field %s is not addressable", f.Name)
-		}
 
 		typ, err := p.getStructFieldType(f, fieldValue)
 		if err != nil {

@@ -298,9 +298,6 @@ func parseFlags(infos []*flagInfo, flagSet *flag.FlagSet) error {
 		if flagName[0] == '-' {
 			flagName = flagName[1:] // handle --flag
 		}
-		if len(flagName) == 0 {
-			continue
-		}
 		// Split on = to get the flag name
 		if idx := strings.IndexByte(flagName, '='); idx >= 0 {
 			flagName = flagName[:idx]

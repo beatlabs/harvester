@@ -249,3 +249,9 @@ type testDuplicateFlagConfig struct {
 type testUnexportedTaggedConfig struct {
 	age sync.Int64 `seed:"1"` //nolint:unused // accessed via reflection to assert the unexported field error
 }
+
+func TestParser_ParseCfg_Nil(t *testing.T) {
+	ff, err := newParser().ParseCfg(nil, nil) //nolint:staticcheck // asserting the nil-configuration guard
+	assert.Nil(t, ff)
+	assert.EqualError(t, err, "configuration is nil")
+}
