@@ -247,5 +247,5 @@ type testDuplicateFlagConfig struct {
 }
 
 type testUnexportedTaggedConfig struct {
-	age sync.Int64 `seed:"1"`
+	age sync.Int64 `seed:"1"` //nolint:unused // accessed via reflection to assert the unexported field error
 }
