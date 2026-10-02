@@ -1,6 +1,6 @@
 services:
   consul:
-    image: hashicorp/consul:1.20.6
+    image: hashicorp/consul:2.0.4
     networks:
       - consul-network
     ports:
