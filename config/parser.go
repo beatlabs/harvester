@@ -31,7 +31,7 @@ func (p *parser) ParseCfg(cfg interface{}, chNotify chan<- ChangeNotification) (
 	}
 
 	tp := value.Type()
-	if tp.Kind() != reflect.Ptr {
+	if tp.Kind() != reflect.Pointer {
 		return nil, errors.New("configuration should be a pointer type")
 	}
 	if value.IsNil() {

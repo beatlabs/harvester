@@ -14,6 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testRedisKey1 = "key1"
+	testRedisKey2 = "key2"
+	testRedisKey3 = "key3"
+)
+
 func TestNew(t *testing.T) {
 	type args struct {
 		client       redis.UniversalClient
@@ -70,31 +76,31 @@ func TestWatcher_Watch(t *testing.T) {
 }
 
 func TestWatcher_Versioning(t *testing.T) {
-	watchedKeys := []string{"key1", "key2", "key3"}
+	watchedKeys := []string{testRedisKey1, testRedisKey2, testRedisKey3}
 	// each element represent the state of redis server at each subsequent poll
 	redisInternalState := []map[string]any{
 		{
 			// watch triggers change in key1, key2 and key3
-			"key1": "val1.1",
-			"key2": "val2.1",
-			"key3": "val3.1",
+			testRedisKey1: "val1.1",
+			testRedisKey2: "val2.1",
+			testRedisKey3: "val3.1",
 		},
 		{
 			// watch triggers change in key2 and key3
-			"key1": "val1.1", // no change
-			"key2": "val2.2", // change
-			"key3": "val3.2", // change
+			testRedisKey1: "val1.1", // no change
+			testRedisKey2: "val2.2", // change
+			testRedisKey3: "val3.2", // change
 		},
 		{
 			// whole watch does not trigger change (but errors will be logged as != redis.Nil)
-			"key1": errors.New("error key1"), // error occurred -> no change should be triggered
-			"key2": errors.New("error key2"), // error occurred -> no change should be triggered
-			"key3": errors.New("error key3"), // error occurred -> no change should be triggered
+			testRedisKey1: errors.New("error key1"), // error occurred -> no change should be triggered
+			testRedisKey2: errors.New("error key2"), // error occurred -> no change should be triggered
+			testRedisKey3: errors.New("error key3"), // error occurred -> no change should be triggered
 		},
 		{
 			// watch does not trigger change or log because key1 watch will lead to redis.Nil
-			"key2": "val2.2", // no change from previous
-			"key3": "val3.2", // no change from previous
+			testRedisKey2: "val2.2", // no change from previous
+			testRedisKey3: "val3.2", // no change from previous
 		},
 		{
 			// all subscribed keys deleted -> do not trigger change or log because redis.Nil is ignored
@@ -107,18 +113,18 @@ func TestWatcher_Versioning(t *testing.T) {
 		{
 			// all subscribed keys deleted -> do not trigger change but triggers
 			// log because error is different than redis.Nil is ignored
-			"key2": errors.New("error"), // error occurred -> no change should be triggered
+			testRedisKey2: errors.New("error"), // error occurred -> no change should be triggered
 		},
 	}
 	expected := [][]*change.Change{
 		{
-			change.New(config.SourceRedis, "key1", "val1.1", 1),
-			change.New(config.SourceRedis, "key2", "val2.1", 1),
-			change.New(config.SourceRedis, "key3", "val3.1", 1),
+			change.New(config.SourceRedis, testRedisKey1, "val1.1", 1),
+			change.New(config.SourceRedis, testRedisKey2, "val2.1", 1),
+			change.New(config.SourceRedis, testRedisKey3, "val3.1", 1),
 		},
 		{
-			change.New(config.SourceRedis, "key2", "val2.2", 2),
-			change.New(config.SourceRedis, "key3", "val3.2", 2),
+			change.New(config.SourceRedis, testRedisKey2, "val2.2", 2),
+			change.New(config.SourceRedis, testRedisKey3, "val3.2", 2),
 		},
 	}
 
@@ -126,7 +132,7 @@ func TestWatcher_Versioning(t *testing.T) {
 	for _, mv := range redisInternalState {
 		client.AppendMockValues(mv)
 	}
-	w, err := New(&client, 5*time.Millisecond, []string{"key1", "key2", "key3"})
+	w, err := New(&client, 5*time.Millisecond, []string{testRedisKey1, testRedisKey2, testRedisKey3})
 	require.NoError(t, err)
 	assert.Equal(t, []uint64{0, 0, 0}, w.versions)
 	assert.Equal(t, []string{"", "", ""}, w.hashes)
@@ -168,7 +174,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 				return nil
 			},
 		}
-		w, _ := New(c, time.Second, []string{"key1"})
+		w, _ := New(c, time.Second, []string{testRedisKey1})
 		w.getValues(ctx, ch)
 		assert.Empty(t, ch)
 	})
@@ -179,7 +185,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 				return redis.NewSliceResult(nil, errors.New("boom"))
 			},
 		}
-		w, _ := New(c, time.Second, []string{"key1"})
+		w, _ := New(c, time.Second, []string{testRedisKey1})
 		w.getValues(ctx, ch)
 		assert.Empty(t, ch)
 	})
@@ -190,7 +196,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 				return redis.NewSliceResult([]any{"val1"}, nil)
 			},
 		}
-		w, _ := New(c, time.Second, []string{"key1", "key2"})
+		w, _ := New(c, time.Second, []string{testRedisKey1, testRedisKey2})
 		w.getValues(ctx, ch)
 		assert.Empty(t, ch)
 	})
@@ -201,7 +207,7 @@ func TestWatcher_GetValues_EdgeCases(t *testing.T) {
 				return redis.NewSliceResult([]any{123}, nil)
 			},
 		}
-		w, _ := New(c, time.Second, []string{"key1"})
+		w, _ := New(c, time.Second, []string{testRedisKey1})
 		w.getValues(ctx, ch)
 		assert.Empty(t, ch)
 	})
@@ -213,7 +219,7 @@ func TestWatcher_GetValuesStopsSendingAfterCancellation(t *testing.T) {
 			return redis.NewSliceResult([]any{"value"}, nil)
 		},
 	}
-	w, err := New(c, time.Second, []string{"key1"})
+	w, err := New(c, time.Second, []string{testRedisKey1})
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(t.Context())
@@ -224,7 +230,7 @@ func TestWatcher_GetValuesStopsSendingAfterCancellation(t *testing.T) {
 }
 
 func TestWatcher_BackoffInterval(t *testing.T) {
-	w, err := New(&redis.Client{}, time.Second, []string{"key1"})
+	w, err := New(&redis.Client{}, time.Second, []string{testRedisKey1})
 	require.NoError(t, err)
 
 	assert.Equal(t, time.Second, w.backoffInterval(0))
@@ -249,7 +255,7 @@ func TestWatcher_MonitorBackoffResetsAfterSuccess(t *testing.T) {
 	}
 
 	client := &sequenceClientStub{responses: responses}
-	w, err := New(client, time.Second, []string{"key1"})
+	w, err := New(client, time.Second, []string{testRedisKey1})
 	require.NoError(t, err)
 
 	intervals := make([]time.Duration, 0, 4)
@@ -395,7 +401,7 @@ func (c *clientStub) MGet(_ context.Context, keys ...string) *redis.SliceCmd {
 
 func (c *clientStub) rollInternalRedisState() {
 	// replace redis virtual state every len(watchedKeys) calls to Get
-	if len(c.keyToCmd) > 0 && (c.internalGetCalls)%len(c.watchedKeys) == 0 {
+	if len(c.keyToCmd) > 0 && c.internalGetCalls%len(c.watchedKeys) == 0 {
 		c.keyToCmd = c.keyToCmd[1:]
 	}
 }

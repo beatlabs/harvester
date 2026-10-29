@@ -10,6 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	emptyCase  = "empty"
+	testKey    = "key"
+	testKey1   = "key1"
+	testKey2   = "key2"
+	testValue  = "value"
+	testValue1 = "value1"
+	testValue2 = "value2"
+)
+
 func TestBool(t *testing.T) {
 	var b Bool
 	ch := make(chan struct{})
@@ -250,7 +260,7 @@ func TestRegexp_SetString(t *testing.T) {
 		result      *regexp.Regexp
 		throwsError bool
 	}{
-		{"empty", "", regexp.MustCompile(""), false},
+		{emptyCase, "", regexp.MustCompile(""), false},
 		{"simple regex", ".*", regexp.MustCompile(".*"), false},
 		{"invalid regex", "[0-9]++", nil, true},
 	}
@@ -284,11 +294,11 @@ func TestStringMap(t *testing.T) {
 	var sm StringMap
 	ch := make(chan struct{})
 	go func() {
-		sm.Set(map[string]string{"key": "value"})
+		sm.Set(map[string]string{testKey: testValue})
 		ch <- struct{}{}
 	}()
 	<-ch
-	assert.Equal(t, map[string]string{"key": "value"}, sm.Get())
+	assert.Equal(t, map[string]string{testKey: testValue}, sm.Get())
 	assert.Equal(t, "key=\"value\"", sm.String())
 
 	d, err := sm.MarshalJSON()
@@ -297,18 +307,18 @@ func TestStringMap(t *testing.T) {
 }
 
 func TestStringMap_CopiesValues(t *testing.T) {
-	input := map[string]string{"key": "value"}
+	input := map[string]string{testKey: testValue}
 	var sm StringMap
 	sm.Set(input)
-	input["key"] = "changed"
-	assert.Equal(t, "value", sm.Get()["key"])
+	input[testKey] = "changed"
+	assert.Equal(t, testValue, sm.Get()[testKey])
 
 	got := sm.Get()
-	got["key"] = "changed again"
-	assert.Equal(t, "value", sm.Get()["key"])
+	got[testKey] = "changed again"
+	assert.Equal(t, testValue, sm.Get()[testKey])
 
 	require.Error(t, sm.UnmarshalJSON([]byte(`{"invalid"`)))
-	assert.Equal(t, map[string]string{"key": "value"}, sm.Get())
+	assert.Equal(t, map[string]string{testKey: testValue}, sm.Get())
 }
 
 func TestStringMap_SetString(t *testing.T) {
@@ -318,19 +328,19 @@ func TestStringMap_SetString(t *testing.T) {
 		result      map[string]string
 		throwsError bool
 	}{
-		{"empty", "", map[string]string{}, false},
+		{emptyCase, "", map[string]string{}, false},
 		{"empty with spaces", "   ", map[string]string{}, false},
-		{"single item colon separator", "key:value", map[string]string{"key": "value"}, false},
-		{"single item equals separator", "key=value", map[string]string{"key": "value"}, false},
-		{"single item with url value (colon)", "key:http://thing", map[string]string{"key": "http://thing"}, false},
-		{"single item with url value (equals)", "key=http://thing", map[string]string{"key": "http://thing"}, false},
+		{"single item colon separator", "key:value", map[string]string{testKey: testValue}, false},
+		{"single item equals separator", "key=value", map[string]string{testKey: testValue}, false},
+		{"single item with url value (colon)", "key:http://thing", map[string]string{testKey: "http://thing"}, false},
+		{"single item with url value (equals)", "key=http://thing", map[string]string{testKey: "http://thing"}, false},
 		{"key without value", "key", nil, true},
-		{"multiple items colon", "key1:value,key2:value", map[string]string{"key1": "value", "key2": "value"}, false},
-		{"multiple items equals", "key1=value,key2=value", map[string]string{"key1": "value", "key2": "value"}, false},
-		{"multiple items with spaces", " key1 : value , key2 :value ", map[string]string{"key1": "value", "key2": "value"}, false},
-		{"multiple urls colon", "key1:http://one,key2:https://two", map[string]string{"key1": "http://one", "key2": "https://two"}, false},
-		{"multiple urls equals", "key1=http://one,key2=https://two", map[string]string{"key1": "http://one", "key2": "https://two"}, false},
-		{"round-trip equals separator plain values", "key1=value1,key2=value2", map[string]string{"key1": "value1", "key2": "value2"}, false},
+		{"multiple items colon", "key1:value,key2:value", map[string]string{testKey1: testValue, testKey2: testValue}, false},
+		{"multiple items equals", "key1=value,key2=value", map[string]string{testKey1: testValue, testKey2: testValue}, false},
+		{"multiple items with spaces", " key1 : value , key2 :value ", map[string]string{testKey1: testValue, testKey2: testValue}, false},
+		{"multiple urls colon", "key1:http://one,key2:https://two", map[string]string{testKey1: "http://one", testKey2: "https://two"}, false},
+		{"multiple urls equals", "key1=http://one,key2=https://two", map[string]string{testKey1: "http://one", testKey2: "https://two"}, false},
+		{"round-trip equals separator plain values", "key1=value1,key2=value2", map[string]string{testKey1: testValue1, testKey2: testValue2}, false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -371,11 +381,11 @@ func TestStringSlice(t *testing.T) {
 	var sl StringSlice
 	ch := make(chan struct{})
 	go func() {
-		sl.Set([]string{"value1", "value2"})
+		sl.Set([]string{testValue1, testValue2})
 		ch <- struct{}{}
 	}()
 	<-ch
-	assert.Equal(t, []string{"value1", "value2"}, sl.Get())
+	assert.Equal(t, []string{testValue1, testValue2}, sl.Get())
 	assert.Equal(t, "value1,value2", sl.String())
 
 	d, err := sl.MarshalJSON()
@@ -384,18 +394,18 @@ func TestStringSlice(t *testing.T) {
 }
 
 func TestStringSlice_CopiesValues(t *testing.T) {
-	input := []string{"value"}
+	input := []string{testValue}
 	var sl StringSlice
 	sl.Set(input)
 	input[0] = "changed"
-	assert.Equal(t, []string{"value"}, sl.Get())
+	assert.Equal(t, []string{testValue}, sl.Get())
 
 	got := sl.Get()
 	got[0] = "changed again"
-	assert.Equal(t, []string{"value"}, sl.Get())
+	assert.Equal(t, []string{testValue}, sl.Get())
 
 	require.Error(t, sl.UnmarshalJSON([]byte(`["invalid"`)))
-	assert.Equal(t, []string{"value"}, sl.Get())
+	assert.Equal(t, []string{testValue}, sl.Get())
 }
 
 func TestStringSlice_SetString(t *testing.T) {
@@ -405,14 +415,14 @@ func TestStringSlice_SetString(t *testing.T) {
 		result      []string
 		throwsError bool
 	}{
-		{"empty", "", []string{}, false},
+		{emptyCase, "", []string{}, false},
 		{"empty with spaces", "   ", []string{}, false},
 		{"all empty elements", ",,", []string{}, false},
-		{"single item", "value", []string{"value"}, false},
-		{"multiple items", "value1,value2", []string{"value1", "value2"}, false},
-		{"multiple items with spaces", "  value1 ,  value2 ", []string{"value1", "value2"}, false},
-		{"empty elements between commas", "value1,,value2", []string{"value1", "value2"}, false},
-		{"leading and trailing commas", ",value1,value2,", []string{"value1", "value2"}, false},
+		{"single item", testValue, []string{testValue}, false},
+		{"multiple items", "value1,value2", []string{testValue1, testValue2}, false},
+		{"multiple items with spaces", "  value1 ,  value2 ", []string{testValue1, testValue2}, false},
+		{"empty elements between commas", "value1,,value2", []string{testValue1, testValue2}, false},
+		{"leading and trailing commas", ",value1,value2,", []string{testValue1, testValue2}, false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

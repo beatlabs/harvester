@@ -19,13 +19,13 @@ func TestWatch(t *testing.T) {
 	client := redis.NewClient(&redis.Options{})
 
 	const (
-		key1 = "key1"
+		key1 = testRedisKey1
 		val1 = "value1"
 
-		key2 = "key2"
+		key2 = testRedisKey2
 		val2 = "value2"
 
-		key3 = "key3"
+		key3 = testRedisKey3
 		val3 = "value3"
 	)
 
