@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/consul/api/watch"
 )
 
+const keyType = "key"
+
 // Item definition.
 type Item struct {
 	tp     string
@@ -23,12 +25,12 @@ type Item struct {
 
 // NewKeyItem creates a new key watch item for the watcher.
 func NewKeyItem(key string) Item {
-	return Item{tp: "key", key: key}
+	return Item{tp: keyType, key: key}
 }
 
 // NewKeyItemWithPrefix creates a new key item for a given key and prefix.
 func NewKeyItemWithPrefix(key, prefix string) Item {
-	return Item{tp: "key", key: key, prefix: prefix}
+	return Item{tp: keyType, key: key, prefix: prefix}
 }
 
 // NewPrefixItem creates a prefix key watch item for the watcher.
@@ -78,7 +80,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 		var pl *watch.Plan
 		var err error
 		switch i.tp {
-		case "key":
+		case keyType:
 			pl, err = w.createKeyPlanWithPrefix(ctx, i.key, i.prefix, ch)
 		case "keyprefix":
 			pl, err = w.createKeyPrefixPlan(ctx, i.key, ch)
@@ -108,7 +110,7 @@ func (w *Watcher) Watch(ctx context.Context, ch chan<- []*change.Change) error {
 }
 
 func (w *Watcher) createKeyPlanWithPrefix(ctx context.Context, key, prefix string, ch chan<- []*change.Change) (*watch.Plan, error) {
-	pl, err := w.getPlan("key", path.Join(prefix, key))
+	pl, err := w.getPlan(keyType, path.Join(prefix, key))
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +128,7 @@ func (w *Watcher) createKeyPlanWithPrefix(ctx context.Context, key, prefix strin
 			}
 		}
 	}
-	slog.Debug("plan created", "key", key)
+	slog.Debug("plan created", keyType, key)
 	return pl, nil
 }
 
@@ -161,8 +163,8 @@ func (w *Watcher) getPlan(tp, key string) (*watch.Plan, error) {
 	params := map[string]interface{}{}
 	params["datacenter"] = w.dc
 	params["token"] = w.token
-	if tp == "key" {
-		params["key"] = key
+	if tp == keyType {
+		params[keyType] = key
 	} else {
 		params["prefix"] = key
 	}

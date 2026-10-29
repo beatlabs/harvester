@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testName         = "John Doe"
+	testTrue         = "true"
+	testInvalidValue = "XXX"
+)
+
 func TestField_Set(t *testing.T) {
 	c := testConfig{}
 	cfg, err := New(&c, nil)
@@ -23,14 +29,14 @@ func TestField_Set(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		"success String":            {field: cfg.Fields[0], args: args{value: "John Doe", version: 3}, wantErr: false},
+		"success String":            {field: cfg.Fields[0], args: args{value: testName, version: 3}, wantErr: false},
 		"success Int64":             {field: cfg.Fields[1], args: args{value: "18", version: 1}, wantErr: false},
 		"success Float64":           {field: cfg.Fields[2], args: args{value: "99.9", version: 1}, wantErr: false},
-		"success Bool":              {field: cfg.Fields[3], args: args{value: "true", version: 1}, wantErr: false},
-		"failure Int64":             {field: cfg.Fields[1], args: args{value: "XXX", version: 1}, wantErr: true},
-		"failure Float64":           {field: cfg.Fields[2], args: args{value: "XXX", version: 1}, wantErr: true},
-		"failure Bool":              {field: cfg.Fields[3], args: args{value: "XXX", version: 1}, wantErr: true},
-		"warn String version older": {field: cfg.Fields[0], args: args{value: "John Doe", version: 2}, wantErr: false},
+		"success Bool":              {field: cfg.Fields[3], args: args{value: testTrue, version: 1}, wantErr: false},
+		"failure Int64":             {field: cfg.Fields[1], args: args{value: testInvalidValue, version: 1}, wantErr: true},
+		"failure Float64":           {field: cfg.Fields[2], args: args{value: testInvalidValue, version: 1}, wantErr: true},
+		"failure Bool":              {field: cfg.Fields[3], args: args{value: testInvalidValue, version: 1}, wantErr: true},
+		"warn String version older": {field: cfg.Fields[0], args: args{value: testName, version: 2}, wantErr: false},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -82,19 +88,19 @@ func TestNew(t *testing.T) {
 				assert.NotNil(t, got)
 				assert.Len(t, got.Fields, 7)
 				assertField(t, got.Fields[0], "Name", "String",
-					map[Source]string{SourceSeed: "John Doe", SourceEnv: "ENV_NAME"})
+					map[Source]string{SourceSeed: testName, SourceEnv: "ENV_NAME"})
 				assertField(t, got.Fields[1], "Age", "Int64",
 					map[Source]string{SourceEnv: "ENV_AGE", SourceConsul: "/config/age"})
 				assertField(t, got.Fields[2], "Balance", "Float64",
 					map[Source]string{SourceSeed: "99.9", SourceEnv: "ENV_BALANCE", SourceConsul: "/config/balance"})
 				assertField(t, got.Fields[3], "HasJob", "Bool",
-					map[Source]string{SourceSeed: "true", SourceEnv: "ENV_HAS_JOB", SourceConsul: "/config/has-job"})
+					map[Source]string{SourceSeed: testTrue, SourceEnv: "ENV_HAS_JOB", SourceConsul: "/config/has-job"})
 				assertField(t, got.Fields[4], "PositionSalary", "Int64",
 					map[Source]string{SourceSeed: "2000", SourceEnv: "ENV_SALARY"})
 				assertField(t, got.Fields[5], "LevelOneLevelTwoDeepField", "String",
 					map[Source]string{SourceSeed: "foobar"})
 				assertField(t, got.Fields[6], "IsAdult", "Bool",
-					map[Source]string{SourceSeed: "true", SourceEnv: "ENV_IS_ADULT", SourceRedis: "is-adult"})
+					map[Source]string{SourceSeed: testTrue, SourceEnv: "ENV_IS_ADULT", SourceRedis: "is-adult"})
 			}
 		})
 	}
@@ -112,7 +118,7 @@ func TestConfig_Set(t *testing.T) {
 	chNotify := make(chan ChangeNotification, 1)
 	cfg, err := New(&c, chNotify)
 	require.NoError(t, err)
-	err = cfg.Fields[0].Set("John Doe", 1)
+	err = cfg.Fields[0].Set(testName, 1)
 	require.NoError(t, err)
 	change := <-chNotify
 	assert.Equal(t, "field [Name] of type [String] changed from [] to [John Doe]", change.String())
@@ -124,7 +130,7 @@ func TestConfig_Set(t *testing.T) {
 	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [Balance] of type [Float64] changed from [0] to [99.9]", change.String())
-	err = cfg.Fields[3].Set("true", 1)
+	err = cfg.Fields[3].Set(testTrue, 1)
 	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [HasJob] of type [Bool] changed from [false] to [true]", change.String())
@@ -136,11 +142,11 @@ func TestConfig_Set(t *testing.T) {
 	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [LevelOneLevelTwoDeepField] of type [String] changed from [] to [baz]", change.String())
-	err = cfg.Fields[6].Set("true", 1)
+	err = cfg.Fields[6].Set(testTrue, 1)
 	require.NoError(t, err)
 	change = <-chNotify
 	assert.Equal(t, "field [IsAdult] of type [Bool] changed from [false] to [true]", change.String())
-	assert.Equal(t, "John Doe", c.Name.Get())
+	assert.Equal(t, testName, c.Name.Get())
 	assert.Equal(t, int64(18), c.Age.Get())
 	assert.InDelta(t, 99.9, c.Balance.Get(), 0.01)
 	assert.True(t, c.HasJob.Get())

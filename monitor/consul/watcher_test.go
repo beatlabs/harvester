@@ -12,6 +12,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testConsulAddr        = "xxx"
+	testConsulKey1        = "key1"
+	testConsulPrefixedKey = "prefix/key"
+)
+
 func TestNew(t *testing.T) {
 	ii := []Item{{}}
 	type args struct {
@@ -23,10 +29,10 @@ func TestNew(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		"success":                 {args: args{addr: "xxx", timeout: 1 * time.Second, ii: ii}, wantErr: false},
-		"success default timeout": {args: args{addr: "xxx", timeout: 0, ii: ii}, wantErr: false},
+		"success":                 {args: args{addr: testConsulAddr, timeout: 1 * time.Second, ii: ii}, wantErr: false},
+		"success default timeout": {args: args{addr: testConsulAddr, timeout: 0, ii: ii}, wantErr: false},
 		"empty address":           {args: args{addr: "", timeout: 1 * time.Second, ii: ii}, wantErr: true},
-		"empty items":             {args: args{addr: "xxx", timeout: 1 * time.Second, ii: nil}, wantErr: true},
+		"empty items":             {args: args{addr: testConsulAddr, timeout: 1 * time.Second, ii: nil}, wantErr: true},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -43,7 +49,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestWatcher_Watch(t *testing.T) {
-	w, err := New("xxx", "", "", 0, Item{})
+	w, err := New(testConsulAddr, "", "", 0, Item{})
 	require.NoError(t, err)
 	type args struct {
 		ctx context.Context
@@ -70,12 +76,12 @@ func TestWatcher_Watch(t *testing.T) {
 
 func TestItems(t *testing.T) {
 	t.Run("NewKeyItem", func(t *testing.T) {
-		item := NewKeyItem("key1")
-		assert.Equal(t, Item{tp: "key", key: "key1"}, item)
+		item := NewKeyItem(testConsulKey1)
+		assert.Equal(t, Item{tp: keyType, key: testConsulKey1}, item)
 	})
 	t.Run("NewKeyItemWithPrefix", func(t *testing.T) {
-		item := NewKeyItemWithPrefix("key1", "prefix1")
-		assert.Equal(t, Item{tp: "key", key: "key1", prefix: "prefix1"}, item)
+		item := NewKeyItemWithPrefix(testConsulKey1, "prefix1")
+		assert.Equal(t, Item{tp: keyType, key: testConsulKey1, prefix: "prefix1"}, item)
 	})
 	t.Run("NewPrefixItem", func(t *testing.T) {
 		item := NewPrefixItem("prefix1")
@@ -84,7 +90,7 @@ func TestItems(t *testing.T) {
 }
 
 func TestWatcher_createKeyPlanWithPrefix(t *testing.T) {
-	w, err := New("xxx", "dc", "token", 0, NewKeyItem("key"))
+	w, err := New(testConsulAddr, "dc", "token", 0, NewKeyItem("key"))
 	require.NoError(t, err)
 
 	ch := make(chan []*change.Change, 1)
@@ -98,7 +104,7 @@ func TestWatcher_createKeyPlanWithPrefix(t *testing.T) {
 	pl.Handler(0, "not a kv pair")
 	assert.Empty(t, ch)
 
-	pl.Handler(0, &api.KVPair{Key: "prefix/key", Value: []byte("value"), ModifyIndex: 42})
+	pl.Handler(0, &api.KVPair{Key: testConsulPrefixedKey, Value: []byte("value"), ModifyIndex: 42})
 	require.Len(t, ch, 1)
 	changes := <-ch
 	require.Len(t, changes, 1)
@@ -109,7 +115,7 @@ func TestWatcher_createKeyPlanWithPrefix(t *testing.T) {
 }
 
 func TestWatcher_createKeyPrefixPlan(t *testing.T) {
-	w, err := New("xxx", "dc", "token", 0, NewPrefixItem("prefix"))
+	w, err := New(testConsulAddr, "dc", "token", 0, NewPrefixItem("prefix"))
 	require.NoError(t, err)
 
 	ch := make(chan []*change.Change, 1)
@@ -141,20 +147,20 @@ func TestWatcher_createKeyPrefixPlan(t *testing.T) {
 func TestWatcher_HandlersStopSendingAfterCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	w, err := New("xxx", "dc", "token", 0, NewKeyItem("key"))
+	w, err := New(testConsulAddr, "dc", "token", 0, NewKeyItem("key"))
 	require.NoError(t, err)
 
 	t.Run("key", func(t *testing.T) {
 		ch := make(chan []*change.Change)
 		pl, err := w.createKeyPlanWithPrefix(ctx, "key", "prefix", ch)
 		require.NoError(t, err)
-		pl.Handler(0, &api.KVPair{Key: "prefix/key", Value: []byte("value"), ModifyIndex: 42})
+		pl.Handler(0, &api.KVPair{Key: testConsulPrefixedKey, Value: []byte("value"), ModifyIndex: 42})
 	})
 
 	t.Run("prefix", func(t *testing.T) {
 		ch := make(chan []*change.Change)
 		pl, err := w.createKeyPrefixPlan(ctx, "prefix", ch)
 		require.NoError(t, err)
-		pl.Handler(0, api.KVPairs{{Key: "prefix/key", Value: []byte("value"), ModifyIndex: 42}})
+		pl.Handler(0, api.KVPairs{{Key: testConsulPrefixedKey, Value: []byte("value"), ModifyIndex: 42}})
 	})
 }

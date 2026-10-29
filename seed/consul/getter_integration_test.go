@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testGetterKey1 = "get_key1"
+
 const (
 	addr = "127.0.0.1:8500"
 )
@@ -55,9 +57,9 @@ func TestGetter_Get(t *testing.T) {
 		want    *string
 		wantErr bool
 	}{
-		"success":       {args: args{addr: addr, key: "get_key1"}, want: &one, wantErr: false},
+		"success":       {args: args{addr: addr, key: testGetterKey1}, want: &one, wantErr: false},
 		"missing key":   {args: args{addr: addr, key: "get_key2"}, want: nil, wantErr: false},
-		"wrong address": {args: args{addr: "xxx", key: "get_key1"}, want: nil, wantErr: true},
+		"wrong address": {args: args{addr: "xxx", key: testGetterKey1}, want: nil, wantErr: true},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -77,7 +79,7 @@ func TestGetter_Get(t *testing.T) {
 }
 
 func cleanup(consul *api.Client) error {
-	_, err := consul.KV().Delete("get_key1", nil)
+	_, err := consul.KV().Delete(testGetterKey1, nil)
 	if err != nil {
 		return err
 	}
@@ -85,7 +87,7 @@ func cleanup(consul *api.Client) error {
 }
 
 func setup(consul *api.Client) error {
-	_, err := consul.KV().Put(&api.KVPair{Key: "get_key1", Value: []byte("1")}, nil)
+	_, err := consul.KV().Put(&api.KVPair{Key: testGetterKey1, Value: []byte("1")}, nil)
 	if err != nil {
 		return err
 	}
