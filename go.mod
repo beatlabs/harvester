@@ -1,6 +1,6 @@
 module github.com/beatlabs/harvester
 
-go 1.26.9
+go 1.27.3
 
 require (
 	github.com/hashicorp/consul/api v1.35.0
