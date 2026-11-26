@@ -347,6 +347,21 @@ func TestSeeder_SeedContext_CancelledGetter(t *testing.T) {
 	require.ErrorIs(t, <-done, context.Canceled)
 }
 
+func TestSeeder_Seed_FileWithTrailingNewline(t *testing.T) {
+	file := t.TempDir() + "/value"
+	require.NoError(t, os.WriteFile(file, []byte("42\n"), 0o600))
+
+	c := struct {
+		Age sync.Int64 `file:"unused"`
+	}{}
+	cfg, err := config.New(&c, nil)
+	require.NoError(t, err)
+	cfg.Fields[0].Sources()[config.SourceFile] = file
+
+	require.NoError(t, New().Seed(cfg))
+	assert.Equal(t, int64(42), c.Age.Get())
+}
+
 func TestSeeder_SeedContext_NilContext(t *testing.T) {
 	c := testConfig{}
 	cfg, err := config.New(&c, nil)

@@ -180,7 +180,7 @@ func processFileField(f *config.Field, seedMap fieldMap) error {
 		return nil
 	}
 
-	err = f.Set(string(body), 0)
+	err = f.Set(strings.TrimRight(string(body), "\r\n"), 0)
 	if err != nil {
 		return err
 	}
